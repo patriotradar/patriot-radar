@@ -1,5 +1,6 @@
 from pytrends.request import TrendReq
 import time
+from datetime import datetime
 
 CONTENT_KEYWORDS = [
     "union jack",
@@ -17,13 +18,13 @@ CONTENT_KEYWORDS = [
 
 AFFILIATE_KEYWORDS = [
     "union jack flag",
-    "british history books",
-    "military history books",
+    "british history",
+    "military history",
     "veteran gifts",
     "british clothing",
-    "army books",
-    "royal navy books",
-    "churchill books",
+    "army",
+    "royal navy",
+    "churchill",
     "uk travel",
 ]
 
@@ -43,13 +44,13 @@ AUDIENCE_SCORES = {
 
 AFFILIATE_SCORES = {
     "union jack flag": 10,
-    "british history books": 10,
-    "military history books": 10,
+    "british history": 10,
+    "military history": 10,
     "veteran gifts": 9,
     "british clothing": 8,
-    "army books": 9,
-    "royal navy books": 9,
-    "churchill books": 8,
+    "army": 8,
+    "royal navy": 8,
+    "churchill": 8,
     "uk travel": 5,
 }
 
@@ -69,27 +70,35 @@ CONTENT_QUESTIONS = {
 
 AFFILIATE_QUESTIONS = {
     "union jack flag": "Should every patriot own a Union Jack flag?",
-    "british history books": "What are the best British history books every patriot should read?",
-    "military history books": "What are the best military history books for British patriots?",
-    "veteran gifts": "What are the best veteran gifts to show respect?",
+    "british history": "What British history should every patriot know?",
+    "military history": "What military history should every British patriot learn?",
+    "veteran gifts": "What veteran gifts show real respect?",
     "british clothing": "Would you wear British clothing that shows national pride?",
-    "army books": "What army books should every military history fan read?",
-    "royal navy books": "What Royal Navy books are worth reading?",
-    "churchill books": "Are Churchill books still important for understanding Britain?",
-    "uk travel": "What UK travel spots show the best of British history?",
+    "army": "What army history should every Brit know?",
+    "royal navy": "What Royal Navy history are you proud of?",
+    "churchill": "Is Churchill still important to British history?",
+    "uk travel": "What UK travel places show the best of British history?",
 }
 
 AFFILIATE_VIDEO_IDEAS = {
     "union jack flag": "Show 3 ways to display a Union Jack flag at home, in the garden, or at events.",
-    "british history books": "Make a video: 3 British history books every patriot should read.",
-    "military history books": "Make a video: Top military history books for people who respect the Armed Forces.",
-    "veteran gifts": "Make a video: Respectful veteran gifts people can buy to show support.",
-    "british clothing": "Make a video: British clothing ideas for people proud of Britain.",
-    "army books": "Make a video: Army books for British military history fans.",
-    "royal navy books": "Make a video: Royal Navy books worth reading.",
-    "churchill books": "Make a video: Churchill books that explain Britain’s wartime history.",
-    "uk travel": "Make a video: UK travel places every patriot should visit.",
+    "british history": "Make a video about British history books, documentaries, or heritage products.",
+    "military history": "Make a video about military history books or documentaries.",
+    "veteran gifts": "Make a video about respectful veteran gifts people can buy to show support.",
+    "british clothing": "Make a video about British clothing ideas for people proud of Britain.",
+    "army": "Make a video about army books, military fitness, or British Army history.",
+    "royal navy": "Make a video about Royal Navy books or naval history.",
+    "churchill": "Make a video about Churchill books or wartime history.",
+    "uk travel": "Make a video about UK heritage places every patriot should visit.",
 }
+
+output_lines = []
+
+
+def add_line(text=""):
+    print(text)
+    output_lines.append(str(text))
+
 
 pytrends = TrendReq(hl="en-GB", tz=0)
 
@@ -111,7 +120,6 @@ def analyse_keywords(keywords, extra_scores):
                 continue
 
             latest = scores[-1]
-
             recent_scores = scores[-6:]
             previous_scores = scores[-12:-6]
 
@@ -125,9 +133,9 @@ def analyse_keywords(keywords, extra_scores):
             else:
                 rise_percent = 0
 
-            base_score = latest + rise_percent
+            confidence_score = (latest * 0.7) + (rise_percent * 0.3)
             extra_score = extra_scores.get(keyword, 0)
-            final_score = base_score + extra_score
+            final_score = confidence_score + extra_score
 
             results.append({
                 "keyword": keyword,
@@ -139,10 +147,10 @@ def analyse_keywords(keywords, extra_scores):
                 "final_score": round(final_score, 1),
             })
 
-            time.sleep(1)
+            time.sleep(3)
 
         except Exception as e:
-            print("Failed:", keyword, e)
+            add_line(f"Failed: {keyword} - {e}")
 
     results.sort(key=lambda x: x["final_score"], reverse=True)
     return results
@@ -151,35 +159,44 @@ def analyse_keywords(keywords, extra_scores):
 content_results = analyse_keywords(CONTENT_KEYWORDS, AUDIENCE_SCORES)
 affiliate_results = analyse_keywords(AFFILIATE_KEYWORDS, AFFILIATE_SCORES)
 
-print("\nTOP CONTENT OPPORTUNITIES\n")
+add_line("PATRIOT RADAR RESULTS")
+add_line(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+add_line("=" * 50)
+
+add_line("\nTOP CONTENT OPPORTUNITIES\n")
 
 for item in content_results[:5]:
     keyword = item["keyword"]
 
-    print("Keyword:", keyword)
-    print("Latest Score:", item["latest"])
-    print("Recent Avg:", item["recent_avg"])
-    print("Previous Avg:", item["previous_avg"])
-    print("Rise %:", item["rise_percent"])
-    print("Audience Score:", item["extra_score"])
-    print("Final Score:", item["final_score"])
-    print("Question:", CONTENT_QUESTIONS.get(keyword, f"What do you think about {keyword}?"))
-    print("Caption:", f"{keyword.title()} is being searched today. What do you think?")
-    print("-" * 40)
+    add_line(f"Keyword: {keyword}")
+    add_line(f"Latest Score: {item['latest']}")
+    add_line(f"Recent Avg: {item['recent_avg']}")
+    add_line(f"Previous Avg: {item['previous_avg']}")
+    add_line(f"Rise %: {item['rise_percent']}")
+    add_line(f"Audience Score: {item['extra_score']}")
+    add_line(f"Final Score: {item['final_score']}")
+    add_line(f"Question: {CONTENT_QUESTIONS.get(keyword, f'What do you think about {keyword}?')}")
+    add_line(f"Caption: {keyword.title()} is being searched today. What do you think?")
+    add_line("-" * 40)
 
-print("\nTOP AFFILIATE OPPORTUNITIES\n")
+add_line("\nTOP AFFILIATE OPPORTUNITIES\n")
 
 for item in affiliate_results[:5]:
     keyword = item["keyword"]
 
-    print("Keyword:", keyword)
-    print("Latest Score:", item["latest"])
-    print("Recent Avg:", item["recent_avg"])
-    print("Previous Avg:", item["previous_avg"])
-    print("Rise %:", item["rise_percent"])
-    print("Affiliate Score:", item["extra_score"])
-    print("Final Score:", item["final_score"])
-    print("Question:", AFFILIATE_QUESTIONS.get(keyword, f"What do you think about {keyword}?"))
-    print("Video Idea:", AFFILIATE_VIDEO_IDEAS.get(keyword, f"Make a video about {keyword}."))
-    print("Caption:", f"{keyword.title()} is trending. Would you use or buy this?")
-    print("-" * 40)
+    add_line(f"Keyword: {keyword}")
+    add_line(f"Latest Score: {item['latest']}")
+    add_line(f"Recent Avg: {item['recent_avg']}")
+    add_line(f"Previous Avg: {item['previous_avg']}")
+    add_line(f"Rise %: {item['rise_percent']}")
+    add_line(f"Affiliate Score: {item['extra_score']}")
+    add_line(f"Final Score: {item['final_score']}")
+    add_line(f"Question: {AFFILIATE_QUESTIONS.get(keyword, f'What do you think about {keyword}?')}")
+    add_line(f"Video Idea: {AFFILIATE_VIDEO_IDEAS.get(keyword, f'Make a video about {keyword}.')}")
+    add_line(f"Caption: {keyword.title()} is trending. Would you use or buy this?")
+    add_line("-" * 40)
+
+with open("results.txt", "w", encoding="utf-8") as f:
+    f.write("\n".join(output_lines))
+
+add_line("Results saved to results.txt")
