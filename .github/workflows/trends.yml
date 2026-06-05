@@ -1,9 +1,12 @@
 name: Patriot Trends Scanner
 
-"on":
+on:
   schedule:
-    - cron: "0,30 * * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   run-scanner:
@@ -31,3 +34,12 @@ jobs:
           path: |
             results.txt
             results.json
+
+      - name: Keep workflow active
+        run: |
+          date > last-run.txt
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add last-run.txt
+          git commit -m "Update scanner timestamp" || echo "No changes"
+          git push
