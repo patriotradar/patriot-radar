@@ -2,7 +2,7 @@ name: Patriot Trends Scanner
 
 on:
   schedule:
-  - cron: "13 * * * *"
+    - cron: "43 * * * *"
   workflow_dispatch:
 
 permissions:
