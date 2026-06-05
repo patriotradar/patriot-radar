@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patriot Radar</title>
+  <style>
+    body {
+      background: #07111f;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .card {
+      background: #111c2e;
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 18px;
+      border: 1px solid #26374f;
+    }
+    h1 { color: #ffffff; }
+    h2 { color: #ff4b5c; }
+    .score { color: #4ade80; font-weight: bold; }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: #ff4b5c;
+      color: white;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🇬🇧 Patriot Radar</h1>
+  <p>Mobile trend dashboard</p>
+
+  <div class="card">
+    <h2>🔥 Top Opportunity</h2>
+    <p><strong>Keyword:</strong> British Army</p>
+    <p><strong>Score:</strong> <span class="score">66/100</span></p>
+    <p><strong>Question:</strong></p>
+    <p id="question">Should Britain invest more in the British Army?</p>
+    <button onclick="copyText('question')">Copy Question</button>
+
+    <p><strong>Caption:</strong></p>
+    <p id="caption">British Army is being searched today. What do you think?</p>
+    <button onclick="copyText('caption')">Copy Caption</button>
+
+    <p><strong>Affiliate Product:</strong></p>
+    <p>Military history books / British Army books</p>
+  </div>
+
+  <div class="card">
+    <h2>📈 Other Trends</h2>
+    <p>UK Politics</p>
+    <p>Armed Forces</p>
+    <p>Union Jack</p>
+    <p>Veterans</p>
+  </div>
+
+<script>
+function copyText(id) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text);
+  alert("Copied!");
+}
+</script>
+
+</body>
+</html>
