@@ -46,6 +46,24 @@ PRODUCT_KEYWORDS = [
     "england hoodie", "british hoodie"
 ]
 
+PATRIOTIC_FILTER_WORDS = [
+    "britain", "british", "england", "english", "uk ", "united kingdom",
+    "royal", "king charles", "queen", "prince", "princess",
+    "army", "navy", "raf", "military", "armed forces", "veterans",
+    "remembrance", "poppy", "cenotaph", "memorial",
+    "churchill", "spitfire", "dunkirk", "d-day", "ve day",
+    "union jack", "st george", "flag",
+    "parliament", "westminster", "buckingham", "downing street",
+    "patriot", "national", "heritage", "tradition",
+    "immigration", "border", "channel",
+    "london", "scotland", "wales", "northern ireland",
+    "commonwealth", "empire", "coronation",
+    "trooping the colour", "proms", "bbc", "nhs",
+    "football", "cricket", "rugby", "olympic",
+    "brexit", "reform", "conservative", "labour",
+    "monarchy", "crown", "throne"
+]
+
 QUESTIONS = {
     "british army": "Should every school in Britain teach children about the British Army? Yes or No?",
     "royal navy": "Should Britain invest more in the Royal Navy? Yes or No?",
@@ -99,6 +117,15 @@ QUESTIONS = {
     "british identity": "Is British identity being lost? Yes or No?"
 }
 
+ALL_KNOWN_KEYWORDS = set(kw.lower() for kw in CONTENT_KEYWORDS + PRODUCT_KEYWORDS)
+
+def is_patriotic_relevant(query):
+    q = query.lower()
+    for word in PATRIOTIC_FILTER_WORDS:
+        if word in q:
+            return True
+    return False
+
 def make_caption(keyword):
     return f"{keyword.title()} is gaining attention today. What do you think?"
 
@@ -117,7 +144,7 @@ def make_product(keyword):
     if "england" in keyword or "english" in keyword or "st george" in keyword: return "England flags and St George merchandise"
     if "britain" in keyword or "british" in keyword: return "Proudly British merchandise"
     if "dunkirk" in keyword or "d-day" in keyword or "ve day" in keyword or "normandy" in keyword: return "WW2 history books and memorabilia"
-    return keyword.title() + " products"
+    return "Patriotic merchandise"
 
 def analyse_keywords(pytrends, keywords, category):
     results = []
@@ -173,6 +200,110 @@ def analyse_keywords(pytrends, keywords, category):
     results.sort(key=lambda x: x["viral_score"], reverse=True)
     return results
 
+def discover_related_keywords(pytrends, seed_keywords):
+    discovered = []
+    seen = set()
+    sample = [kw for kw in seed_keywords if kw in [r.lower() for r in ALL_KNOWN_KEYWORDS]]
+    top_seeds = seed_keywords[:20]
+
+    for keyword in top_seeds:
+        try:
+            pytrends.build_payload([keyword], timeframe="now 7-d", geo="GB")
+
+            related = pytrends.related_queries()
+            if keyword in related:
+                rising = related[keyword].get("rising")
+                if rising is not None and not rising.empty:
+                    for _, row in rising.head(5).iterrows():
+                        query = row["query"].lower()
+                        value = row["value"]
+                        if query not in ALL_KNOWN_KEYWORDS and query not in seen:
+                            if is_patriotic_relevant(query):
+                                seen.add(query)
+                                discovered.append({
+                                    "keyword": query,
+                                    "source_keyword": keyword,
+                                    "rise_value": int(value) if str(value).isdigit() else 100,
+                                    "discovery_type": "rising_query"
+                                })
+
+                top = related[keyword].get("top")
+                if top is not None and not top.empty:
+                    for _, row in top.head(3).iterrows():
+                        query = row["query"].lower()
+                        if query not in ALL_KNOWN_KEYWORDS and query not in seen:
+                            if is_patriotic_relevant(query):
+                                seen.add(query)
+                                discovered.append({
+                                    "keyword": query,
+                                    "source_keyword": keyword,
+                                    "rise_value": int(row["value"]) if str(row["value"]).isdigit() else 50,
+                                    "discovery_type": "related_query"
+                                })
+
+            time.sleep(2)
+
+        except Exception as e:
+            print(f"Related query failed for {keyword}: {e}")
+
+    discovered.sort(key=lambda x: x["rise_value"], reverse=True)
+    return discovered
+
+def discover_trending_searches(pytrends):
+    discovered = []
+    try:
+        trending = pytrends.trending_searches(pn="united_kingdom")
+        if trending is not None and not trending.empty:
+            for _, row in trending.iterrows():
+                query = row[0].lower() if len(row) > 0 else ""
+                if query and is_patriotic_relevant(query) and query not in ALL_KNOWN_KEYWORDS:
+                    discovered.append({
+                        "keyword": query,
+                        "source_keyword": "UK Trending",
+                        "rise_value": 200,
+                        "discovery_type": "uk_trending"
+                    })
+    except Exception as e:
+        print(f"Trending searches failed: {e}")
+
+    return discovered
+
+def score_discovered_keyword(pytrends, keyword):
+    try:
+        pytrends.build_payload([keyword], timeframe="now 7-d", geo="GB")
+        data = pytrends.interest_over_time()
+
+        if data.empty or keyword not in data:
+            return None
+
+        scores = list(data[keyword])
+        if len(scores) < 6:
+            return None
+
+        latest = scores[-1]
+        recent_avg = sum(scores[-6:]) / 6
+        previous_avg = sum(scores[:-6]) / max(1, len(scores) - 6) if len(scores) > 6 else recent_avg * 0.8
+
+        rise = recent_avg - previous_avg
+        rise_percent = (rise / previous_avg * 100) if previous_avg > 0 else 0
+
+        viral_score = (
+            latest * 0.35 +
+            min(max(rise_percent, 0), 100) * 0.45 +
+            recent_avg * 0.20
+        )
+
+        return {
+            "latest_score": round(latest, 1),
+            "recent_avg": round(recent_avg, 1),
+            "previous_avg": round(previous_avg, 1),
+            "rise_percent": round(rise_percent, 1),
+            "viral_score": round(viral_score, 1)
+        }
+    except Exception as e:
+        print(f"Scoring failed for {keyword}: {e}")
+        return None
+
 def fallback_results():
     fallback = []
     sample = CONTENT_KEYWORDS[:12]
@@ -195,7 +326,7 @@ def fallback_results():
     fallback.sort(key=lambda x: x["viral_score"], reverse=True)
     return fallback
 
-def save_results(results):
+def save_results(results, emerging):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     lines = []
@@ -217,14 +348,31 @@ def save_results(results):
         lines.append(f"Product: {item['product']}")
         lines.append("-" * 50)
 
+    if emerging:
+        lines.append("")
+        lines.append("EMERGING TOPICS")
+        lines.append("=" * 50)
+        for item in emerging[:10]:
+            lines.append(f"Keyword: {item['keyword']}")
+            lines.append(f"Source: {item.get('source_keyword', 'N/A')}")
+            lines.append(f"Type: {item.get('discovery_type', 'N/A')}")
+            lines.append(f"Viral Score: {item.get('viral_score', 'N/A')}")
+            lines.append("-" * 50)
+
     with open("results.txt", "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
+    output = {
+        "results": results[:15],
+        "emerging": emerging[:10],
+        "last_updated": now
+    }
+
     with open("results.json", "w", encoding="utf-8") as f:
-        json.dump(results[:15], f, indent=2)
+        json.dump(output, f, indent=2)
 
     print("\n".join(lines))
-    print("Results saved to results.txt and results.json")
+    print(f"Results saved. {len(results)} main, {len(emerging)} emerging.")
 
 def main():
     print("Starting Patriot Radar scanner...")
@@ -242,7 +390,44 @@ def main():
 
     all_results.sort(key=lambda x: x["viral_score"], reverse=True)
 
-    save_results(all_results)
+    print("Discovering emerging topics...")
+    related_discovered = discover_related_keywords(pytrends, CONTENT_KEYWORDS)
+    trending_discovered = discover_trending_searches(pytrends)
+
+    all_discovered = related_discovered + trending_discovered
+    seen_kw = set()
+    unique_discovered = []
+    for d in all_discovered:
+        if d["keyword"] not in seen_kw:
+            seen_kw.add(d["keyword"])
+            unique_discovered.append(d)
+
+    print(f"Found {len(unique_discovered)} emerging topics. Scoring top candidates...")
+
+    scored_emerging = []
+    for item in unique_discovered[:15]:
+        time.sleep(2)
+        scores = score_discovered_keyword(pytrends, item["keyword"])
+        if scores and scores["viral_score"] > 10:
+            entry = {
+                "category": "emerging",
+                "keyword": item["keyword"],
+                "latest_score": scores["latest_score"],
+                "recent_avg": scores["recent_avg"],
+                "previous_avg": scores["previous_avg"],
+                "rise_percent": scores["rise_percent"],
+                "viral_score": scores["viral_score"],
+                "source_keyword": item["source_keyword"],
+                "discovery_type": item["discovery_type"],
+                "question": f"Should every school in Britain teach children about {item['keyword'].title()}? Yes or No?",
+                "caption": make_caption(item["keyword"]),
+                "product": make_product(item["keyword"])
+            }
+            scored_emerging.append(entry)
+
+    scored_emerging.sort(key=lambda x: x["viral_score"], reverse=True)
+
+    save_results(all_results, scored_emerging)
 
 if __name__ == "__main__":
     main()
