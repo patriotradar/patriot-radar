@@ -5,32 +5,98 @@ import json
 import random
 
 CONTENT_KEYWORDS = [
-    "british army", "royal navy", "raf", "veterans", "armed forces",
-    "union jack", "uk politics", "immigration", "small boats",
-    "england", "britain", "london", "nato", "remembrance",
-    "british history", "churchill", "military history"
+    # Core
+    "england", "britain", "great britain", "united kingdom", "british", "english",
+    "union jack", "union flag", "british flag", "english flag",
+    "st george", "st george's day",
+    "veterans", "armed forces", "remembrance", "poppy",
+    "churchill", "winston churchill",
+    "royal navy", "raf", "royal air force", "british army",
+    "monarchy", "king", "royal family",
+    "national pride", "british pride", "english pride",
+    "patriotism", "national identity", "british identity",
+    # Supporting
+    "battle of britain", "the few", "spitfire", "hurricane",
+    "dunkirk spirit", "ve day", "d-day", "normandy",
+    "white cliffs of dover", "buckingham palace", "westminster", "parliament",
+    "cenotaph", "war memorial", "armed forces day",
+    "victoria cross", "george cross", "national service",
+    "heritage", "tradition", "courage", "honour", "duty",
+    "sacrifice", "leadership", "freedom", "democracy",
+    # Long-tail
+    "british lion", "english lion", "lionheart",
+    "rule britannia", "britannia",
+    "land of hope and glory", "green and pleasant land",
+    "spirit of 1940", "british bulldog", "finest hour spirit",
+    "england expects", "keep calm and carry on",
+    "proudly british", "proudly english",
+    "loyal to britain", "loyal to the crown", "for king and country",
+    # Topical
+    "immigration", "small boats", "london", "uk politics",
+    "british history", "military history"
 ]
 
 PRODUCT_KEYWORDS = [
-    "british army books", "military history books", "union jack flag",
-    "veteran gifts", "british clothing", "army surplus",
-    "royal navy gifts", "churchill books", "uk travel guide",
-    "patriotic clothing", "history posters", "british flag"
+    "union jack flag", "british flag", "england flag",
+    "patriotic clothing", "british clothing",
+    "british army books", "military history books",
+    "veteran gifts", "army surplus",
+    "royal navy gifts", "churchill books",
+    "history posters", "poppy brooch",
+    "england hoodie", "british hoodie"
 ]
 
 QUESTIONS = {
-    "british army": "Should Britain invest more in the British Army?",
-    "royal navy": "Does Britain still need a stronger Royal Navy?",
-    "raf": "Is the RAF still one of Britain's strongest symbols?",
-    "veterans": "Do veterans receive enough respect in Britain?",
-    "armed forces": "Are the Armed Forces undervalued today?",
-    "union jack": "Should the Union Jack be flown more proudly?",
-    "uk politics": "Are ordinary people being ignored by UK politics?",
-    "immigration": "Has Britain lost control of immigration?",
-    "small boats": "Is Britain doing enough about small boats?",
-    "england": "Are you proud to be English?",
-    "britain": "Is Britain heading in the right direction?",
-    "london": "Is London still the heart of Britain?"
+    "british army": "Should every school in Britain teach children about the British Army? Yes or No?",
+    "royal navy": "Should Britain invest more in the Royal Navy? Yes or No?",
+    "raf": "Should every child in Britain visit an RAF memorial? Yes or No?",
+    "royal air force": "Should every child in Britain visit an RAF memorial? Yes or No?",
+    "veterans": "Should veterans get free healthcare for life? Yes or No?",
+    "armed forces": "Should every young person in Britain serve in the Armed Forces? Yes or No?",
+    "union jack": "Should every school in Britain fly the Union Jack? Yes or No?",
+    "union flag": "Should every school in Britain fly the Union Flag? Yes or No?",
+    "uk politics": "Are ordinary people being ignored by UK politics? Yes or No?",
+    "immigration": "Has Britain lost control of immigration? Yes or No?",
+    "small boats": "Is Britain doing enough about small boats? Yes or No?",
+    "england": "Should every school in Britain fly the England flag? Yes or No?",
+    "britain": "Is being proud of Britain still acceptable? Yes or No?",
+    "great britain": "Should every school teach children why Great Britain is great? Yes or No?",
+    "london": "Is London still the heart of Britain? Yes or No?",
+    "churchill": "Should every school in Britain teach children about Churchill? Yes or No?",
+    "winston churchill": "Would Churchill recognise Britain today? Yes or No?",
+    "remembrance": "Should every school in Britain hold a Remembrance assembly? Yes or No?",
+    "poppy": "Should wearing a poppy be compulsory? Yes or No?",
+    "monarchy": "Should Britain abolish the monarchy? Yes or No?",
+    "king": "Should every school celebrate the King? Yes or No?",
+    "royal family": "Should British taxpayers continue to fund the Royal Family? Yes or No?",
+    "patriotism": "Is being patriotic still acceptable in modern Britain? Yes or No?",
+    "national pride": "Are young people losing national pride? Yes or No?",
+    "british pride": "Should it be compulsory to learn about British pride in schools? Yes or No?",
+    "national identity": "Is British national identity under threat? Yes or No?",
+    "battle of britain": "Should every school in Britain teach children about the Battle of Britain? Yes or No?",
+    "spitfire": "Should every child in Britain learn about the Spitfire? Yes or No?",
+    "dunkirk spirit": "Could Britain survive another Dunkirk today? Yes or No?",
+    "ve day": "Should VE Day be a national bank holiday? Yes or No?",
+    "d-day": "Should every school teach children about D-Day? Yes or No?",
+    "st george": "Should St George's Day be a national holiday? Yes or No?",
+    "st george's day": "Should St George's Day be a bank holiday? Yes or No?",
+    "national service": "Should Britain bring back National Service? Yes or No?",
+    "heritage": "Is British heritage being erased? Yes or No?",
+    "tradition": "Is Britain losing its traditions? Yes or No?",
+    "sacrifice": "Is Britain forgetting the sacrifice of its heroes? Yes or No?",
+    "freedom": "Is freedom of speech under threat in Britain? Yes or No?",
+    "democracy": "Is British democracy still working? Yes or No?",
+    "cenotaph": "Should every town in Britain have a cenotaph? Yes or No?",
+    "war memorial": "Should vandalising a war memorial carry a prison sentence? Yes or No?",
+    "armed forces day": "Should Armed Forces Day be a bank holiday? Yes or No?",
+    "buckingham palace": "Should Buckingham Palace be open to everyone for free? Yes or No?",
+    "rule britannia": "Should Rule Britannia still be sung at the Proms? Yes or No?",
+    "keep calm and carry on": "Does Britain still have the Keep Calm and Carry On spirit? Yes or No?",
+    "british bulldog": "Does Britain still have the Bulldog spirit? Yes or No?",
+    "british flag": "Should every school in Britain fly the British flag? Yes or No?",
+    "english flag": "Should every school in England fly the English flag? Yes or No?",
+    "english pride": "Is being proud to be English still acceptable? Yes or No?",
+    "british identity": "Is British identity being lost? Yes or No?"
 }
 
 def make_caption(keyword):
@@ -38,20 +104,19 @@ def make_caption(keyword):
 
 def make_product(keyword):
     keyword = keyword.lower()
-    if "army" in keyword:
-        return "British Army history books"
-    if "navy" in keyword:
-        return "Royal Navy books and gifts"
-    if "flag" in keyword or "union jack" in keyword:
-        return "Union Jack flags and patriotic decor"
-    if "veteran" in keyword:
-        return "Veteran gifts"
-    if "churchill" in keyword:
-        return "Churchill books"
-    if "history" in keyword:
-        return "British history books"
-    if "clothing" in keyword:
-        return "British patriotic clothing"
+    if "army" in keyword: return "British Army history books"
+    if "navy" in keyword: return "Royal Navy books and gifts"
+    if "flag" in keyword or "union jack" in keyword or "union flag" in keyword: return "Union Jack flags and patriotic decor"
+    if "veteran" in keyword: return "Veteran gifts"
+    if "churchill" in keyword: return "Churchill books"
+    if "history" in keyword or "heritage" in keyword: return "British history books"
+    if "clothing" in keyword or "hoodie" in keyword: return "British patriotic clothing"
+    if "remembrance" in keyword or "poppy" in keyword or "cenotaph" in keyword: return "Remembrance gifts and poppy accessories"
+    if "spitfire" in keyword or "hurricane" in keyword or "battle of britain" in keyword: return "RAF and Spitfire memorabilia"
+    if "king" in keyword or "royal" in keyword or "monarchy" in keyword or "crown" in keyword: return "Royal family collectibles"
+    if "england" in keyword or "english" in keyword or "st george" in keyword: return "England flags and St George merchandise"
+    if "britain" in keyword or "british" in keyword: return "Proudly British merchandise"
+    if "dunkirk" in keyword or "d-day" in keyword or "ve day" in keyword or "normandy" in keyword: return "WW2 history books and memorabilia"
     return keyword.title() + " products"
 
 def analyse_keywords(pytrends, keywords, category):
@@ -95,7 +160,7 @@ def analyse_keywords(pytrends, keywords, category):
                 "previous_avg": round(previous_avg, 1),
                 "rise_percent": round(rise_percent, 1),
                 "viral_score": round(viral_score, 1),
-                "question": QUESTIONS.get(keyword, f"Is {keyword.title()} about to become a bigger talking point?"),
+                "question": QUESTIONS.get(keyword, f"Should every school in Britain teach children about {keyword.title()}? Yes or No?"),
                 "caption": make_caption(keyword),
                 "product": make_product(keyword)
             })
@@ -110,8 +175,9 @@ def analyse_keywords(pytrends, keywords, category):
 
 def fallback_results():
     fallback = []
+    sample = CONTENT_KEYWORDS[:12]
 
-    for keyword in CONTENT_KEYWORDS[:8]:
+    for keyword in sample:
         score = random.randint(45, 78)
         fallback.append({
             "category": "content",
@@ -121,7 +187,7 @@ def fallback_results():
             "previous_avg": score - random.randint(8, 20),
             "rise_percent": random.randint(10, 70),
             "viral_score": score,
-            "question": QUESTIONS.get(keyword, f"Is {keyword.title()} about to go viral?"),
+            "question": QUESTIONS.get(keyword, f"Should every school in Britain teach children about {keyword.title()}? Yes or No?"),
             "caption": make_caption(keyword),
             "product": make_product(keyword)
         })
@@ -138,7 +204,7 @@ def save_results(results):
     lines.append("=" * 50)
     lines.append("")
 
-    for item in results[:10]:
+    for item in results[:15]:
         lines.append(f"Keyword: {item['keyword']}")
         lines.append(f"Category: {item['category']}")
         lines.append(f"Latest Score: {item['latest_score']}")
@@ -155,7 +221,7 @@ def save_results(results):
         f.write("\n".join(lines))
 
     with open("results.json", "w", encoding="utf-8") as f:
-        json.dump(results[:10], f, indent=2)
+        json.dump(results[:15], f, indent=2)
 
     print("\n".join(lines))
     print("Results saved to results.txt and results.json")
