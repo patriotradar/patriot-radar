@@ -279,6 +279,96 @@ def discover_trending_searches(pytrends):
 
     return discovered
 
+EMERGING_HOOK_TEMPLATES = {
+    "military": [
+        "Should Britain invest more in {kw}? Yes or No?",
+        "Should {kw} be a bigger priority for Britain's defence? Yes or No?",
+        "Is {kw} being forgotten by modern Britain? Yes or No?",
+        "Should every young person in Britain learn about {kw}? Yes or No?",
+        "Does Britain need {kw} now more than ever? Yes or No?"
+    ],
+    "royal": [
+        "Should {kw} be a national celebration? Yes or No?",
+        "Does {kw} still matter to modern Britain? Yes or No?",
+        "Should British taxpayers support {kw}? Yes or No?",
+        "Is {kw} good for Britain? Yes or No?",
+        "Should every school celebrate {kw}? Yes or No?"
+    ],
+    "national_identity": [
+        "Should {kw} be celebrated more in Britain? Yes or No?",
+        "Is {kw} something every British person should be proud of? Yes or No?",
+        "Should {kw} be taught in every British school? Yes or No?",
+        "Does {kw} unite or divide Britain? Yes or No?",
+        "Is {kw} under threat in modern Britain? Yes or No?"
+    ],
+    "history": [
+        "Should every child in Britain learn about {kw}? Yes or No?",
+        "Is Britain forgetting the lessons of {kw}? Yes or No?",
+        "Should {kw} be a national day of remembrance? Yes or No?",
+        "Would {kw} be possible in today's Britain? Yes or No?",
+        "Should {kw} be a bigger part of the school curriculum? Yes or No?"
+    ],
+    "remembrance": [
+        "Should {kw} be a bank holiday in Britain? Yes or No?",
+        "Is Britain doing enough to honour {kw}? Yes or No?",
+        "Should every workplace observe {kw}? Yes or No?",
+        "Is {kw} being forgotten by younger generations? Yes or No?",
+        "Should {kw} be marked with a national silence? Yes or No?"
+    ],
+    "politics": [
+        "Is {kw} what the British people really want? Yes or No?",
+        "Should {kw} be a bigger priority for the government? Yes or No?",
+        "Does {kw} prove Britain is heading in the wrong direction? Yes or No?",
+        "Should the British public have more say on {kw}? Yes or No?",
+        "Is {kw} being handled properly? Yes or No?"
+    ],
+    "events": [
+        "Should {kw} be a national holiday? Yes or No?",
+        "Should every British person watch {kw}? Yes or No?",
+        "Does {kw} make you proud to be British? Yes or No?",
+        "Should schools let children watch {kw}? Yes or No?",
+        "Is {kw} the greatest event in Britain? Yes or No?"
+    ],
+    "default": [
+        "Should Britain care more about {kw}? Yes or No?",
+        "Is {kw} important to modern Britain? Yes or No?",
+        "Should every school in Britain teach about {kw}? Yes or No?",
+        "Does {kw} make you proud to be British? Yes or No?",
+        "Is {kw} being ignored by the government? Yes or No?"
+    ]
+}
+
+SOURCE_TO_GROUP = {
+    "british army": "military", "royal navy": "military", "raf": "military",
+    "royal air force": "military", "veterans": "military", "armed forces": "military",
+    "armed forces day": "military", "national service": "military",
+    "spitfire": "military", "hurricane": "military", "battle of britain": "military",
+    "victoria cross": "military", "george cross": "military",
+    "king": "royal", "monarchy": "royal", "royal family": "royal",
+    "buckingham palace": "royal", "loyal to the crown": "royal",
+    "coronation": "events", "trooping the colour": "events",
+    "england": "national_identity", "britain": "national_identity",
+    "union jack": "national_identity", "british flag": "national_identity",
+    "english flag": "national_identity", "st george": "national_identity",
+    "patriotism": "national_identity", "national pride": "national_identity",
+    "british pride": "national_identity", "national identity": "national_identity",
+    "churchill": "history", "winston churchill": "history",
+    "dunkirk spirit": "history", "ve day": "history", "d-day": "history",
+    "normandy": "history", "british history": "history", "military history": "history",
+    "remembrance": "remembrance", "poppy": "remembrance",
+    "cenotaph": "remembrance", "war memorial": "remembrance",
+    "immigration": "politics", "small boats": "politics",
+    "uk politics": "politics", "democracy": "politics", "freedom": "politics",
+    "UK Trending": "events"
+}
+
+def make_emerging_hooks(keyword, source_keyword):
+    group = SOURCE_TO_GROUP.get(source_keyword.lower(), "default")
+    templates = EMERGING_HOOK_TEMPLATES.get(group, EMERGING_HOOK_TEMPLATES["default"])
+    kw = keyword.title()
+    hooks = [t.replace("{kw}", kw) for t in templates]
+    return hooks
+
 def score_discovered_keyword(pytrends, keyword):
     try:
         pytrends.build_payload([keyword], timeframe="now 7-d", geo="GB")
@@ -420,6 +510,7 @@ def main():
         time.sleep(2)
         scores = score_discovered_keyword(pytrends, item["keyword"])
         if scores and scores["viral_score"] > 10:
+            hooks = make_emerging_hooks(item["keyword"], item["source_keyword"])
             entry = {
                 "category": "emerging",
                 "keyword": item["keyword"],
@@ -430,7 +521,8 @@ def main():
                 "viral_score": scores["viral_score"],
                 "source_keyword": item["source_keyword"],
                 "discovery_type": item["discovery_type"],
-                "question": f"Should every school in Britain teach children about {item['keyword'].title()}? Yes or No?",
+                "question": hooks[0],
+                "hooks": hooks,
                 "caption": make_caption(item["keyword"]),
                 "product": make_product(item["keyword"])
             }
