@@ -128,12 +128,13 @@ def is_patriotic_relevant(query):
 
 def make_caption(keyword):
     kw = keyword.title()
+    question = QUESTIONS.get(keyword.lower(), f"Should every school in Britain teach children about {kw}? Yes or No?")
     captions = [
-        f"🇬🇧 {kw} is trending in Britain right now. Should every school teach children about this? Comment YES or NO below!",
-        f"🇬🇧 {kw} is gaining attention across Britain. Do you think enough is being done? YES or NO? Comment below!",
-        f"🇬🇧 {kw} is a hot topic in Britain today. Are you proud of this? YES or NO? Drop your answer below!",
-        f"🇬🇧 {kw} is trending right now. Should Britain do more? YES or NO? Let us know in the comments!",
-        f"🇬🇧 {kw} is back in the spotlight. Does this still matter to modern Britain? YES or NO?"
+        f"🇬🇧 {question} Comment below! #britain #patriotic #british #england #proud",
+        f"🇬🇧 {question} Drop your answer below! #british #england #patriot #uk #proud",
+        f"🇬🇧 {question} Let us know in the comments! #britain #english #patriotic #uk",
+        f"🇬🇧 Every generation should understand this. {question} #british #proud #england #uk",
+        f"🇬🇧 This is important. {question} Comment YES or NO! #britain #patriotic #english"
     ]
     import hashlib
     idx = int(hashlib.md5(keyword.lower().encode()).hexdigest(), 16) % len(captions)
