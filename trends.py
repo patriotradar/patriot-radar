@@ -136,12 +136,33 @@ QUESTIONS = {
 
 ALL_KNOWN_KEYWORDS = set(kw.lower() for kw in CONTENT_KEYWORDS + PRODUCT_KEYWORDS)
 
+BLOCKED_WORDS = [
+    "spineless", "worst", "terrible", "hate", "stupid", "ugly", "boring",
+    "dead", "killed", "murder", "crime", "scandal", "cheat", "fraud",
+    "reality tv", "love island", "celebrity", "kardashian",
+    "weather forecast", "recipe", "diet", "weight loss",
+    "fifa", "premier league", "transfer", "champions league",
+    "netflix", "spotify", "amazon prime", "tiktok ban",
+    "iphone", "samsung", "playstation", "xbox",
+    "individuals in", "people in", "things in", "places in",
+    "best restaurants", "hotels in", "flights to",
+    "salary", "jobs in", "cost of living"
+]
+
 def is_patriotic_relevant(query):
     q = query.lower()
+    for blocked in BLOCKED_WORDS:
+        if blocked in q:
+            return False
+    matches = 0
     for word in PATRIOTIC_FILTER_WORDS:
         if word in q:
-            return True
-    return False
+            matches += 1
+    if matches == 0:
+        return False
+    if len(q.split()) > 5 and matches < 2:
+        return False
+    return True
 
 def make_caption(keyword):
     kw = keyword.title()
