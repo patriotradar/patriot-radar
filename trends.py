@@ -65,37 +65,37 @@ PATRIOTIC_FILTER_WORDS = [
 ]
 
 QUESTIONS = {
-    "british army": "Should every school in Britain teach children about the British Army? Yes or No?",
+    "british army": "Should Britain double its spending on the British Army? Yes or No?",
     "royal navy": "Should Britain invest more in the Royal Navy? Yes or No?",
     "raf": "Should every child in Britain visit an RAF memorial? Yes or No?",
     "royal air force": "Should every child in Britain visit an RAF memorial? Yes or No?",
     "veterans": "Should veterans get free healthcare for life? Yes or No?",
     "armed forces": "Should every young person in Britain serve in the Armed Forces? Yes or No?",
-    "union jack": "Should every school in Britain fly the Union Jack? Yes or No?",
-    "union flag": "Should every school in Britain fly the Union Flag? Yes or No?",
+    "union jack": "Would you fly the Union Jack outside your home? Yes or No?",
+    "union flag": "Would you fly the Union Flag outside your home? Yes or No?",
     "uk politics": "Are ordinary people being ignored by UK politics? Yes or No?",
     "immigration": "Has Britain lost control of immigration? Yes or No?",
     "small boats": "Is Britain doing enough about small boats? Yes or No?",
-    "england": "Should every school in Britain fly the England flag? Yes or No?",
+    "england": "Is being proud of England still acceptable today? Yes or No?",
     "britain": "Is being proud of Britain still acceptable? Yes or No?",
-    "great britain": "Should every school teach children why Great Britain is great? Yes or No?",
+    "great britain": "Is Great Britain still the greatest country in the world? Yes or No?",
     "london": "Is London still the heart of Britain? Yes or No?",
-    "churchill": "Should every school in Britain teach children about Churchill? Yes or No?",
+    "churchill": "Was Churchill the greatest leader Britain ever had? Yes or No?",
     "winston churchill": "Would Churchill recognise Britain today? Yes or No?",
-    "remembrance": "Should every school in Britain hold a Remembrance assembly? Yes or No?",
+    "remembrance": "Should Remembrance Day be a national bank holiday? Yes or No?",
     "poppy": "Should wearing a poppy be compulsory? Yes or No?",
     "monarchy": "Should Britain abolish the monarchy? Yes or No?",
-    "king": "Should every school celebrate the King? Yes or No?",
+    "king": "Does the King make you proud to be British? Yes or No?",
     "royal family": "Should British taxpayers continue to fund the Royal Family? Yes or No?",
     "patriotism": "Is being patriotic still acceptable in modern Britain? Yes or No?",
     "national pride": "Are young people losing national pride? Yes or No?",
     "british pride": "Should it be compulsory to learn about British pride in schools? Yes or No?",
     "national identity": "Is British national identity under threat? Yes or No?",
-    "battle of britain": "Should every school in Britain teach children about the Battle of Britain? Yes or No?",
+    "battle of britain": "Was the Battle of Britain our finest hour? Yes or No?",
     "spitfire": "Should every child in Britain learn about the Spitfire? Yes or No?",
     "dunkirk spirit": "Could Britain survive another Dunkirk today? Yes or No?",
     "ve day": "Should VE Day be a national bank holiday? Yes or No?",
-    "d-day": "Should every school teach children about D-Day? Yes or No?",
+    "d-day": "Is modern Britain forgetting the sacrifice of D-Day? Yes or No?",
     "st george": "Should St George's Day be a national holiday? Yes or No?",
     "st george's day": "Should St George's Day be a bank holiday? Yes or No?",
     "national service": "Should Britain bring back National Service? Yes or No?",
@@ -111,8 +111,8 @@ QUESTIONS = {
     "rule britannia": "Should Rule Britannia still be sung at the Proms? Yes or No?",
     "keep calm and carry on": "Does Britain still have the Keep Calm and Carry On spirit? Yes or No?",
     "british bulldog": "Does Britain still have the Bulldog spirit? Yes or No?",
-    "british flag": "Should every school in Britain fly the British flag? Yes or No?",
-    "english flag": "Should every school in England fly the English flag? Yes or No?",
+    "british flag": "Would you fly the British flag outside your home? Yes or No?",
+    "english flag": "Would you fly the English flag outside your home? Yes or No?",
     "english pride": "Is being proud to be English still acceptable? Yes or No?",
     "british identity": "Is British identity being lost? Yes or No?"
 }
@@ -128,7 +128,7 @@ def is_patriotic_relevant(query):
 
 def make_caption(keyword):
     kw = keyword.title()
-    question = QUESTIONS.get(keyword.lower(), f"Should every school in Britain teach children about {kw}? Yes or No?")
+    question = QUESTIONS.get(keyword.lower(), f"Is {kw} being ignored in modern Britain? Yes or No?")
     captions = [
         f"🇬🇧 {question} Comment below! #britain #patriotic #british #england #proud",
         f"🇬🇧 {question} Drop your answer below! #british #england #patriot #uk #proud",
@@ -198,7 +198,7 @@ def analyse_keywords(pytrends, keywords, category):
                 "previous_avg": round(previous_avg, 1),
                 "rise_percent": round(rise_percent, 1),
                 "viral_score": round(viral_score, 1),
-                "question": QUESTIONS.get(keyword, f"Should every school in Britain teach children about {keyword.title()}? Yes or No?"),
+                "question": QUESTIONS.get(keyword, f"Is {keyword.title()} being ignored in modern Britain? Yes or No?"),
                 "caption": make_caption(keyword),
                 "product": make_product(keyword)
             })
@@ -292,7 +292,7 @@ EMERGING_HOOK_TEMPLATES = {
         "Does {kw} still matter to modern Britain? Yes or No?",
         "Should British taxpayers support {kw}? Yes or No?",
         "Is {kw} good for Britain? Yes or No?",
-        "Should every school celebrate {kw}? Yes or No?"
+        "Does {kw} make you proud to be British? Yes or No?"
     ],
     "national_identity": [
         "Should {kw} be celebrated more in Britain? Yes or No?",
@@ -332,7 +332,7 @@ EMERGING_HOOK_TEMPLATES = {
     "default": [
         "Should Britain care more about {kw}? Yes or No?",
         "Is {kw} important to modern Britain? Yes or No?",
-        "Should every school in Britain teach about {kw}? Yes or No?",
+        "Is {kw} more important now than ever? Yes or No?",
         "Does {kw} make you proud to be British? Yes or No?",
         "Is {kw} being ignored by the government? Yes or No?"
     ]
@@ -419,7 +419,7 @@ def fallback_results():
             "previous_avg": score - random.randint(8, 20),
             "rise_percent": random.randint(10, 70),
             "viral_score": score,
-            "question": QUESTIONS.get(keyword, f"Should every school in Britain teach children about {keyword.title()}? Yes or No?"),
+            "question": QUESTIONS.get(keyword, f"Is {keyword.title()} being ignored in modern Britain? Yes or No?"),
             "caption": make_caption(keyword),
             "product": make_product(keyword)
         })
