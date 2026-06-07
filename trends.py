@@ -13,24 +13,22 @@ CONTENT_KEYWORDS = [
     "churchill", "winston churchill",
     "royal navy", "raf", "royal air force", "british army",
     "monarchy", "king", "royal family",
-    "national pride", "british pride", "english pride",
-    "patriotism", "national identity", "british identity",
+    "british pride", "english pride",
+    "patriotism", "british identity",
     # Supporting
     "battle of britain", "the few", "spitfire", "hurricane",
     "dunkirk spirit", "ve day", "d-day", "normandy",
     "white cliffs of dover", "buckingham palace", "westminster", "parliament",
     "cenotaph", "war memorial", "armed forces day",
     "victoria cross", "george cross", "national service",
-    "heritage", "tradition", "courage", "honour", "duty",
-    "sacrifice", "leadership", "freedom", "democracy",
+    "british heritage", "british tradition",
     # Long-tail
-    "british lion", "english lion", "lionheart",
-    "rule britannia", "britannia",
-    "land of hope and glory", "green and pleasant land",
-    "spirit of 1940", "british bulldog", "finest hour spirit",
-    "england expects", "keep calm and carry on",
+    "rule britannia",
+    "land of hope and glory",
+    "spirit of 1940", "british bulldog",
+    "keep calm and carry on",
     "proudly british", "proudly english",
-    "loyal to britain", "loyal to the crown", "for king and country",
+    "loyal to the crown", "for king and country",
     # Topical
     "immigration", "small boats", "london", "uk politics",
     "british history", "military history"
@@ -193,8 +191,13 @@ def analyse_keywords(pytrends, keywords, category):
                 continue
 
             latest = scores[-1]
+            overall_avg = sum(scores) / len(scores)
             recent_avg = sum(scores[-6:]) / 6
             previous_avg = sum(scores[-12:-6]) / 6
+
+            if overall_avg < 5:
+                print(f"Skipping {keyword}: too low volume (avg {overall_avg:.1f})")
+                continue
 
             rise = recent_avg - previous_avg
             rise_percent = (rise / previous_avg * 100) if previous_avg > 0 else 0
