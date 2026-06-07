@@ -114,7 +114,26 @@ QUESTIONS = {
     "british flag": "Would you fly the British flag outside your home? Yes or No?",
     "english flag": "Would you fly the English flag outside your home? Yes or No?",
     "english pride": "Is being proud to be English still acceptable? Yes or No?",
-    "british identity": "Is British identity being lost? Yes or No?"
+    "british identity": "Is British identity being lost? Yes or No?",
+    "duty": "Has Britain lost its sense of duty? Yes or No?",
+    "honour": "Does honour still mean anything in modern Britain? Yes or No?",
+    "courage": "Does Britain still have the courage to stand up for itself? Yes or No?",
+    "sacrifice": "Is Britain forgetting the sacrifice of its heroes? Yes or No?",
+    "leadership": "Does Britain have real leaders anymore? Yes or No?",
+    "tradition": "Is Britain losing its traditions? Yes or No?",
+    "heritage": "Is British heritage being erased? Yes or No?",
+    "freedom": "Is freedom of speech under threat in Britain? Yes or No?",
+    "democracy": "Is British democracy still working? Yes or No?",
+    "british": "Is being British still something to be proud of? Yes or No?",
+    "english": "Is being English still something to be proud of? Yes or No?",
+    "the few": "Will Britain ever forget The Few who saved us? Yes or No?",
+    "lionheart": "Does Britain still have the Lionheart spirit? Yes or No?",
+    "britannia": "Does Britannia still rule? Yes or No?",
+    "british lion": "Does the British Lion still roar? Yes or No?",
+    "english lion": "Does the English Lion still roar? Yes or No?",
+    "british bulldog": "Does Britain still have the Bulldog spirit? Yes or No?",
+    "united kingdom": "Is the United Kingdom still truly united? Yes or No?",
+    "great britain": "Is Great Britain still the greatest country in the world? Yes or No?"
 }
 
 ALL_KNOWN_KEYWORDS = set(kw.lower() for kw in CONTENT_KEYWORDS + PRODUCT_KEYWORDS)
