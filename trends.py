@@ -161,14 +161,29 @@ ALL_KNOWN_KEYWORDS = set(kw.lower() for kw in CONTENT_KEYWORDS + PRODUCT_KEYWORD
 BLOCKED_WORDS = [
     "spineless", "worst", "terrible", "hate", "stupid", "ugly", "boring",
     "dead", "killed", "murder", "crime", "scandal", "cheat", "fraud",
+    "crash", "accident", "injured", "hospital", "arrest", "jailed",
     "reality tv", "love island", "celebrity", "kardashian",
     "weather forecast", "recipe", "diet", "weight loss",
-    "fifa", "premier league", "transfer", "champions league",
+    "fifa", "premier league", "transfer", "champions league", "football score",
     "netflix", "spotify", "amazon prime", "tiktok ban",
     "iphone", "samsung", "playstation", "xbox",
     "individuals in", "people in", "things in", "places in",
-    "best restaurants", "hotels in", "flights to",
-    "salary", "jobs in", "cost of living"
+    "best restaurants", "hotels in", "flights to", "resort",
+    "salary", "jobs in", "cost of living", "mortgage", "interest rate",
+    "polling", "poll ", "survey says", "election results",
+    "theme park", "universal", "disney", "tickets",
+    "unbound", "startup", "app launch", "tech company",
+    "tv show", "bbc iplayer", "itv hub", "channel 4"
+]
+
+STRONG_PATRIOTIC_WORDS = [
+    "army", "navy", "raf", "military", "armed forces", "veterans",
+    "remembrance", "poppy", "cenotaph", "memorial",
+    "churchill", "spitfire", "dunkirk", "d-day", "ve day",
+    "patriot", "heritage", "tradition", "pride",
+    "union jack", "st george", "flag",
+    "king charles", "coronation", "trooping",
+    "national service", "victoria cross"
 ]
 
 def is_patriotic_relevant(query):
@@ -177,12 +192,19 @@ def is_patriotic_relevant(query):
         if blocked in q:
             return False
     matches = 0
+    strong_match = False
     for word in PATRIOTIC_FILTER_WORDS:
         if word in q:
             matches += 1
+    for word in STRONG_PATRIOTIC_WORDS:
+        if word in q:
+            strong_match = True
+            break
     if matches == 0:
         return False
-    if len(q.split()) > 5 and matches < 2:
+    if len(q.split()) > 4 and not strong_match:
+        return False
+    if len(q.split()) > 6 and matches < 2:
         return False
     return True
 
