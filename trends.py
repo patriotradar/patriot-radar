@@ -173,7 +173,10 @@ BLOCKED_WORDS = [
     "polling", "poll ", "survey says", "election results",
     "theme park", "universal", "disney", "tickets",
     "unbound", "startup", "app launch", "tech company",
-    "tv show", "bbc iplayer", "itv hub", "channel 4"
+    "tv show", "bbc iplayer", "itv hub", "channel 4",
+    "tennis", "rugby", "atp ", "challenger ", "cricket score",
+    "golf", "formula 1", "f1 ", "boxing", "ufc",
+    "darcy", "wimbledon", "ashes"
 ]
 
 STRONG_PATRIOTIC_WORDS = [
