@@ -17,7 +17,7 @@ CONTENT_KEYWORDS = [
     "british pride", "english pride",
     "patriotism", "british identity",
     # Supporting
-    "battle of britain", "the few", "spitfire", "hurricane",
+    "battle of britain", "the few", "spitfire", "hawker hurricane",
     "dunkirk spirit", "ve day", "d-day", "normandy",
     "white cliffs of dover", "buckingham palace", "westminster", "parliament",
     "cenotaph", "war memorial", "armed forces day",
@@ -128,7 +128,7 @@ QUESTIONS = {
     "cenotaph": "Should protesting near the Cenotaph be a criminal offence? Yes or No?",
     "poppy": "Should wearing a poppy be compulsory in Britain? Yes or No?",
     "armed forces day": "Should Armed Forces Day be a national bank holiday? Yes or No?",
-    "hurricane": "Did the Hurricane do more than the Spitfire to save Britain? Yes or No?",
+    "hawker hurricane": "Did the Hawker Hurricane do more than the Spitfire to save Britain? Yes or No?",
     "dunkirk spirit": "Does Britain still have the Dunkirk Spirit? Yes or No?",
     "normandy": "Is Britain forgetting what happened in Normandy? Yes or No?",
     "the few": "Were The Few the bravest generation Britain ever produced? Yes or No?",
@@ -210,7 +210,7 @@ def make_product(keyword):
     if "history" in keyword or "heritage" in keyword: return "British history books"
     if "clothing" in keyword or "hoodie" in keyword: return "British patriotic clothing"
     if "remembrance" in keyword or "poppy" in keyword or "cenotaph" in keyword: return "Remembrance gifts and poppy accessories"
-    if "spitfire" in keyword or "hurricane" in keyword or "battle of britain" in keyword: return "RAF and Spitfire memorabilia"
+    if "spitfire" in keyword or "hawker hurricane" in keyword or "battle of britain" in keyword: return "RAF and Spitfire memorabilia"
     if "king" in keyword or "royal" in keyword or "monarchy" in keyword or "crown" in keyword: return "Royal family collectibles"
     if "england" in keyword or "english" in keyword or "st george" in keyword: return "England flags and St George merchandise"
     if "britain" in keyword or "british" in keyword: return "Proudly British merchandise"
@@ -521,7 +521,7 @@ SOURCE_TO_GROUP = {
     "british army": "military", "royal navy": "military", "raf": "military",
     "royal air force": "military", "veterans": "military", "armed forces": "military",
     "armed forces day": "military", "national service": "military",
-    "spitfire": "military", "hurricane": "military", "battle of britain": "military",
+    "spitfire": "military", "hawker hurricane": "military", "battle of britain": "military",
     "victoria cross": "military", "george cross": "military",
     "king": "royal", "monarchy": "royal", "royal family": "royal",
     "buckingham palace": "royal", "loyal to the crown": "royal",
