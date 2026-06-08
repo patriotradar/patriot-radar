@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 import json
 import random
+import requests
 
 CONTENT_KEYWORDS = [
     # Core
@@ -343,6 +344,101 @@ def discover_trending_searches(pytrends):
 
     return discovered
 
+def scan_reddit():
+    discovered = []
+    subreddits = ["unitedkingdom", "CasualUK", "ukpolitics", "BritishMilitary", "AskUK"]
+    headers = {"User-Agent": "PatriotRadar/1.0"}
+
+    for sub in subreddits:
+        try:
+            url = f"https://www.reddit.com/r/{sub}/hot.json?limit=25"
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code != 200:
+                print(f"Reddit r/{sub}: HTTP {resp.status_code}")
+                continue
+
+            posts = resp.json().get("data", {}).get("children", [])
+            for post in posts:
+                data = post.get("data", {})
+                title = data.get("title", "").lower()
+                score = data.get("score", 0)
+                num_comments = data.get("num_comments", 0)
+
+                if score < 50:
+                    continue
+
+                if is_patriotic_relevant(title) and title not in ALL_KNOWN_KEYWORDS:
+                    clean_title = title[:60].strip()
+                    if len(clean_title) > 10:
+                        engagement = score + (num_comments * 3)
+                        discovered.append({
+                            "keyword": clean_title,
+                            "source_keyword": f"Reddit r/{sub}",
+                            "rise_value": min(500, engagement),
+                            "discovery_type": "reddit",
+                            "reddit_score": score,
+                            "reddit_comments": num_comments
+                        })
+
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"Reddit r/{sub} failed: {e}")
+
+    discovered.sort(key=lambda x: x["rise_value"], reverse=True)
+    return discovered[:10]
+
+def scan_twitter_trends():
+    discovered = []
+    try:
+        url = "https://trends24.in/united-kingdom/"
+        headers = {"User-Agent": "PatriotRadar/1.0"}
+        resp = requests.get(url, headers=headers, timeout=10)
+
+        if resp.status_code == 200:
+            import re
+            trends = re.findall(r'<a[^>]*class="trend-link"[^>]*>([^<]+)</a>', resp.text)
+            if not trends:
+                trends = re.findall(r'>#([^<]+)</a>', resp.text)
+
+            for trend in trends[:30]:
+                t = trend.strip().lower().replace("#", "")
+                if t and is_patriotic_relevant(t) and t not in ALL_KNOWN_KEYWORDS:
+                    discovered.append({
+                        "keyword": t[:60],
+                        "source_keyword": "Twitter UK",
+                        "rise_value": 250,
+                        "discovery_type": "twitter"
+                    })
+    except Exception as e:
+        print(f"Twitter trends failed: {e}")
+
+    return discovered[:10]
+
+def scan_uk_news():
+    discovered = []
+    try:
+        url = "https://newsapi.org/v2/top-headlines?country=gb&pageSize=20"
+        headers = {"User-Agent": "PatriotRadar/1.0"}
+        resp = requests.get(f"https://news.google.com/rss/search?q=british+patriotic+uk+military&hl=en-GB&gl=GB&ceid=GB:en", headers=headers, timeout=10)
+
+        if resp.status_code == 200:
+            import re
+            titles = re.findall(r'<title>([^<]+)</title>', resp.text)
+            for title in titles[1:15]:
+                t = title.strip().lower()
+                if is_patriotic_relevant(t) and len(t) > 15 and t not in ALL_KNOWN_KEYWORDS:
+                    discovered.append({
+                        "keyword": t[:60],
+                        "source_keyword": "UK News",
+                        "rise_value": 180,
+                        "discovery_type": "news"
+                    })
+    except Exception as e:
+        print(f"UK News scan failed: {e}")
+
+    return discovered[:5]
+
 EMERGING_HOOK_TEMPLATES = {
     "military": [
         "Should Britain invest more in {kw}? Yes or No?",
@@ -559,13 +655,40 @@ def main():
     related_discovered = discover_related_keywords(pytrends, CONTENT_KEYWORDS)
     trending_discovered = discover_trending_searches(pytrends)
 
-    all_discovered = related_discovered + trending_discovered
+    print("Scanning Reddit...")
+    reddit_discovered = scan_reddit()
+
+    print("Scanning Twitter trends...")
+    twitter_discovered = scan_twitter_trends()
+
+    print("Scanning UK news...")
+    news_discovered = scan_uk_news()
+
+    all_discovered = related_discovered + trending_discovered + reddit_discovered + twitter_discovered + news_discovered
+
+    keyword_sources = {}
+    for d in all_discovered:
+        kw = d["keyword"][:40].lower()
+        if kw not in keyword_sources:
+            keyword_sources[kw] = {"item": d, "sources": [], "total_rise": 0}
+        keyword_sources[kw]["sources"].append(d["discovery_type"])
+        keyword_sources[kw]["total_rise"] += d["rise_value"]
+
+    for kw in keyword_sources:
+        src_count = len(set(keyword_sources[kw]["sources"]))
+        keyword_sources[kw]["cross_platform"] = src_count
+        keyword_sources[kw]["item"]["rise_value"] = keyword_sources[kw]["total_rise"]
+        keyword_sources[kw]["item"]["platforms"] = list(set(keyword_sources[kw]["sources"]))
+        keyword_sources[kw]["item"]["platform_count"] = src_count
+        if src_count >= 2:
+            keyword_sources[kw]["item"]["rise_value"] *= 2
+
     seen_kw = set()
     unique_discovered = []
-    for d in all_discovered:
-        if d["keyword"] not in seen_kw:
-            seen_kw.add(d["keyword"])
-            unique_discovered.append(d)
+    for kw in sorted(keyword_sources, key=lambda k: keyword_sources[k]["item"]["rise_value"], reverse=True):
+        if kw not in seen_kw:
+            seen_kw.add(kw)
+            unique_discovered.append(keyword_sources[kw]["item"])
 
     print(f"Found {len(unique_discovered)} emerging topics. Scoring top candidates...")
 
@@ -575,6 +698,10 @@ def main():
         scores = score_discovered_keyword(pytrends, item["keyword"])
         if scores and scores["viral_score"] > 10:
             hooks = make_emerging_hooks(item["keyword"], item["source_keyword"])
+            platforms = item.get("platforms", [item["discovery_type"]])
+            platform_count = item.get("platform_count", 1)
+            boosted_viral = scores["viral_score"] * (1 + (platform_count - 1) * 0.3)
+
             entry = {
                 "category": "emerging",
                 "keyword": item["keyword"],
@@ -582,9 +709,11 @@ def main():
                 "recent_avg": scores["recent_avg"],
                 "previous_avg": scores["previous_avg"],
                 "rise_percent": scores["rise_percent"],
-                "viral_score": scores["viral_score"],
+                "viral_score": round(boosted_viral, 1),
                 "source_keyword": item["source_keyword"],
                 "discovery_type": item["discovery_type"],
+                "platforms": platforms,
+                "platform_count": platform_count,
                 "question": hooks[0],
                 "hooks": hooks,
                 "caption": make_caption(item["keyword"]),
