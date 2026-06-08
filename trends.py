@@ -712,33 +712,59 @@ def main():
     print(f"Found {len(unique_discovered)} emerging topics. Scoring top candidates...")
 
     scored_emerging = []
-    for item in unique_discovered[:15]:
-        time.sleep(2)
-        scores = score_discovered_keyword(pytrends, item["keyword"])
-        if scores and scores["viral_score"] > 10:
-            hooks = make_emerging_hooks(item["keyword"], item["source_keyword"])
-            platforms = item.get("platforms", [item["discovery_type"]])
-            platform_count = item.get("platform_count", 1)
-            boosted_viral = scores["viral_score"] * (1 + (platform_count - 1) * 0.3)
+    for item in unique_discovered[:10]:
+        hooks = make_emerging_hooks(item["keyword"], item["source_keyword"])
+        platforms = item.get("platforms", [item["discovery_type"]])
+        platform_count = item.get("platform_count", 1)
 
-            entry = {
-                "category": "emerging",
-                "keyword": item["keyword"],
-                "latest_score": scores["latest_score"],
-                "recent_avg": scores["recent_avg"],
-                "previous_avg": scores["previous_avg"],
-                "rise_percent": scores["rise_percent"],
-                "viral_score": round(boosted_viral, 1),
-                "source_keyword": item["source_keyword"],
-                "discovery_type": item["discovery_type"],
-                "platforms": platforms,
-                "platform_count": platform_count,
-                "question": hooks[0],
-                "hooks": hooks,
-                "caption": make_caption(item["keyword"]),
-                "product": make_product(item["keyword"])
-            }
-            scored_emerging.append(entry)
+        base_score = item["rise_value"] / 10
+        boosted = base_score * (1 + (platform_count - 1) * 0.5)
+
+        try:
+            time.sleep(3)
+            scores = score_discovered_keyword(pytrends, item["keyword"])
+            if scores:
+                boosted = scores["viral_score"] * (1 + (platform_count - 1) * 0.3)
+                entry = {
+                    "category": "emerging",
+                    "keyword": item["keyword"],
+                    "latest_score": scores["latest_score"],
+                    "recent_avg": scores["recent_avg"],
+                    "previous_avg": scores["previous_avg"],
+                    "rise_percent": scores["rise_percent"],
+                    "viral_score": round(boosted, 1),
+                    "source_keyword": item["source_keyword"],
+                    "discovery_type": item["discovery_type"],
+                    "platforms": platforms,
+                    "platform_count": platform_count,
+                    "question": hooks[0],
+                    "hooks": hooks,
+                    "caption": make_caption(item["keyword"]),
+                    "product": make_product(item["keyword"])
+                }
+                scored_emerging.append(entry)
+                continue
+        except Exception as e:
+            print(f"Scoring failed, using estimate for {item['keyword']}: {e}")
+
+        entry = {
+            "category": "emerging",
+            "keyword": item["keyword"],
+            "latest_score": 0,
+            "recent_avg": 0,
+            "previous_avg": 0,
+            "rise_percent": 0,
+            "viral_score": round(boosted, 1),
+            "source_keyword": item["source_keyword"],
+            "discovery_type": item["discovery_type"],
+            "platforms": platforms,
+            "platform_count": platform_count,
+            "question": hooks[0],
+            "hooks": hooks,
+            "caption": make_caption(item["keyword"]),
+            "product": make_product(item["keyword"])
+        }
+        scored_emerging.append(entry)
 
     scored_emerging.sort(key=lambda x: x["viral_score"], reverse=True)
 
