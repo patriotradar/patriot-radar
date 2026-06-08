@@ -536,7 +536,7 @@ def main():
     content_results = analyse_keywords(pytrends, CONTENT_KEYWORDS, "content")
     product_results = analyse_keywords(pytrends, PRODUCT_KEYWORDS, "product")
 
-    all_results = content_results + product_results
+    all_results = content_results
 
     if not all_results:
         print("No live Google Trends results. Using fallback results.")
