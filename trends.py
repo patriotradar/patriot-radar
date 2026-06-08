@@ -631,7 +631,7 @@ def fallback_results():
     fallback.sort(key=lambda x: x["viral_score"], reverse=True)
     return fallback
 
-def save_results(results, emerging):
+def save_results(results, emerging, product_trends=None):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     lines = []
@@ -670,6 +670,7 @@ def save_results(results, emerging):
     output = {
         "results": results[:15],
         "emerging": emerging[:10],
+        "product_trends": product_trends or [],
         "last_updated": now
     }
 
@@ -793,7 +794,9 @@ def main():
 
     scored_emerging.sort(key=lambda x: x["viral_score"], reverse=True)
 
-    save_results(all_results, scored_emerging)
+    product_trends = sorted(product_results, key=lambda x: x["viral_score"], reverse=True)
+
+    save_results(all_results, scored_emerging, product_trends)
 
 if __name__ == "__main__":
     main()
