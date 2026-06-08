@@ -347,11 +347,11 @@ def discover_trending_searches(pytrends):
 def scan_reddit():
     discovered = []
     subreddits = ["unitedkingdom", "CasualUK", "ukpolitics", "BritishMilitary", "AskUK"]
-    headers = {"User-Agent": "PatriotRadar/1.0"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"}
 
     for sub in subreddits:
         try:
-            url = f"https://www.reddit.com/r/{sub}/hot.json?limit=25"
+            url = f"https://old.reddit.com/r/{sub}/hot/.json?limit=25"
             resp = requests.get(url, headers=headers, timeout=10)
             if resp.status_code != 200:
                 print(f"Reddit r/{sub}: HTTP {resp.status_code}")
@@ -368,7 +368,9 @@ def scan_reddit():
                     continue
 
                 if is_patriotic_relevant(title) and title not in ALL_KNOWN_KEYWORDS:
-                    clean_title = title[:60].strip()
+                    words = title.split()
+                    clean_title = " ".join(words[:10]) if len(words) > 10 else title
+                    clean_title = clean_title[:60].strip()
                     if len(clean_title) > 10:
                         engagement = score + (num_comments * 3)
                         discovered.append({
@@ -417,27 +419,44 @@ def scan_twitter_trends():
 
 def scan_uk_news():
     discovered = []
-    try:
-        url = "https://newsapi.org/v2/top-headlines?country=gb&pageSize=20"
-        headers = {"User-Agent": "PatriotRadar/1.0"}
-        resp = requests.get(f"https://news.google.com/rss/search?q=british+patriotic+uk+military&hl=en-GB&gl=GB&ceid=GB:en", headers=headers, timeout=10)
+    import re
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"}
 
-        if resp.status_code == 200:
-            import re
-            titles = re.findall(r'<title>([^<]+)</title>', resp.text)
-            for title in titles[1:15]:
-                t = title.strip().lower()
-                if is_patriotic_relevant(t) and len(t) > 15 and t not in ALL_KNOWN_KEYWORDS:
-                    discovered.append({
-                        "keyword": t[:60],
-                        "source_keyword": "UK News",
-                        "rise_value": 180,
-                        "discovery_type": "news"
-                    })
-    except Exception as e:
-        print(f"UK News scan failed: {e}")
+    searches = [
+        "british+army+uk+military",
+        "royal+family+king+britain",
+        "remembrance+veterans+uk",
+        "england+patriotic+british+pride"
+    ]
 
-    return discovered[:5]
+    for query in searches:
+        try:
+            resp = requests.get(f"https://news.google.com/rss/search?q={query}&hl=en-GB&gl=GB&ceid=GB:en", headers=headers, timeout=10)
+            if resp.status_code == 200:
+                titles = re.findall(r'<title>([^<]+)</title>', resp.text)
+                for title in titles[1:10]:
+                    t = title.strip().lower()
+                    if is_patriotic_relevant(t) and len(t) > 15 and t not in ALL_KNOWN_KEYWORDS:
+                        words = t.split()
+                        clean = " ".join(words[:10]) if len(words) > 10 else t
+                        discovered.append({
+                            "keyword": clean[:60],
+                            "source_keyword": "UK News",
+                            "rise_value": 180,
+                            "discovery_type": "news"
+                        })
+            time.sleep(1)
+        except Exception as e:
+            print(f"UK News scan failed for {query}: {e}")
+
+    seen = set()
+    unique = []
+    for d in discovered:
+        if d["keyword"] not in seen:
+            seen.add(d["keyword"])
+            unique.append(d)
+
+    return unique[:8]
 
 EMERGING_HOOK_TEMPLATES = {
     "military": [
