@@ -37,12 +37,13 @@ CONTENT_KEYWORDS = [
 
 PRODUCT_KEYWORDS = [
     "union jack flag", "british flag", "england flag",
-    "patriotic clothing", "british clothing",
-    "british army books", "military history books",
-    "veteran gifts", "army surplus",
-    "royal navy gifts", "churchill books",
-    "history posters", "poppy brooch",
-    "england hoodie", "british hoodie"
+    "union jack hoodie", "england hoodie", "british hoodie",
+    "england shirt", "british t shirt",
+    "patriotic clothing", "british clothing", "british gifts",
+    "poppy brooch", "poppy pin", "remembrance gifts",
+    "british army books", "churchill books",
+    "veteran gifts", "military gifts",
+    "royal memorabilia", "british souvenirs"
 ]
 
 PATRIOTIC_FILTER_WORDS = [
@@ -263,7 +264,8 @@ def analyse_keywords(pytrends, keywords, category):
             recent_avg = sum(scores[-6:]) / 6
             previous_avg = sum(scores[-12:-6]) / 6
 
-            if overall_avg < 5:
+            min_vol = 2 if category == "product" else 5
+            if overall_avg < min_vol:
                 print(f"Skipping {keyword}: too low volume (avg {overall_avg:.1f})")
                 continue
 
