@@ -687,8 +687,9 @@ def main():
 
     pytrends = TrendReq(hl="en-GB", tz=0)
 
+    product_results = analyse_keywords(pytrends, PRODUCT_KEYWORDS[:10], "product")
+
     content_results = analyse_keywords(pytrends, CONTENT_KEYWORDS, "content")
-    product_results = analyse_keywords(pytrends, PRODUCT_KEYWORDS, "product")
 
     all_results = content_results
 
