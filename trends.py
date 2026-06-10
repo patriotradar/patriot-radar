@@ -495,7 +495,11 @@ def scan_autocomplete():
         "emoji", "png", "image", "icon", "theorem", "1776", "hsr",
         "trailblazer", "elden", "prototype", "chapter", "build",
         "population", "time zone", " map", "election polls",
-        "movies", "movie", "drink", "knife", "login", "shirt"
+        "movies", "movie", "drink", "knife", "login", "shirt",
+        "football team", "football ", "cricket", "rugby team",
+        "flagge", " time", "national team", "pay scale", "pay rise",
+        "ranks", "uniform", "jobs", "seeds", "flower",
+        "bank note", "meaning", "wiki", "definition"
     ]
     seeds = CONTENT_KEYWORDS[:15] + creator_seeds
 
