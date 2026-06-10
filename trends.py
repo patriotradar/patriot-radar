@@ -489,6 +489,14 @@ def scan_autocomplete():
     discovered = []
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"}
     creator_seeds = ["tiktok views", "how to get views", "content ideas", "tiktok growth", "tiktok algorithm"]
+    autocomplete_blocklist = [
+        "playtime", "elden ring", "insurance", "nadal", "leao", "downs",
+        "geschirr", "canada", "dalton", "got talent", "olarra", "jodar",
+        "emoji", "png", "image", "icon", "theorem", "1776", "hsr",
+        "trailblazer", "elden", "prototype", "chapter", "build",
+        "population", "time zone", " map", "election polls",
+        "movies", "movie", "drink", "knife", "login", "shirt"
+    ]
     seeds = CONTENT_KEYWORDS[:15] + creator_seeds
 
     for seed in seeds:
@@ -500,6 +508,8 @@ def scan_autocomplete():
                 suggestions = data[1] if len(data) > 1 else []
                 for sug in suggestions:
                     s = sug.lower().strip()
+                    if any(b in s for b in autocomplete_blocklist):
+                        continue
                     is_creator_seed = seed in creator_seeds
                     is_relevant = is_patriotic_relevant(s) or is_creator_seed
                     if s != seed and s not in ALL_KNOWN_KEYWORDS and len(s) > 10 and is_relevant:
