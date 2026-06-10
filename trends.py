@@ -488,7 +488,8 @@ def scan_uk_news():
 def scan_autocomplete():
     discovered = []
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"}
-    seeds = CONTENT_KEYWORDS[:15]
+    creator_seeds = ["tiktok views", "how to get views", "content ideas", "tiktok growth", "tiktok algorithm"]
+    seeds = CONTENT_KEYWORDS[:15] + creator_seeds
 
     for seed in seeds:
         try:
@@ -499,7 +500,9 @@ def scan_autocomplete():
                 suggestions = data[1] if len(data) > 1 else []
                 for sug in suggestions:
                     s = sug.lower().strip()
-                    if s != seed and s not in ALL_KNOWN_KEYWORDS and len(s) > 10 and is_patriotic_relevant(s):
+                    is_creator_seed = seed in creator_seeds
+                    is_relevant = is_patriotic_relevant(s) or is_creator_seed
+                    if s != seed and s not in ALL_KNOWN_KEYWORDS and len(s) > 10 and is_relevant:
                         words = s.split()
                         clean = " ".join(words[:8]) if len(words) > 8 else s
                         discovered.append({
