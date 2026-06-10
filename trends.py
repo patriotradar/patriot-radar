@@ -503,7 +503,10 @@ def scan_autocomplete():
         "world cup", "squad", "schedule", "fixture", "score",
         "in german", "auf deutsch", "postal code", "zip code",
         "countries", "vs uk", "vs usa", "capital", "language",
-        "prime minister", "weather", "currency", "flag"
+        "prime minister", "weather", "currency", "flag",
+        "a country", "a city", "a continent", "a state",
+        "in europe", "in england", "in the eu",
+        "buy", " bot", "hack"
     ]
     specific_seeds = [
         "should britain", "is britain", "why is britain",
