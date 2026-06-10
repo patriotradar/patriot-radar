@@ -522,6 +522,7 @@ def scan_autocomplete():
         "immigration uk 2026", "small boats uk"
     ]
     seeds = specific_seeds + creator_seeds
+    creator_results = []
 
     for seed in seeds:
         try:
@@ -535,16 +536,19 @@ def scan_autocomplete():
                     if any(b in s for b in autocomplete_blocklist):
                         continue
                     is_creator_seed = seed in creator_seeds
-                    is_relevant = is_patriotic_relevant(s) or is_creator_seed
-                    if s != seed and s not in ALL_KNOWN_KEYWORDS and len(s) > 10 and is_relevant:
+                    if s != seed and s not in ALL_KNOWN_KEYWORDS and len(s) > 10:
                         words = s.split()
                         clean = " ".join(words[:8]) if len(words) > 8 else s
-                        discovered.append({
+                        entry = {
                             "keyword": clean[:60],
                             "source_keyword": seed,
                             "rise_value": 150,
-                            "discovery_type": "autocomplete"
-                        })
+                            "discovery_type": "creator_search" if is_creator_seed else "autocomplete"
+                        }
+                        if is_creator_seed:
+                            creator_results.append(entry)
+                        elif is_patriotic_relevant(s):
+                            discovered.append(entry)
             time.sleep(1)
         except Exception as e:
             print(f"Autocomplete failed for {seed}: {e}")
@@ -556,7 +560,13 @@ def scan_autocomplete():
             seen.add(d["keyword"])
             unique.append(d)
 
-    return unique[:10]
+    creator_unique = []
+    for d in creator_results:
+        if d["keyword"] not in seen:
+            seen.add(d["keyword"])
+            creator_unique.append(d)
+
+    return unique[:10], creator_unique[:10]
 
 EMERGING_HOOK_TEMPLATES = {
     "military": [
@@ -706,7 +716,7 @@ def fallback_results():
     fallback.sort(key=lambda x: x["viral_score"], reverse=True)
     return fallback
 
-def save_results(results, emerging, product_trends=None):
+def save_results(results, emerging, product_trends=None, creator_insights=None):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     lines = []
@@ -746,6 +756,7 @@ def save_results(results, emerging, product_trends=None):
         "results": results[:15],
         "emerging": emerging[:10],
         "product_trends": product_trends or [],
+        "creator_insights": creator_insights or [],
         "last_updated": now
     }
 
@@ -786,7 +797,7 @@ def main():
     news_discovered = scan_uk_news()
 
     print("Scanning Google Autocomplete...")
-    autocomplete_discovered = scan_autocomplete()
+    autocomplete_discovered, creator_insights = scan_autocomplete()
 
     all_discovered = related_discovered + trending_discovered + reddit_discovered + twitter_discovered + news_discovered + autocomplete_discovered
 
@@ -875,7 +886,7 @@ def main():
 
     product_trends = sorted(product_results, key=lambda x: x["viral_score"], reverse=True)
 
-    save_results(all_results, scored_emerging, product_trends)
+    save_results(all_results, scored_emerging, product_trends, creator_insights)
 
 if __name__ == "__main__":
     main()
