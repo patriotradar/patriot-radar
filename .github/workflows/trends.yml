@@ -44,7 +44,8 @@ jobs:
           git config user.email "github-actions@github.com"
           git add results.json
           git commit -m "Update live trend results" || echo "No changes to commit"
-          git push
+          git pull --rebase origin main || true
+          git push || echo "Dashboard push failed"
 
       - name: Keep workflow active
         run: |
@@ -53,4 +54,5 @@ jobs:
           git config user.email "github-actions@github.com"
           git add last-run.txt
           git commit -m "Update scanner timestamp" || echo "No changes"
-          git push
+          git pull --rebase origin main || true
+          git push || echo "Push failed - will retry next cycle"
