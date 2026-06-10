@@ -509,11 +509,17 @@ def scan_autocomplete():
         "buy", " bot", "hack"
     ]
     specific_seeds = [
-        "should britain", "is britain", "why is britain",
-        "should the uk", "is the uk", "why did britain",
-        "british army 2026", "remembrance day 2026", "d-day 2026",
-        "patriotic british", "proud to be british",
-        "veterans uk", "armed forces uk", "royal family news"
+        "should britain", "why should britain", "will britain",
+        "should the uk", "why is the uk", "will the uk",
+        "is it wrong to be proud of being british",
+        "do british people", "why do british people",
+        "british army 2026", "british military 2026",
+        "remembrance day 2026", "d-day anniversary",
+        "veterans uk 2026", "armed forces uk 2026",
+        "royal family latest", "king charles latest",
+        "is national service coming back",
+        "union jack controversy", "england pride",
+        "immigration uk 2026", "small boats uk"
     ]
     seeds = specific_seeds + creator_seeds
 
