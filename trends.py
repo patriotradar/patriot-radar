@@ -499,9 +499,20 @@ def scan_autocomplete():
         "football team", "football ", "cricket", "rugby team",
         "flagge", " time", "national team", "pay scale", "pay rise",
         "ranks", "uniform", "jobs", "seeds", "flower",
-        "bank note", "meaning", "wiki", "definition"
+        "bank note", "meaning", "wiki", "definition",
+        "world cup", "squad", "schedule", "fixture", "score",
+        "in german", "auf deutsch", "postal code", "zip code",
+        "countries", "vs uk", "vs usa", "capital", "language",
+        "prime minister", "weather", "currency", "flag"
     ]
-    seeds = CONTENT_KEYWORDS[:15] + creator_seeds
+    specific_seeds = [
+        "should britain", "is britain", "why is britain",
+        "should the uk", "is the uk", "why did britain",
+        "british army 2026", "remembrance day 2026", "d-day 2026",
+        "patriotic british", "proud to be british",
+        "veterans uk", "armed forces uk", "royal family news"
+    ]
+    seeds = specific_seeds + creator_seeds
 
     for seed in seeds:
         try:
