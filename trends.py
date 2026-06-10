@@ -485,6 +485,42 @@ def scan_uk_news():
 
     return unique[:8]
 
+def scan_autocomplete():
+    discovered = []
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"}
+    seeds = CONTENT_KEYWORDS[:15]
+
+    for seed in seeds:
+        try:
+            url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={seed}&hl=en&gl=uk"
+            resp = requests.get(url, headers=headers, timeout=8)
+            if resp.status_code == 200:
+                data = resp.json()
+                suggestions = data[1] if len(data) > 1 else []
+                for sug in suggestions:
+                    s = sug.lower().strip()
+                    if s != seed and s not in ALL_KNOWN_KEYWORDS and len(s) > 10 and is_patriotic_relevant(s):
+                        words = s.split()
+                        clean = " ".join(words[:8]) if len(words) > 8 else s
+                        discovered.append({
+                            "keyword": clean[:60],
+                            "source_keyword": seed,
+                            "rise_value": 150,
+                            "discovery_type": "autocomplete"
+                        })
+            time.sleep(1)
+        except Exception as e:
+            print(f"Autocomplete failed for {seed}: {e}")
+
+    seen = set()
+    unique = []
+    for d in discovered:
+        if d["keyword"] not in seen:
+            seen.add(d["keyword"])
+            unique.append(d)
+
+    return unique[:10]
+
 EMERGING_HOOK_TEMPLATES = {
     "military": [
         "Should Britain invest more in {kw}? Yes or No?",
@@ -712,7 +748,10 @@ def main():
     print("Scanning UK news...")
     news_discovered = scan_uk_news()
 
-    all_discovered = related_discovered + trending_discovered + reddit_discovered + twitter_discovered + news_discovered
+    print("Scanning Google Autocomplete...")
+    autocomplete_discovered = scan_autocomplete()
+
+    all_discovered = related_discovered + trending_discovered + reddit_discovered + twitter_discovered + news_discovered + autocomplete_discovered
 
     keyword_sources = {}
     for d in all_discovered:
