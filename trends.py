@@ -373,40 +373,37 @@ def discover_trending_searches(pytrends):
 
 def scan_reddit():
     discovered = []
-    subreddits = ["unitedkingdom", "CasualUK", "ukpolitics", "BritishMilitary", "AskUK"]
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"}
+    subreddits = ["unitedkingdom", "CasualUK", "ukpolitics", "BritishMilitary", "AskUK", "BritishSuccess", "britishproblems"]
+    import re as reddit_re
 
     for sub in subreddits:
         try:
-            url = f"https://old.reddit.com/r/{sub}/hot/.json?limit=25"
+            url = f"https://www.reddit.com/r/{sub}/hot/.rss?limit=25"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                "Accept": "application/rss+xml, application/xml, text/xml"
+            }
             resp = requests.get(url, headers=headers, timeout=10)
             if resp.status_code != 200:
-                print(f"Reddit r/{sub}: HTTP {resp.status_code}")
+                print(f"Reddit RSS r/{sub}: HTTP {resp.status_code}")
                 continue
 
-            posts = resp.json().get("data", {}).get("children", [])
-            for post in posts:
-                data = post.get("data", {})
-                title = data.get("title", "").lower()
-                score = data.get("score", 0)
-                num_comments = data.get("num_comments", 0)
-
-                if score < 50:
-                    continue
+            titles = reddit_re.findall(r'<title>([^<]+)</title>', resp.text)
+            for title_raw in titles[1:]:
+                title = title_raw.strip().lower()
+                title = reddit_re.sub(r'&amp;', '&', title)
+                title = reddit_re.sub(r'&#\d+;', '', title)
 
                 if is_patriotic_relevant(title) and title not in ALL_KNOWN_KEYWORDS:
                     words = title.split()
                     clean_title = " ".join(words[:10]) if len(words) > 10 else title
                     clean_title = clean_title[:60].strip()
                     if len(clean_title) > 10:
-                        engagement = score + (num_comments * 3)
                         discovered.append({
                             "keyword": clean_title,
                             "source_keyword": f"Reddit r/{sub}",
-                            "rise_value": min(500, engagement),
-                            "discovery_type": "reddit",
-                            "reddit_score": score,
-                            "reddit_comments": num_comments
+                            "rise_value": 200,
+                            "discovery_type": "reddit"
                         })
 
             time.sleep(1)
@@ -414,33 +411,59 @@ def scan_reddit():
         except Exception as e:
             print(f"Reddit r/{sub} failed: {e}")
 
-    discovered.sort(key=lambda x: x["rise_value"], reverse=True)
-    return discovered[:10]
+    seen = set()
+    unique = []
+    for d in discovered:
+        if d["keyword"] not in seen:
+            seen.add(d["keyword"])
+            unique.append(d)
+
+    return unique[:10]
 
 def scan_twitter_trends():
     discovered = []
-    try:
-        url = "https://trends24.in/united-kingdom/"
-        headers = {"User-Agent": "PatriotRadar/1.0"}
-        resp = requests.get(url, headers=headers, timeout=10)
+    import re as tw_re
 
-        if resp.status_code == 200:
-            import re
-            trends = re.findall(r'<a[^>]*class="trend-link"[^>]*>([^<]+)</a>', resp.text)
-            if not trends:
-                trends = re.findall(r'>#([^<]+)</a>', resp.text)
+    sources = [
+        ("https://trends24.in/united-kingdom/", [
+            r'<a[^>]*class="trend-link"[^>]*>([^<]+)</a>',
+            r'>#([^<]+)</a>',
+            r'class="[^"]*trend[^"]*"[^>]*>([^<]{3,40})<'
+        ]),
+        ("https://getdaytrends.com/united-kingdom/", [
+            r'<a[^>]*>([^<]{3,40})</a>',
+        ])
+    ]
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"}
 
-            for trend in trends[:30]:
+    for url, patterns in sources:
+        try:
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code != 200:
+                print(f"Twitter trends source {url}: HTTP {resp.status_code}")
+                continue
+
+            trends = []
+            for pattern in patterns:
+                found = tw_re.findall(pattern, resp.text)
+                if found:
+                    trends = found
+                    break
+
+            for trend in trends[:40]:
                 t = trend.strip().lower().replace("#", "")
-                if t and is_patriotic_relevant(t) and t not in ALL_KNOWN_KEYWORDS:
+                if t and len(t) > 3 and is_patriotic_relevant(t) and t not in ALL_KNOWN_KEYWORDS:
                     discovered.append({
                         "keyword": t[:60],
                         "source_keyword": "Twitter UK",
                         "rise_value": 250,
                         "discovery_type": "twitter"
                     })
-    except Exception as e:
-        print(f"Twitter trends failed: {e}")
+
+            if discovered:
+                break
+        except Exception as e:
+            print(f"Twitter trends failed ({url}): {e}")
 
     return discovered[:10]
 
@@ -742,7 +765,7 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
         lines.append("")
         lines.append("EMERGING TOPICS")
         lines.append("=" * 50)
-        for item in emerging[:10]:
+        for item in emerging[:15]:
             lines.append(f"Keyword: {item['keyword']}")
             lines.append(f"Source: {item.get('source_keyword', 'N/A')}")
             lines.append(f"Type: {item.get('discovery_type', 'N/A')}")
@@ -754,7 +777,7 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
 
     output = {
         "results": results[:15],
-        "emerging": emerging[:10],
+        "emerging": emerging[:15],
         "product_trends": product_trends or [],
         "creator_insights": creator_insights or [],
         "last_updated": now
@@ -828,7 +851,7 @@ def main():
     print(f"Found {len(unique_discovered)} emerging topics. Scoring top candidates...")
 
     scored_emerging = []
-    for item in unique_discovered[:10]:
+    for item in unique_discovered[:15]:
         hooks = make_emerging_hooks(item["keyword"], item["source_keyword"])
         platforms = item.get("platforms", [item["discovery_type"]])
         platform_count = item.get("platform_count", 1)
