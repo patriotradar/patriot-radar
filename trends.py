@@ -510,6 +510,40 @@ def scan_uk_news():
         except Exception as e:
             print(f"UK News scan failed for {query}: {e}")
 
+    rss_feeds = [
+        ("https://feeds.bbci.co.uk/news/uk/rss.xml", "BBC UK"),
+        ("https://feeds.bbci.co.uk/news/politics/rss.xml", "BBC Politics"),
+        ("https://feeds.bbci.co.uk/news/england/rss.xml", "BBC England"),
+        ("https://feeds.skynews.com/feeds/rss/uk.xml", "Sky UK"),
+        ("https://feeds.skynews.com/feeds/rss/politics.xml", "Sky Politics"),
+        ("https://www.dailymail.co.uk/news/index.rss", "Daily Mail"),
+        ("https://www.telegraph.co.uk/news/rss.xml", "Telegraph"),
+        ("https://www.theguardian.com/uk-news/rss", "Guardian UK"),
+    ]
+
+    for feed_url, source_name in rss_feeds:
+        try:
+            resp = requests.get(feed_url, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                titles = re.findall(r'<title>([^<]+)</title>', resp.text)
+                for title in titles[1:15]:
+                    t = title.strip().lower()
+                    t = re.sub(r'&amp;', '&', t)
+                    t = re.sub(r'&#\d+;', '', t)
+                    t = re.sub(r'<!\[CDATA\[|\]\]>', '', t)
+                    if is_patriotic_relevant(t) and len(t) > 15 and t not in ALL_KNOWN_KEYWORDS:
+                        words = t.split()
+                        clean = " ".join(words[:10]) if len(words) > 10 else t
+                        discovered.append({
+                            "keyword": clean[:60],
+                            "source_keyword": source_name,
+                            "rise_value": 180,
+                            "discovery_type": "news"
+                        })
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"RSS {source_name} failed: {e}")
+
     seen = set()
     unique = []
     for d in discovered:
@@ -517,7 +551,7 @@ def scan_uk_news():
             seen.add(d["keyword"])
             unique.append(d)
 
-    return unique[:8]
+    return unique[:15]
 
 def scan_autocomplete():
     discovered = []
@@ -553,8 +587,30 @@ def scan_autocomplete():
         "royal family latest", "king charles latest",
         "is national service coming back",
         "union jack controversy", "england pride",
-        "immigration uk 2026", "small boats uk"
+        "immigration uk 2026", "small boats uk",
+        "why is england", "why is britain",
+        "is britain still", "is england still",
+        "british culture", "english culture today",
+        "british values", "british identity crisis",
+        "proud to be british", "proud to be english",
+        "best of british", "great british",
+        "british military news", "uk defence news",
+        "royal navy news", "raf news today",
+        "king charles news today", "royal family news today",
+        "uk immigration news", "channel crossing news",
+        "british traditions dying", "english traditions",
+        "should england have", "does britain need",
+        "is the uk becoming", "will england ever",
+        "british nostalgia", "remember when britain",
+        "growing up british", "only in britain",
+        "british problems", "things only british people",
+        "what makes britain great", "best thing about britain",
+        "worst thing about britain", "britain debate",
+        "uk veterans news", "armed forces day 2026",
+        "british patriotism tiktok", "england tiktok",
+        "patriotic content ideas", "british content creator",
     ]
+    random.shuffle(specific_seeds)
     seeds = specific_seeds + creator_seeds
     creator_results = []
 
@@ -730,7 +786,9 @@ def score_discovered_keyword(pytrends, keyword):
 
 def fallback_results():
     fallback = []
-    sample = CONTENT_KEYWORDS[:12]
+    shuffled = list(CONTENT_KEYWORDS)
+    random.shuffle(shuffled)
+    sample = shuffled[:12]
 
     for keyword in sample:
         score = random.randint(45, 78)
