@@ -245,11 +245,20 @@ def make_product(keyword):
 
 def analyse_keywords(pytrends, keywords, category):
     results = []
+    consecutive_fails = 0
 
     for keyword in keywords:
+        if consecutive_fails >= 5:
+            print(f"Rate limited - stopping after {consecutive_fails} consecutive failures ({len(results)} results so far)")
+            break
+
         try:
+            delay = random.uniform(8, 18)
+            time.sleep(delay)
+
             pytrends.build_payload([keyword], timeframe="now 7-d", geo="GB")
             data = pytrends.interest_over_time()
+            consecutive_fails = 0
 
             if data.empty or keyword not in data:
                 continue
@@ -295,10 +304,11 @@ def analyse_keywords(pytrends, keywords, category):
                 "product": make_product(keyword)
             })
 
-            time.sleep(3)
-
         except Exception as e:
+            consecutive_fails += 1
             print(f"Failed: {keyword} - {e}")
+            if "429" in str(e):
+                time.sleep(random.uniform(30, 60))
 
     results.sort(key=lambda x: x["viral_score"], reverse=True)
     return results
@@ -307,10 +317,11 @@ def discover_related_keywords(pytrends, seed_keywords):
     discovered = []
     seen = set()
     sample = [kw for kw in seed_keywords if kw in [r.lower() for r in ALL_KNOWN_KEYWORDS]]
-    top_seeds = seed_keywords[:20]
+    top_seeds = seed_keywords[:10]
 
     for keyword in top_seeds:
         try:
+            time.sleep(random.uniform(8, 15))
             pytrends.build_payload([keyword], timeframe="now 7-d", geo="GB")
 
             related = pytrends.related_queries()
@@ -344,10 +355,10 @@ def discover_related_keywords(pytrends, seed_keywords):
                                     "discovery_type": "related_query"
                                 })
 
-            time.sleep(2)
-
         except Exception as e:
             print(f"Related query failed for {keyword}: {e}")
+            if "429" in str(e):
+                break
 
     discovered.sort(key=lambda x: x["rise_value"], reverse=True)
     return discovered
@@ -794,15 +805,25 @@ def main():
 
     pytrends = TrendReq(hl="en-GB", tz=0)
 
-    product_results = analyse_keywords(pytrends, PRODUCT_KEYWORDS[:10], "product")
+    shuffled_content = list(CONTENT_KEYWORDS)
+    random.shuffle(shuffled_content)
+    scan_keywords = shuffled_content[:20]
 
-    content_results = analyse_keywords(pytrends, CONTENT_KEYWORDS, "content")
+    product_results = analyse_keywords(pytrends, PRODUCT_KEYWORDS[:5], "product")
+
+    content_results = analyse_keywords(pytrends, scan_keywords, "content")
 
     all_results = content_results
 
-    if not all_results:
-        print("No live Google Trends results. Using fallback results.")
-        all_results = fallback_results()
+    if len(all_results) < 5:
+        print(f"Only {len(all_results)} live results. Supplementing with fallback data.")
+        fallback = fallback_results()
+        existing_kws = {r["keyword"] for r in all_results}
+        for fb in fallback:
+            if fb["keyword"] not in existing_kws:
+                all_results.append(fb)
+            if len(all_results) >= 12:
+                break
 
     all_results.sort(key=lambda x: x["viral_score"], reverse=True)
 
@@ -851,7 +872,7 @@ def main():
     print(f"Found {len(unique_discovered)} emerging topics. Scoring top candidates...")
 
     scored_emerging = []
-    for item in unique_discovered[:15]:
+    for item in unique_discovered[:10]:
         hooks = make_emerging_hooks(item["keyword"], item["source_keyword"])
         platforms = item.get("platforms", [item["discovery_type"]])
         platform_count = item.get("platform_count", 1)
@@ -860,7 +881,7 @@ def main():
         boosted = base_score * (1 + (platform_count - 1) * 0.5)
 
         try:
-            time.sleep(3)
+            time.sleep(random.uniform(10, 20))
             scores = score_discovered_keyword(pytrends, item["keyword"])
             if scores:
                 boosted = scores["viral_score"] * (1 + (platform_count - 1) * 0.3)
