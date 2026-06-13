@@ -934,8 +934,38 @@ def score_content_potential(item):
 
     total = fresh_score + british_score + emotion_score + debate_score
 
+    proven_topics = [
+        "immigration", "small boats", "channel",
+        "flag", "union jack", "english flag", "st george",
+        "veterans", "remembrance", "sacrifice", "poppy", "cenotaph",
+        "culture", "identity", "heritage", "tradition", "values",
+        "armed forces", "army", "military", "national service"
+    ]
+    proven_boost = 0
+    for pt in proven_topics:
+        if pt in kw:
+            proven_boost = 8
+            break
+
+    controversial = [
+        "offend", "ban", "abolish", "compulsory", "prison",
+        "deport", "criminal", "reparation", "extreme",
+        "erased", "lost", "forgotten", "threat", "dying"
+    ]
+    controversy_boost = 0
+    for cv in controversial:
+        if cv in combined:
+            controversy_boost = 5
+            break
+
+    question_words = ["should", "is ", "does ", "would ", "has ", "can ", "are "]
+    is_question = any(q in question.lower() for q in question_words) and "?" in question
+    question_boost = 6 if is_question else 0
+
+    total = total + proven_boost + controversy_boost + question_boost
+
     return {
-        "content_score": total,
+        "content_score": min(100, total),
         "fresh": fresh_score,
         "british": british_score,
         "emotion": emotion_score,
