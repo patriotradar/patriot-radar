@@ -879,6 +879,20 @@ def score_content_potential(item):
     for trigger in EMOTIONAL_TRIGGERS:
         if trigger in combined:
             emotion_hits += 1
+
+    topic_emotion_words = [
+        "veterans", "armed forces", "army", "navy", "raf", "military",
+        "remembrance", "poppy", "cenotaph", "memorial", "war",
+        "churchill", "spitfire", "dunkirk", "d-day", "ve day", "normandy",
+        "sacrifice", "hero", "pride", "patriot", "flag",
+        "union jack", "st george", "victoria cross",
+        "national service", "coronation", "king charles",
+        "immigration", "small boats", "monarchy", "heritage", "tradition"
+    ]
+    for tw in topic_emotion_words:
+        if tw in kw:
+            emotion_hits += 1
+
     if emotion_hits >= 5:
         emotion_score = 25
     elif emotion_hits >= 3:
