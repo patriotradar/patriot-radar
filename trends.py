@@ -972,6 +972,91 @@ def score_content_potential(item):
         "debate": debate_score
     }
 
+def check_tiktok_competition(keyword):
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"}
+    try:
+        query = f"tiktok {keyword} british"
+        url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={query}&hl=en&gl=uk"
+        resp = requests.get(url, headers=headers, timeout=8)
+        if resp.status_code == 200:
+            data = resp.json()
+            suggestions = data[1] if len(data) > 1 else []
+            return len(suggestions)
+        return 5
+    except:
+        return 5
+
+def score_opportunity_gap(item):
+    kw = (item.get("keyword", "") or "").lower()
+    viral = float(item.get("viral_score", 0) or 0)
+    rise = float(item.get("rise_percent", 0) or 0)
+    content_score = int(item.get("content_score", 0) or 0)
+
+    demand = 0
+    if viral > 60:
+        demand = 10
+    elif viral > 40:
+        demand = 8
+    elif viral > 20:
+        demand = 6
+    elif viral > 10:
+        demand = 4
+    else:
+        demand = 2
+
+    if rise > 50:
+        demand = min(10, demand + 3)
+    elif rise > 20:
+        demand = min(10, demand + 2)
+    elif rise > 0:
+        demand = min(10, demand + 1)
+
+    competition = item.get("_tiktok_competition", 5)
+
+    if competition <= 1:
+        comp_score = 10
+    elif competition <= 3:
+        comp_score = 8
+    elif competition <= 5:
+        comp_score = 5
+    elif competition <= 7:
+        comp_score = 3
+    else:
+        comp_score = 1
+
+    words = kw.split()
+    if len(words) >= 4:
+        comp_score = min(10, comp_score + 2)
+    elif len(words) >= 3:
+        comp_score = min(10, comp_score + 1)
+
+    niche_words = ["assembly", "cenotaph", "d-day", "normandy", "ve day",
+                   "victoria cross", "george cross", "hawker hurricane",
+                   "battle of britain", "dunkirk spirit", "trooping",
+                   "armed forces day", "national service", "white cliffs"]
+    for nw in niche_words:
+        if nw in kw:
+            comp_score = min(10, comp_score + 2)
+            break
+
+    gap = round((demand + comp_score) / 2, 1)
+
+    if gap >= 8:
+        label = "High Opportunity"
+    elif gap >= 6:
+        label = "Good Opportunity"
+    elif gap >= 4:
+        label = "Moderate"
+    else:
+        label = "Saturated"
+
+    return {
+        "opportunity_gap": gap,
+        "opportunity_label": label,
+        "demand_score": demand,
+        "competition_score": comp_score
+    }
+
 def fallback_results():
     fallback = []
     shuffled = list(CONTENT_KEYWORDS)
@@ -1182,6 +1267,20 @@ def main():
     for item in scored_emerging:
         cs = score_content_potential(item)
         item.update(cs)
+
+    print("Checking TikTok competition for opportunity gaps...")
+    all_to_check = all_results + scored_emerging
+    for idx, item in enumerate(all_to_check[:15]):
+        comp = check_tiktok_competition(item["keyword"])
+        item["_tiktok_competition"] = comp
+        og = score_opportunity_gap(item)
+        item.update(og)
+        if idx < 14:
+            time.sleep(0.5)
+    for item in all_to_check[15:]:
+        item["_tiktok_competition"] = 5
+        og = score_opportunity_gap(item)
+        item.update(og)
 
     all_results.sort(key=lambda x: x.get("content_score", 0), reverse=True)
 
