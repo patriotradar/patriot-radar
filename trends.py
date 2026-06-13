@@ -784,6 +784,150 @@ def score_discovered_keyword(pytrends, keyword):
         print(f"Scoring failed for {keyword}: {e}")
         return None
 
+EMOTIONAL_TRIGGERS = [
+    "pride", "proud", "shame", "disgrace", "honour", "honor", "sacrifice",
+    "hero", "heroes", "heroic", "brave", "bravery", "courage", "courageous",
+    "forgotten", "betrayed", "betrayal", "abandoned", "neglected", "ignored",
+    "threatened", "under threat", "lost", "losing", "erased", "dying",
+    "outrage", "furious", "angry", "anger", "shocking", "unbelievable",
+    "heartbreaking", "tragic", "tragedy", "devastating", "powerful",
+    "inspiring", "inspirational", "incredible", "amazing", "legendary",
+    "never forget", "remember", "remembrance", "memorial", "tribute",
+    "duty", "loyalty", "loyal", "devoted", "devotion", "spirit",
+    "fight", "fighting", "defend", "defending", "protect", "stand up",
+    "freedom", "liberty", "rights", "justice", "truth",
+    "identity", "crisis", "collapse", "decline", "broken",
+    "love", "hate", "fear", "hope", "faith", "belief", "trust",
+    "respect", "disrespect", "honour", "dishonour",
+    "greatest", "finest", "worst", "last", "first", "only"
+]
+
+DEBATE_TRIGGERS = [
+    "should", "is it", "does", "will", "can", "has", "are",
+    "yes or no", "agree or disagree", "right or wrong",
+    "too far", "gone too far", "not enough", "too much",
+    "bring back", "get rid of", "abolish", "ban", "compulsory",
+    "still", "anymore", "ever", "never", "always",
+    "acceptable", "unacceptable", "wrong", "right",
+    "better", "worse", "more", "less",
+    "free", "pay", "fund", "tax", "spend",
+    "every", "all", "no one", "everyone", "nobody"
+]
+
+def score_content_potential(item):
+    kw = (item.get("keyword", "") or "").lower()
+    question = (item.get("question", "") or "").lower()
+    rise = float(item.get("rise_percent", 0) or 0)
+    viral = float(item.get("viral_score", 0) or 0)
+    source = (item.get("discovery_type", "") or "").lower()
+    combined = kw + " " + question
+
+    fresh_score = 0
+    if rise > 80:
+        fresh_score = 25
+    elif rise > 50:
+        fresh_score = 22
+    elif rise > 30:
+        fresh_score = 18
+    elif rise > 15:
+        fresh_score = 14
+    elif rise > 5:
+        fresh_score = 10
+    elif rise > 0:
+        fresh_score = 7
+    else:
+        fresh_score = 3
+
+    if source in ("news", "twitter", "uk_trending"):
+        fresh_score = min(25, fresh_score + 5)
+    elif source in ("reddit", "autocomplete"):
+        fresh_score = min(25, fresh_score + 3)
+
+    if item.get("category") == "emerging":
+        fresh_score = min(25, fresh_score + 4)
+
+    british_score = 0
+    strong_hits = 0
+    filter_hits = 0
+    for w in STRONG_PATRIOTIC_WORDS:
+        if w in kw:
+            strong_hits += 1
+    for w in PATRIOTIC_FILTER_WORDS:
+        if w in kw:
+            filter_hits += 1
+
+    if strong_hits >= 3:
+        british_score = 25
+    elif strong_hits >= 2:
+        british_score = 22
+    elif strong_hits >= 1:
+        british_score = 18
+    elif filter_hits >= 3:
+        british_score = 16
+    elif filter_hits >= 2:
+        british_score = 13
+    elif filter_hits >= 1:
+        british_score = 9
+    else:
+        british_score = 4
+
+    if any(w in kw for w in ["britain", "british", "england", "english", "uk "]):
+        british_score = min(25, british_score + 4)
+
+    emotion_score = 0
+    emotion_hits = 0
+    for trigger in EMOTIONAL_TRIGGERS:
+        if trigger in combined:
+            emotion_hits += 1
+    if emotion_hits >= 5:
+        emotion_score = 25
+    elif emotion_hits >= 3:
+        emotion_score = 21
+    elif emotion_hits >= 2:
+        emotion_score = 17
+    elif emotion_hits >= 1:
+        emotion_score = 12
+    else:
+        emotion_score = 4
+
+    if any(w in kw for w in ["remembrance", "veterans", "sacrifice", "hero", "pride"]):
+        emotion_score = min(25, emotion_score + 5)
+
+    debate_score = 0
+    debate_hits = 0
+    for trigger in DEBATE_TRIGGERS:
+        if trigger in combined:
+            debate_hits += 1
+
+    has_question = kw in QUESTIONS
+    words = kw.split()
+    is_short = len(words) <= 4
+
+    if has_question:
+        debate_score += 12
+    if debate_hits >= 4:
+        debate_score += 10
+    elif debate_hits >= 2:
+        debate_score += 7
+    elif debate_hits >= 1:
+        debate_score += 4
+    if is_short:
+        debate_score += 3
+
+    debate_score = min(25, debate_score)
+    if debate_score < 4:
+        debate_score = 4
+
+    total = fresh_score + british_score + emotion_score + debate_score
+
+    return {
+        "content_score": total,
+        "fresh": fresh_score,
+        "british": british_score,
+        "emotion": emotion_score,
+        "debate": debate_score
+    }
+
 def fallback_results():
     fallback = []
     shuffled = list(CONTENT_KEYWORDS)
@@ -825,6 +969,7 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
         lines.append(f"Previous Avg: {item['previous_avg']}")
         lines.append(f"Rise %: {item['rise_percent']}")
         lines.append(f"Viral Score: {item['viral_score']}")
+        lines.append(f"Content Score: {item.get('content_score', 0)}/100 (Fresh:{item.get('fresh', 0)} British:{item.get('british', 0)} Emotion:{item.get('emotion', 0)} Debate:{item.get('debate', 0)})")
         lines.append(f"Question: {item['question']}")
         lines.append(f"Caption: {item['caption']}")
         lines.append(f"Product: {item['product']}")
@@ -985,6 +1130,16 @@ def main():
         scored_emerging.append(entry)
 
     scored_emerging.sort(key=lambda x: x["viral_score"], reverse=True)
+
+    print("Scoring content potential (Fresh + British + Emotion + Debate)...")
+    for item in all_results:
+        cs = score_content_potential(item)
+        item.update(cs)
+    for item in scored_emerging:
+        cs = score_content_potential(item)
+        item.update(cs)
+
+    all_results.sort(key=lambda x: x.get("content_score", 0), reverse=True)
 
     product_trends = sorted(product_results, key=lambda x: x["viral_score"], reverse=True)
 
