@@ -59,34 +59,12 @@ FORMAT_FAMILIES = (
 
 
 def _candidate_rank_key(item):
+    """Deprecated ranking helper — selection authority is recommendation_selector.py."""
     return (
         float(item.get("opportunity_gap", 0) or 0),
         float(item.get("content_score", 0) or 0),
         float(item.get("viral_score", 0) or 0),
     )
-
-
-def rank_recommendation_candidates(results, emerging, calibration_context=None, engagement_signal="HEALTHY"):
-    candidates = []
-    seen = set()
-    for item in (results or [])[:5] + (emerging or [])[:5]:
-        keyword = (item.get("keyword") or "").lower()
-        if keyword and keyword in seen:
-            continue
-        if keyword:
-            seen.add(keyword)
-        candidates.append(item)
-
-    if calibration_context:
-        from user_calibration import calibrated_rank_key
-
-        return sorted(
-            candidates,
-            key=lambda item: calibrated_rank_key(item, calibration_context, engagement_signal),
-            reverse=True,
-        )
-
-    return sorted(candidates, key=_candidate_rank_key, reverse=True)
 
 
 def _stable_index(seed: str, modulo: int) -> int:
@@ -177,30 +155,6 @@ def save_recommendation_history(entry: dict, path: str = HISTORY_FILE) -> None:
     history = history[-HISTORY_LIMIT:]
     with open(path, "w", encoding="utf-8") as f:
         json.dump(history, f, indent=2)
-
-
-def _repeats_topic_format(keyword: str, post_format: str, history: list[dict]) -> bool:
-    topic = (keyword or "").lower().strip()
-    family = _format_family(post_format)
-    for past in history:
-        if (past.get("keyword") or "").lower().strip() == topic and past.get("format_family") == family:
-            return True
-    return False
-
-
-def _repeats_emotional_trigger(trigger: str, history: list[dict]) -> bool:
-    if not history:
-        return False
-    last = history[-1]
-    return last.get("emotional_trigger") == trigger
-
-
-def _is_repetitive(keyword: str, post_format: str, trigger: str, history: list[dict]) -> bool:
-    if _repeats_topic_format(keyword, post_format, history):
-        return True
-    if _repeats_emotional_trigger(trigger, history):
-        return True
-    return False
 
 
 def _strip_analytics_language(text: str) -> str:
@@ -472,47 +426,6 @@ def humanise_next_post(next_post: dict, item, engagement_signal: str) -> dict:
     return post
 
 
-def select_recommendation_with_diversity(
-    results,
-    emerging,
-    engagement_metrics,
-    history,
-    build_recommendation_for_item,
-    calibration_context=None,
-):
-    """
-    Pick the highest-ranked candidate that does not repeat recent topic+format
-    or consecutive emotional triggers. Falls back to top pick if all repeat.
-    """
-    from trends import detect_engagement_signal
-
-    engagement_signal = detect_engagement_signal(engagement_metrics)
-    ranked = rank_recommendation_candidates(
-        results, emerging, calibration_context, engagement_signal
-    )
-    if not ranked:
-        return None, engagement_signal
-
-    fallback = None
-    for item in ranked:
-        draft = build_recommendation_for_item(item, engagement_metrics)
-        next_post = draft.get("next_post") or {}
-        trigger = _emotional_trigger(
-            item, engagement_signal, next_post.get("format", "")
-        )
-        keyword = item.get("keyword", "")
-        post_format = next_post.get("format", "")
-
-        if fallback is None:
-            fallback = (item, draft, trigger)
-
-        if not _is_repetitive(keyword, post_format, trigger, history):
-            return item, draft, trigger
-
-    item, draft, trigger = fallback
-    return item, draft, trigger
-
-
 def _build_recommendation_for_item(item, engagement_metrics):
     from trends import (
         build_insight_summary,
@@ -553,28 +466,30 @@ def finalize_recommendation(
     performance_posts=None,
 ) -> dict:
     """
-    TEMPLATE → STRUCTURE (from trends.py) → CALIBRATION → SELECTION → HUMANISATION → FINAL OUTPUT
+    Orchestration only — selection authority is final_recommendation_selector().
+
+    Flow: SIGNALS → final_recommendation_selector() → HUMANISATION → FINAL OUTPUT
     """
+    from recommendation_selector import final_recommendation_selector
     from user_calibration import build_calibration_context
 
     history = load_recommendation_history(history_path)
     calibration_context = build_calibration_context(performance_posts, engagement_metrics)
 
-    selected = select_recommendation_with_diversity(
+    item, final, trigger = final_recommendation_selector(
         results,
         emerging,
         engagement_metrics,
+        calibration_context,
         history,
         _build_recommendation_for_item,
-        calibration_context,
+        structural_fallback=recommendation,
     )
 
-    if selected[0] is None:
+    if final is None:
         final = deepcopy(recommendation)
         item = None
         trigger = "curiosity"
-    else:
-        item, final, trigger = selected
 
     engagement_signal = final.get("engagement_signal", "HEALTHY")
     final["insight_summary"] = _humanise_insight(

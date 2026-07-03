@@ -10,14 +10,13 @@ from recommendation_output import (
     finalize_recommendation,
     humanise_next_post,
     load_recommendation_history,
-    rank_recommendation_candidates,
     save_recommendation_history,
-    select_recommendation_with_diversity,
     _build_recommendation_for_item,
     _humanise_hook,
     _is_generic_hook,
     _strip_analytics_language,
 )
+from recommendation_selector import final_recommendation_selector
 
 
 SAMPLE_ITEM = {
@@ -121,30 +120,23 @@ class TestHumanisation(unittest.TestCase):
 
 
 class TestRepetitionControl(unittest.TestCase):
-    def test_avoids_topic_format_repeat(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            history_path = os.path.join(tmp, "history.json")
-            save_recommendation_history(
-                {
-                    "keyword": "british pride",
-                    "format_family": "reaction",
-                    "emotional_trigger": "curiosity",
-                    "hook": "old hook",
-                },
-                path=history_path,
-            )
-            history = load_recommendation_history(history_path)
-            results = [SAMPLE_ITEM, SAMPLE_ITEM_B]
-            emerging = []
-
-            selected_item, _, _ = select_recommendation_with_diversity(
-                results,
-                emerging,
-                None,
-                history,
-                _build_recommendation_for_item,
-            )
-            self.assertEqual(selected_item["keyword"], "remembrance")
+    def test_selector_applies_repetition_penalty(self):
+        history = [
+            {
+                "keyword": "british pride",
+                "format_family": "reaction",
+                "emotional_trigger": "pride",
+            }
+        ]
+        item, _, _ = final_recommendation_selector(
+            [SAMPLE_ITEM, SAMPLE_ITEM_B],
+            [],
+            None,
+            {},
+            history,
+            _build_recommendation_for_item,
+        )
+        self.assertEqual(item["keyword"], "remembrance")
 
     def test_finalize_writes_history(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -173,12 +165,6 @@ class TestRepetitionControl(unittest.TestCase):
                 ).lower()
                 if term in ("score", "trend", "viral", "momentum"):
                     self.assertNotIn(term, combined)
-
-
-class TestCandidateRanking(unittest.TestCase):
-    def test_ranks_by_opportunity_then_content(self):
-        ranked = rank_recommendation_candidates([SAMPLE_ITEM_B], [SAMPLE_ITEM])
-        self.assertEqual(ranked[0]["keyword"], "british pride")
 
 
 if __name__ == "__main__":

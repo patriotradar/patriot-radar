@@ -304,8 +304,8 @@ def _keyword_overlap(candidate_keyword: str, pattern_keyword: str) -> bool:
 
 def calibrated_selection_boost(item: dict, calibration_context: dict, engagement_signal: str) -> float:
     """
-    Relative boost/penalty for a trend candidate based on the user's historical outcomes.
-    Does not alter raw trend scores — only interpretation at selection time.
+    Advisory calibration signal for final_recommendation_selector().
+    Does not approve, reject, or rank candidates on its own.
     """
     if not calibration_context:
         return 0.0
@@ -339,18 +339,3 @@ def calibrated_selection_boost(item: dict, calibration_context: dict, engagement
     if matches:
         return boost / matches
     return 0.0
-
-
-def calibrated_rank_key(item: dict, calibration_context: dict | None, engagement_signal: str):
-    """Combine trend ranking with user-calibrated pattern preference."""
-    base = (
-        float(item.get("opportunity_gap", 0) or 0),
-        float(item.get("content_score", 0) or 0),
-        float(item.get("viral_score", 0) or 0),
-    )
-    if not calibration_context:
-        return base
-
-    boost = calibrated_selection_boost(item, calibration_context, engagement_signal)
-    scaled = boost * 2.5
-    return (base[0] + scaled, base[1] + scaled * 0.5, base[2] + scaled * 0.25)
