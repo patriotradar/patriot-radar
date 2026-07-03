@@ -132,8 +132,8 @@ button.admin{background:#7c3aed}
     <div class="card admin-card">
       <h2>🛠 Admin: TikTok Trend Scan</h2>
       <p class="small" style="text-align:left;margin-bottom:12px">
-        Triggers extraction from sample TikTok inputs and writes to trend_intelligence_feed.
-        Production scans also run via GitHub Actions (TikTok Trend Intelligence Scan workflow).
+        Triggers live TikTok fetch via Apify (when APIFY_API_TOKEN is set) and writes to trend_intelligence_feed.
+        Production scans run via GitHub Actions (TikTok Trend Intelligence Scan workflow).
       </p>
       <button class="admin" onclick="runTiktokTrendScan()">Run TikTok Trend Scan</button>
       <button class="secondary" onclick="refreshTrendIntelligenceFeed()">Refresh Dashboard Feed</button>

@@ -8,11 +8,15 @@ Does NOT feed into scoring, final_recommendation_selector, calibration, or capti
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
+from apify_tiktok_fetcher import fetch_tiktok_via_apify
 from tiktok_trend_extractor import extract_tiktok_trend_signals
 from trend_intelligence_store import store_external_tiktok_signals
+
+logger = logging.getLogger(__name__)
 
 _EMPTY_TIKTOK_SIGNALS: dict[str, Any] = {
     "platform": "tiktok",
@@ -116,40 +120,93 @@ class TrendShiftEngine:
         return signals.get("insight_summary", "")
 
 
+def _resolve_scan_inputs(
+    tiktok_inputs: list[str | dict[str, Any]] | None = None,
+    sample_inputs_path: str | Path | None = None,
+    use_apify: bool = True,
+) -> tuple[list[str | dict[str, Any]], dict[str, Any]]:
+    """
+    Resolve TikTok scan inputs: explicit inputs > Apify fetch > sample file.
+
+    Returns (inputs, apify_fetch_result).
+    """
+    if tiktok_inputs:
+        logger.info("Using %d explicit TikTok input(s) (Apify skipped).", len(tiktok_inputs))
+        return tiktok_inputs, {"success": False, "skipped": True, "reason": "explicit_inputs_provided"}
+
+    apify_result: dict[str, Any] = {"success": False, "items": [], "item_count": 0, "error": None}
+    if use_apify:
+        apify_result = fetch_tiktok_via_apify()
+        if apify_result.get("success") and apify_result.get("items"):
+            items = apify_result["items"]
+            logger.info("Using %d TikTok item(s) from Apify.", len(items))
+            return items, apify_result
+
+        if apify_result.get("token_present"):
+            logger.warning(
+                "Apify fetch did not return usable items (error=%s); falling back to sample inputs.",
+                apify_result.get("error"),
+            )
+        else:
+            logger.warning(
+                "APIFY_API_TOKEN not configured; falling back to sample inputs."
+            )
+
+    sample_inputs = _load_sample_inputs(sample_inputs_path)
+    logger.info("Using %d sample TikTok input(s) from fallback.", len(sample_inputs))
+    return sample_inputs, apify_result
+
+
 def run_tiktok_trend_scan(
     tiktok_inputs: list[str | dict[str, Any]] | None = None,
     sample_inputs_path: str | Path | None = None,
     persist: bool = True,
+    use_apify: bool = True,
 ) -> dict[str, Any]:
     """
     Admin/testing entry point: extract TikTok signals and optionally persist.
 
-    Uses sample URLs/captions when no inputs are provided. Never raises.
-  """
+    Fetches live TikTok data via Apify when APIFY_API_TOKEN is set, otherwise
+    uses explicit inputs or sample captions. Never raises.
+    """
     try:
-        inputs = tiktok_inputs
-        if not inputs:
-            inputs = _load_sample_inputs(sample_inputs_path)
+        inputs, apify_result = _resolve_scan_inputs(
+            tiktok_inputs=tiktok_inputs,
+            sample_inputs_path=sample_inputs_path,
+            use_apify=use_apify,
+        )
 
         engine = TrendShiftEngine()
         signals = engine.load_tiktok_signals(inputs)
 
         store_result = {"stored": 0, "skipped": 0, "error": None}
-        if persist and signals.get("extracted_items"):
+        extracted_count = len(signals.get("extracted_items") or [])
+        if persist and extracted_count:
             store_result = engine.store_external_tiktok_signals(signals)
+            logger.info(
+                "Supabase upsert complete: stored=%d skipped=%d error=%s",
+                store_result.get("stored", 0),
+                store_result.get("skipped", 0),
+                store_result.get("error"),
+            )
+        elif persist and not extracted_count:
+            logger.warning("No extracted items to persist to trend_intelligence_feed.")
 
         return {
             "success": True,
             "signals": signals,
             "store_result": store_result,
-            "item_count": len(signals.get("extracted_items") or []),
+            "item_count": extracted_count,
+            "apify_fetch": apify_result,
             "insight_summary": signals.get("insight_summary", ""),
         }
     except Exception as exc:
+        logger.exception("TikTok trend scan failed: %s", exc)
         return {
             "success": False,
             "signals": dict(_EMPTY_TIKTOK_SIGNALS),
             "store_result": {"stored": 0, "skipped": 0, "error": str(exc)},
             "item_count": 0,
+            "apify_fetch": {"success": False, "error": str(exc)},
             "insight_summary": "",
         }

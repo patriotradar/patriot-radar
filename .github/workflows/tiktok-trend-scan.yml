@@ -17,12 +17,26 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install supabase
+        run: pip install -r requirements.txt
 
-      - name: Run TikTok trend scan
+      - name: Run TikTok trend scan (Apify → Supabase)
         env:
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python scripts/run_tiktok_trend_scan.py --inputs data/tiktok_sample_inputs.json
+        run: python scripts/run_tiktok_trend_scan.py
+
+      - name: Verify Apify token is configured
+        if: failure()
+        env:
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+        run: |
+          if [ -z "$APIFY_API_TOKEN" ]; then
+            echo "::error::APIFY_API_TOKEN secret is missing. Add it in GitHub repo Settings → Secrets → Actions."
+          fi
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
+            echo "::error::SUPABASE_URL secret is missing."
+          fi
+          if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY secret is missing."
+          fi

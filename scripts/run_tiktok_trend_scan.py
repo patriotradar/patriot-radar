@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -18,17 +19,27 @@ sys.path.insert(0, str(ROOT))
 
 from trend_shift_engine import run_tiktok_trend_scan
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run TikTok trend intelligence scan")
     parser.add_argument(
         "--inputs",
-        help="Path to JSON file with TikTok URLs or caption strings",
+        help="Path to JSON file with TikTok URLs or caption strings (skips Apify when set)",
     )
     parser.add_argument(
         "--no-persist",
         action="store_true",
         help="Extract only; skip Supabase write",
+    )
+    parser.add_argument(
+        "--no-apify",
+        action="store_true",
+        help="Skip Apify fetch; use --inputs or sample file only",
     )
     parser.add_argument(
         "--output",
@@ -45,7 +56,11 @@ def main() -> int:
         tiktok_inputs=inputs,
         sample_inputs_path=args.inputs,
         persist=not args.no_persist,
+        use_apify=not args.no_apify,
     )
+
+    apify_fetch = result.get("apify_fetch") or {}
+    store_result = result.get("store_result") or {}
 
     if args.output:
         out_path = Path(args.output)
@@ -53,16 +68,23 @@ def main() -> int:
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2)
 
-    print(json.dumps({
+    summary = {
         "success": result.get("success"),
-        "item_count": result.get("item_count"),
-        "store_result": result.get("store_result"),
-        "insight_summary": result.get("insight_summary", "")[:200],
-    }, indent=2))
+        "apify_fetch_succeeded": apify_fetch.get("success"),
+        "apify_items_returned": apify_fetch.get("item_count", 0),
+        "apify_error": apify_fetch.get("error"),
+        "apify_token_present": apify_fetch.get("token_present"),
+        "extracted_item_count": result.get("item_count"),
+        "supabase_rows_stored": store_result.get("stored", 0),
+        "supabase_rows_skipped": store_result.get("skipped", 0),
+        "supabase_error": store_result.get("error"),
+        "insight_summary": (result.get("insight_summary") or "")[:200],
+    }
+    print(json.dumps(summary, indent=2))
 
     if not result.get("success"):
         return 1
-    if result.get("store_result", {}).get("error"):
+    if store_result.get("error"):
         return 2
     return 0
 

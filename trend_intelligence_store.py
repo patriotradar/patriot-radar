@@ -8,9 +8,12 @@ Does not touch trends.py scoring, recommendations, or calibration.
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_FEED_TABLE = "trend_intelligence_feed"
 SOURCE_TIKTOK = "tiktok"
@@ -187,6 +190,15 @@ def _get_supabase_client():
     supabase_url = os.getenv("SUPABASE_URL")
     service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not service_role_key:
+        missing = []
+        if not supabase_url:
+            missing.append("SUPABASE_URL")
+        if not service_role_key:
+            missing.append("SUPABASE_SERVICE_ROLE_KEY")
+        logger.error(
+            "Supabase credentials missing (%s). Cannot write to trend_intelligence_feed.",
+            ", ".join(missing),
+        )
         return None
     from supabase import create_client
     return create_client(supabase_url, service_role_key)
@@ -227,7 +239,10 @@ def store_trend_intelligence_rows(
     """
     table_name = table or os.getenv("SUPABASE_FEED_TABLE", DEFAULT_FEED_TABLE)
     if not rows:
+        logger.info("No trend_intelligence_feed rows to store.")
         return {"stored": 0, "skipped": 0, "error": None}
+
+    logger.info("Preparing to upsert %d row(s) into %s.", len(rows), table_name)
 
     try:
         supabase = _get_supabase_client()
@@ -261,12 +276,19 @@ def store_trend_intelligence_rows(
             except Exception:
                 failed += 1
 
+        logger.info(
+            "Supabase upsert finished: table=%s stored=%d failed=%d",
+            table_name,
+            stored,
+            failed,
+        )
         return {
             "stored": stored,
             "skipped": failed,
             "error": None if failed == 0 else "partial_write_failure",
         }
     except Exception as exc:
+        logger.exception("Supabase upsert failed: %s", exc)
         return {"stored": 0, "skipped": len(rows), "error": str(exc)}
 
 
