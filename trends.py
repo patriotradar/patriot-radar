@@ -1473,6 +1473,11 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
 
     engagement_metrics = load_engagement_metrics()
     recommendation = build_virality_recommendation(results, emerging, engagement_metrics)
+    from recommendation_output import finalize_recommendation
+
+    recommendation = finalize_recommendation(
+        recommendation, results, emerging, engagement_metrics
+    )
     lines.append("")
     lines.append("VIRALITY RECOMMENDATION")
     lines.append("=" * 50)
