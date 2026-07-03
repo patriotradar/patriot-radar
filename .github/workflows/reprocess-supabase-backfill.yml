@@ -1,0 +1,71 @@
+# One-time Supabase backfill — manual trigger only (does not affect scanner schedule).
+name: Reprocess Supabase Analytics (One-Time Backfill)
+
+on:
+  workflow_dispatch:
+    inputs:
+      output_version:
+        description: Version label for stored outputs
+        required: false
+        default: v2-recommendation-layer
+      dry_run:
+        description: Compute only (no Supabase writes)
+        required: false
+        type: boolean
+        default: false
+      local_only:
+        description: Write local JSON artifact only (no Supabase writes)
+        required: false
+        type: boolean
+        default: false
+      user_limit:
+        description: Max users to process (0 = all)
+        required: false
+        default: "0"
+
+permissions:
+  contents: read
+
+jobs:
+  backfill-recommendations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backfill requirements
+        run: pip install -r requirements-backfill.txt
+
+      - name: Run one-time Supabase backfill
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TRENDS_JSON_URL: https://raw.githubusercontent.com/patriotradar/patriot-radar-dashboard/main/results.json
+          BACKFILL_OUTPUT_VERSION: ${{ github.event.inputs.output_version }}
+          SUPABASE_OUTPUT_TABLE: cr_recommendation_outputs
+        run: |
+          ARGS="--output-version ${{ github.event.inputs.output_version }}"
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ "${{ github.event.inputs.local_only }}" = "true" ]; then
+            ARGS="$ARGS --local-only"
+          fi
+          if [ "${{ github.event.inputs.user_limit }}" != "0" ]; then
+            ARGS="$ARGS --limit ${{ github.event.inputs.user_limit }}"
+          fi
+          python scripts/reprocess_supabase_backfill.py $ARGS
+
+      - name: Upload backfill artifact
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backfill-${{ github.event.inputs.output_version }}
+          path: backfill_outputs/*.json
+          if-no-files-found: ignore
