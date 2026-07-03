@@ -91,7 +91,7 @@ def _row_base(
         "virality": item.get("virality") or {},
     }
     return {
-        "timestamp": ts,
+        "created_at": ts,
         "source": SOURCE_TIKTOK,
         "type": row_type,
         "signal_strength": signal_strength,

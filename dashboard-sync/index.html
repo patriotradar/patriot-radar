@@ -1831,7 +1831,8 @@ function renderTiktokTrendIntelligenceFeed(rows) {
     var row = safe[i];
     var virality = getTiktokViralityScore(row);
     var keywords = extractTiktokKeywords(row);
-    var ts = row.timestamp ? formatTimestamp(row.timestamp) : "Unknown time";
+    var ts = row.created_at || row.timestamp;
+    ts = ts ? formatTimestamp(ts) : "Unknown time";
     var strength = Number(row.signal_strength || 0);
 
     h += '<div class="feed-item">';
@@ -1889,7 +1890,7 @@ async function refreshTiktokTrendIntelligenceFeed() {
       .from(TIKTOK_FEED_TABLE)
       .select("*")
       .eq("source", "tiktok")
-      .order("timestamp", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(200);
 
     tiktokFeedDebug("Supabase response status", resp.status + " " + (resp.statusText || ""));

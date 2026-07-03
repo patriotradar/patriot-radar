@@ -278,12 +278,16 @@ function metaLine(row, extra) {
   const v = viralityLabel(row);
   if (v) parts.push(v);
   if (extra) parts.push(extra);
-  parts.push(formatTimestamp(row.timestamp));
+  parts.push(formatTimestamp(formatRowTime(row)));
   return parts.join(' | ');
 }
 
 function safeRows(rows) {
   return Array.isArray(rows) ? rows.filter(function(r) { return r && typeof r === "object"; }) : [];
+}
+
+function formatRowTime(row) {
+  return row.created_at || row.timestamp || null;
 }
 
 function renderRisingTopics(rows) {
@@ -294,13 +298,14 @@ function renderRisingTopics(rows) {
   topics.forEach(function(row) {
     const signal = (row.raw_data && row.raw_data.signal) || {};
     const topic = signal.primary_topic || "other";
-    if (!grouped[topic]) grouped[topic] = { count: 0, strength: 0, virality: 0, latest: row.timestamp, sampleRow: row };
+    const rowTime = formatRowTime(row);
+    if (!grouped[topic]) grouped[topic] = { count: 0, strength: 0, virality: 0, latest: rowTime, sampleRow: row };
     grouped[topic].count += 1;
     grouped[topic].strength = Math.max(grouped[topic].strength, Number(row.signal_strength || 0));
     const v = getViralityScore(row);
     if (v != null) grouped[topic].virality = Math.max(grouped[topic].virality, v);
-    if (new Date(row.timestamp) > new Date(grouped[topic].latest)) {
-      grouped[topic].latest = row.timestamp;
+    if (rowTime && new Date(rowTime) > new Date(grouped[topic].latest)) {
+      grouped[topic].latest = rowTime;
       grouped[topic].sampleRow = row;
     }
   });
@@ -327,12 +332,13 @@ function renderHookPatterns(rows) {
   hooks.forEach(function(row) {
     const signal = (row.raw_data && row.raw_data.signal) || {};
     const hookType = signal.hook_type || "unknown";
-    if (!grouped[hookType]) grouped[hookType] = { count: 0, virality: 0, examples: [], latest: row.timestamp };
+    const rowTime = formatRowTime(row);
+    if (!grouped[hookType]) grouped[hookType] = { count: 0, virality: 0, examples: [], latest: rowTime };
     grouped[hookType].count += 1;
     const v = getViralityScore(row);
     if (v != null) grouped[hookType].virality = Math.max(grouped[hookType].virality, v);
     if (signal.hook_text) grouped[hookType].examples.push(signal.hook_text);
-    if (new Date(row.timestamp) > new Date(grouped[hookType].latest)) grouped[hookType].latest = row.timestamp;
+    if (rowTime && new Date(rowTime) > new Date(grouped[hookType].latest)) grouped[hookType].latest = rowTime;
   });
 
   let html = "";
@@ -386,13 +392,14 @@ function renderFormatShifts(rows) {
   formats.forEach(function(row) {
     const signal = (row.raw_data && row.raw_data.signal) || {};
     const fmt = signal.format_type || "unknown";
-    if (!grouped[fmt]) grouped[fmt] = { count: 0, strength: 0, virality: 0, states: {}, latest: row.timestamp };
+    const rowTime = formatRowTime(row);
+    if (!grouped[fmt]) grouped[fmt] = { count: 0, strength: 0, virality: 0, states: {}, latest: rowTime };
     grouped[fmt].count += 1;
     grouped[fmt].strength = Math.max(grouped[fmt].strength, Number(row.signal_strength || 0));
     const v = getViralityScore(row);
     if (v != null) grouped[fmt].virality = Math.max(grouped[fmt].virality, v);
     grouped[fmt].states[row.trend_state] = (grouped[fmt].states[row.trend_state] || 0) + 1;
-    if (new Date(row.timestamp) > new Date(grouped[fmt].latest)) grouped[fmt].latest = row.timestamp;
+    if (rowTime && new Date(rowTime) > new Date(grouped[fmt].latest)) grouped[fmt].latest = rowTime;
   });
 
   let html = "";
@@ -440,7 +447,7 @@ function renderTrendIntelligenceFeed(rows) {
   document.getElementById("formatShifts").innerHTML = renderFormatShifts(safe);
   document.getElementById("keywordClusters").innerHTML = renderKeywordClusters(safe);
 
-  const latest = safe.length ? safe[0].timestamp : null;
+  const latest = safe.length ? formatRowTime(safe[0]) : null;
   document.getElementById("feedLastUpdated").innerText = safe.length
     ? "Last updated: " + formatTimestamp(latest) + " (" + safe.length + " signals)"
     : NO_TRENDS_MSG;
@@ -478,7 +485,7 @@ async function refreshTrendIntelligenceFeed() {
       .from(FEED_TABLE)
       .select("*")
       .eq("source", "tiktok")
-      .order("timestamp", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(200);
 
     feedDebug("Supabase response status", status + " " + statusText);
