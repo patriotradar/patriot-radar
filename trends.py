@@ -1474,9 +1474,14 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
     engagement_metrics = load_engagement_metrics()
     recommendation = build_virality_recommendation(results, emerging, engagement_metrics)
     from recommendation_output import finalize_recommendation
+    from user_calibration import load_performance_posts
 
     recommendation = finalize_recommendation(
-        recommendation, results, emerging, engagement_metrics
+        recommendation,
+        results,
+        emerging,
+        engagement_metrics,
+        performance_posts=load_performance_posts(),
     )
     lines.append("")
     lines.append("VIRALITY RECOMMENDATION")

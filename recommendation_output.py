@@ -66,7 +66,7 @@ def _candidate_rank_key(item):
     )
 
 
-def rank_recommendation_candidates(results, emerging):
+def rank_recommendation_candidates(results, emerging, calibration_context=None, engagement_signal="HEALTHY"):
     candidates = []
     seen = set()
     for item in (results or [])[:5] + (emerging or [])[:5]:
@@ -76,6 +76,16 @@ def rank_recommendation_candidates(results, emerging):
         if keyword:
             seen.add(keyword)
         candidates.append(item)
+
+    if calibration_context:
+        from user_calibration import calibrated_rank_key
+
+        return sorted(
+            candidates,
+            key=lambda item: calibrated_rank_key(item, calibration_context, engagement_signal),
+            reverse=True,
+        )
+
     return sorted(candidates, key=_candidate_rank_key, reverse=True)
 
 
@@ -468,6 +478,7 @@ def select_recommendation_with_diversity(
     engagement_metrics,
     history,
     build_recommendation_for_item,
+    calibration_context=None,
 ):
     """
     Pick the highest-ranked candidate that does not repeat recent topic+format
@@ -476,7 +487,9 @@ def select_recommendation_with_diversity(
     from trends import detect_engagement_signal
 
     engagement_signal = detect_engagement_signal(engagement_metrics)
-    ranked = rank_recommendation_candidates(results, emerging)
+    ranked = rank_recommendation_candidates(
+        results, emerging, calibration_context, engagement_signal
+    )
     if not ranked:
         return None, engagement_signal
 
@@ -537,11 +550,15 @@ def finalize_recommendation(
     emerging,
     engagement_metrics=None,
     history_path: str = HISTORY_FILE,
+    performance_posts=None,
 ) -> dict:
     """
-    TEMPLATE → STRUCTURE (from trends.py) → HUMANISATION → FINAL OUTPUT
+    TEMPLATE → STRUCTURE (from trends.py) → CALIBRATION → SELECTION → HUMANISATION → FINAL OUTPUT
     """
+    from user_calibration import build_calibration_context
+
     history = load_recommendation_history(history_path)
+    calibration_context = build_calibration_context(performance_posts, engagement_metrics)
 
     selected = select_recommendation_with_diversity(
         results,
@@ -549,6 +566,7 @@ def finalize_recommendation(
         engagement_metrics,
         history,
         _build_recommendation_for_item,
+        calibration_context,
     )
 
     if selected[0] is None:
