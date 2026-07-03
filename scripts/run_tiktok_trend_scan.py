@@ -70,11 +70,14 @@ def main() -> int:
 
     summary = {
         "success": result.get("success"),
+        "data_source": result.get("data_source"),
         "apify_fetch_succeeded": apify_fetch.get("success"),
         "apify_items_returned": apify_fetch.get("item_count", 0),
-        "apify_error": apify_fetch.get("error"),
+        "apify_raw_error": apify_fetch.get("error"),
         "apify_token_present": apify_fetch.get("token_present"),
+        "apify_run_id": apify_fetch.get("apify_run_id"),
         "extracted_item_count": result.get("item_count"),
+        "avg_virality_score": result.get("avg_virality_score", 0),
         "supabase_rows_stored": store_result.get("stored", 0),
         "supabase_rows_skipped": store_result.get("skipped", 0),
         "supabase_error": store_result.get("error"),
@@ -84,7 +87,11 @@ def main() -> int:
 
     if not result.get("success"):
         return 1
+    if apify_fetch.get("fallback_refused"):
+        return 3
     if store_result.get("error"):
+        return 2
+    if summary["data_source"] == "apify" and summary["supabase_rows_stored"] == 0 and summary["extracted_item_count"] > 0:
         return 2
     return 0
 

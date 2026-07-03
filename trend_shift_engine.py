@@ -141,7 +141,7 @@ def _resolve_scan_inputs(
 
     if tiktok_inputs:
         logger.info("Using %d explicit TikTok input(s) (Apify skipped).", len(tiktok_inputs))
-        return tiktok_inputs, {"success": False, "skipped": True, "reason": "explicit_inputs_provided"}
+        return tiktok_inputs, {"success": False, "skipped": True, "reason": "explicit_inputs_provided", "data_source": "explicit"}
 
     apify_result: dict[str, Any] = {"success": False, "items": [], "item_count": 0, "error": None}
     if use_apify:
@@ -149,20 +149,26 @@ def _resolve_scan_inputs(
         if apify_result.get("success") and apify_result.get("items"):
             items = apify_result["items"]
             logger.info("Using %d TikTok item(s) from Apify.", len(items))
+            apify_result["data_source"] = "apify"
             return items, apify_result
 
         if apify_result.get("token_present"):
-            logger.warning(
-                "Apify fetch did not return usable items (error=%s); falling back to sample inputs.",
+            logger.error(
+                "Apify fetch failed with APIFY_API_TOKEN configured (error=%s). "
+                "Refusing sample-data fallback — fix Apify integration or token.",
                 apify_result.get("error"),
             )
-        else:
-            logger.warning(
-                "APIFY_API_TOKEN not configured; falling back to sample inputs."
-            )
+            apify_result["data_source"] = "apify_failed"
+            apify_result["fallback_refused"] = True
+            return [], apify_result
+
+        logger.warning(
+            "APIFY_API_TOKEN not configured; falling back to sample inputs."
+        )
 
     sample_inputs = _load_sample_inputs(sample_inputs_path)
     logger.info("Using %d sample TikTok input(s) from fallback.", len(sample_inputs))
+    apify_result["data_source"] = "sample_fallback"
     return sample_inputs, apify_result
 
 
@@ -189,11 +195,53 @@ def run_tiktok_trend_scan(
             historical_keywords=historical,
         )
 
+        data_source = apify_result.get("data_source", "explicit" if tiktok_inputs else "unknown")
+        if apify_result.get("fallback_refused"):
+            return {
+                "success": False,
+                "signals": dict(_EMPTY_TIKTOK_SIGNALS),
+                "store_result": {"stored": 0, "skipped": 0, "error": apify_result.get("error") or "apify_fetch_failed"},
+                "item_count": 0,
+                "apify_fetch": apify_result,
+                "data_source": data_source,
+                "insight_summary": "",
+            }
+
+        if not inputs:
+            logger.error("No TikTok inputs available after resolution step.")
+            return {
+                "success": False,
+                "signals": dict(_EMPTY_TIKTOK_SIGNALS),
+                "store_result": {"stored": 0, "skipped": 0, "error": "no_inputs"},
+                "item_count": 0,
+                "apify_fetch": apify_result,
+                "data_source": data_source,
+                "insight_summary": "",
+            }
+
         engine = TrendShiftEngine()
         signals = engine.load_tiktok_signals(inputs, historical_keywords=historical)
 
         store_result = {"stored": 0, "skipped": 0, "error": None}
         extracted_count = len(signals.get("extracted_items") or [])
+        extracted_items = signals.get("extracted_items") or []
+        virality_scores = [
+            (item.get("virality") or {}).get("virality_score", 0)
+            for item in extracted_items
+        ]
+        avg_virality = (
+            round(sum(virality_scores) / len(virality_scores), 1)
+            if virality_scores else 0
+        )
+
+        logger.info(
+            "Extraction complete: source=%s input_count=%d extracted=%d avg_virality=%.1f",
+            data_source,
+            len(inputs),
+            extracted_count,
+            avg_virality,
+        )
+
         if persist and extracted_count:
             store_result = engine.store_external_tiktok_signals(signals)
             logger.info(
@@ -202,6 +250,9 @@ def run_tiktok_trend_scan(
                 store_result.get("skipped", 0),
                 store_result.get("error"),
             )
+            if store_result.get("stored", 0) == 0 and not store_result.get("error"):
+                store_result["error"] = "zero_rows_stored"
+                logger.error("Supabase upsert stored 0 rows despite %d extracted items.", extracted_count)
         elif persist and not extracted_count:
             logger.warning("No extracted items to persist to trend_intelligence_feed.")
 
@@ -211,6 +262,8 @@ def run_tiktok_trend_scan(
             "store_result": store_result,
             "item_count": extracted_count,
             "apify_fetch": apify_result,
+            "data_source": data_source,
+            "avg_virality_score": avg_virality,
             "insight_summary": signals.get("insight_summary", ""),
         }
     except Exception as exc:

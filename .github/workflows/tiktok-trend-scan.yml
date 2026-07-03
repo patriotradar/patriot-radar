@@ -24,14 +24,48 @@ jobs:
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python scripts/run_tiktok_trend_scan.py
-
-      - name: Verify Apify token is configured
-        if: failure()
-        env:
-          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
         run: |
-          if [ -z "$APIFY_API_TOKEN" ]; then
+          set -e
+          python scripts/run_tiktok_trend_scan.py | tee scan_output.json
+          echo "--- Scan summary ---"
+          tail -20 scan_output.json
+
+      - name: Validate pipeline result
+        if: always()
+        run: |
+          if [ ! -f scan_output.json ]; then
+            echo "::error::Scan produced no output file."
+            exit 1
+          fi
+          python3 << 'PYEOF'
+          import json, sys
+          lines = open("scan_output.json").read().strip().splitlines()
+          summary = json.loads(lines[-1])
+          print("Parsed summary:", json.dumps(summary, indent=2))
+          errors = []
+          if not summary.get("success"):
+              errors.append("scan returned success=false")
+          if summary.get("apify_token_present") and summary.get("data_source") != "apify":
+              errors.append(f"APIFY token set but data_source={summary.get('data_source')} (expected apify)")
+          if summary.get("apify_token_present") and not summary.get("apify_fetch_succeeded"):
+              errors.append(f"Apify fetch failed: {summary.get('apify_raw_error')}")
+          if summary.get("extracted_item_count", 0) == 0:
+              errors.append("zero items extracted")
+          if summary.get("supabase_rows_stored", 0) == 0 and summary.get("extracted_item_count", 0) > 0:
+              errors.append(f"zero Supabase rows stored: {summary.get('supabase_error')}")
+          if summary.get("avg_virality_score", 0) == 0 and summary.get("extracted_item_count", 0) > 0:
+              errors.append("avg_virality_score is 0 — virality may not be computed")
+          if errors:
+              for e in errors:
+                  print(f"::error::{e}")
+              sys.exit(1)
+          print("Pipeline validation passed.")
+          PYEOF
+
+      - name: Diagnose missing secrets
+        if: failure()
+        run: |
+          if [ -z "${{ secrets.APIFY_API_TOKEN }}" ]; then
             echo "::error::APIFY_API_TOKEN secret is missing. Add it in GitHub repo Settings → Secrets → Actions."
           fi
           if [ -z "${{ secrets.SUPABASE_URL }}" ]; then

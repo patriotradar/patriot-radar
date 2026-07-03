@@ -282,15 +282,55 @@ def store_trend_intelligence_rows(
 
         stored = 0
         failed = 0
+        last_error: str | None = None
+        strip_virality_column = False
+
         for row in rows:
+            payload = dict(row)
+            if strip_virality_column:
+                payload.pop("virality_score", None)
+
             try:
                 supabase.table(table_name).upsert(
-                    row,
+                    payload,
                     on_conflict="dedupe_key",
                 ).execute()
                 stored += 1
-            except Exception:
+            except Exception as exc:
+                err_msg = str(exc)
+                last_error = err_msg
+                # Retry without top-level virality_score if column not migrated yet.
+                if (
+                    not strip_virality_column
+                    and "virality_score" in err_msg.lower()
+                    and payload.get("virality_score") is not None
+                ):
+                    logger.warning(
+                        "virality_score column missing in %s — retrying upserts without column "
+                        "(run sql/trend_intelligence_feed_add_virality.sql). Error: %s",
+                        table_name,
+                        err_msg,
+                    )
+                    strip_virality_column = True
+                    try:
+                        payload_no_col = dict(row)
+                        payload_no_col.pop("virality_score", None)
+                        supabase.table(table_name).upsert(
+                            payload_no_col,
+                            on_conflict="dedupe_key",
+                        ).execute()
+                        stored += 1
+                        continue
+                    except Exception as retry_exc:
+                        last_error = str(retry_exc)
+                        logger.error("Supabase upsert retry failed for %s: %s", row.get("dedupe_key"), retry_exc)
+
                 failed += 1
+                logger.error(
+                    "Supabase upsert failed for dedupe_key=%s: %s",
+                    row.get("dedupe_key"),
+                    err_msg,
+                )
 
         logger.info(
             "Supabase upsert finished: table=%s stored=%d failed=%d",
@@ -298,10 +338,12 @@ def store_trend_intelligence_rows(
             stored,
             failed,
         )
+        if failed and last_error:
+            logger.error("Last Supabase upsert error: %s", last_error)
         return {
             "stored": stored,
             "skipped": failed,
-            "error": None if failed == 0 else "partial_write_failure",
+            "error": None if failed == 0 else ("partial_write_failure: " + (last_error or "unknown")),
         }
     except Exception as exc:
         logger.exception("Supabase upsert failed: %s", exc)
