@@ -1,25 +1,46 @@
--- Full setup for TikTok trend intelligence feed (idempotent).
--- Run once in Supabase SQL Editor OR via: python scripts/apply_trend_feed_schema.py
+-- Alias for sql/trend_intelligence_feed.sql (kept for scripts/docs that reference this path).
+-- Content is identical — edit trend_intelligence_feed.sql as the canonical source.
+
+-- =============================================================================
+-- trend_intelligence_feed — idempotent production setup (safe to run repeatedly)
+-- =============================================================================
+-- Fixes PGRST205 when public.trend_intelligence_feed is missing.
+--
+-- Schema derived from:
+--   trend_intelligence_store.py  (insert/upsert columns, on_conflict dedupe_key)
+--   keyword_diversity.py         (select summary, raw_data, type; filter source)
+--   dashboard-sync/index.html    (select *; filter source=tiktok; order timestamp)
+--
+-- Run in Supabase SQL Editor, or: python scripts/apply_trend_feed_schema.py
+-- No DROP TABLE. No data loss.
 
 create table if not exists public.trend_intelligence_feed (
   id uuid primary key default gen_random_uuid(),
   timestamp timestamptz not null default now(),
   source text not null default 'tiktok',
-  type text not null check (type in ('hook', 'format', 'emotion', 'topic', 'keyword_cluster')),
-  signal_strength integer not null default 0 check (signal_strength >= 0 and signal_strength <= 100),
-  virality_score integer not null default 0 check (virality_score >= 0 and virality_score <= 100),
+  type text not null
+    check (type in ('hook', 'format', 'emotion', 'topic', 'keyword_cluster')),
+  signal_strength integer not null default 0
+    check (signal_strength >= 0 and signal_strength <= 100),
+  virality_score integer not null default 0
+    check (virality_score >= 0 and virality_score <= 100),
   trend_state text not null default 'emerging'
     check (trend_state in ('emerging', 'rising', 'peaking', 'fading')),
   raw_data jsonb not null default '{}'::jsonb,
   summary text not null default '',
   dedupe_key text not null,
-  unique (dedupe_key)
+  constraint trend_intelligence_feed_dedupe_key_key unique (dedupe_key)
 );
 
--- Backfill column if table existed before virality_score was added.
 alter table public.trend_intelligence_feed
   add column if not exists virality_score integer not null default 0
-  check (virality_score >= 0 and virality_score <= 100);
+    check (virality_score >= 0 and virality_score <= 100);
+
+create unique index if not exists trend_intelligence_feed_dedupe_key_idx
+  on public.trend_intelligence_feed (dedupe_key);
+
+create index if not exists trend_intelligence_feed_source_timestamp_idx
+  on public.trend_intelligence_feed (source, timestamp desc);
 
 create index if not exists trend_intelligence_feed_timestamp_idx
   on public.trend_intelligence_feed (timestamp desc);
@@ -60,7 +81,6 @@ create policy "Authenticated users update trend intelligence feed"
   using (true)
   with check (true);
 
--- Backfill virality from raw_data for legacy rows.
 update public.trend_intelligence_feed
 set virality_score = coalesce(
   (raw_data->>'virality_score')::integer,
@@ -73,3 +93,5 @@ where virality_score = 0
     raw_data ? 'virality_score'
     or raw_data->'virality' ? 'viral_strength_score'
   );
+
+notify pgrst, 'reload schema';
