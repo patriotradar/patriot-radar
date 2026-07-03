@@ -2,6 +2,7 @@ from pytrends.request import TrendReq
 from datetime import datetime
 import time
 import json
+import os
 import random
 import requests
 
@@ -1175,6 +1176,92 @@ def build_insight_summary(item, state):
         f"Post with a sharper hook or a more debate-led angle to break through."
     )
 
+def load_engagement_metrics():
+    metrics = {}
+    env_map = {
+        "avg_views": "AVG_VIEWS",
+        "avg_likes": "AVG_LIKES",
+        "engagement_rate": "ENGAGEMENT_RATE",
+    }
+    for key, env_key in env_map.items():
+        value = os.getenv(env_key)
+        if value is not None and value != "":
+            metrics[key] = float(value)
+
+    metrics_path = "engagement_metrics.json"
+    if os.path.exists(metrics_path):
+        try:
+            with open(metrics_path, encoding="utf-8") as f:
+                file_metrics = json.load(f)
+            if isinstance(file_metrics, dict):
+                for key in env_map:
+                    if key in file_metrics and file_metrics[key] is not None:
+                        metrics[key] = float(file_metrics[key])
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            print(f"engagement_metrics.json load failed: {e}")
+
+    return metrics or None
+
+def detect_engagement_signal(engagement_metrics):
+    if not engagement_metrics:
+        return "HEALTHY"
+
+    avg_views = float(engagement_metrics.get("avg_views", 0) or 0)
+    avg_likes = float(engagement_metrics.get("avg_likes", 0) or 0)
+    engagement_rate = engagement_metrics.get("engagement_rate")
+
+    if avg_views < 300:
+        return "DISTRIBUTION_LIMITED"
+
+    if avg_views >= 300 and avg_likes <= 2:
+        return "HOOK_OK_LOW_CONVERSION"
+
+    if avg_views >= 300 and engagement_rate is not None and float(engagement_rate) < 1.0:
+        return "ATTENTION_WITHOUT_VALUE"
+
+    return "HEALTHY"
+
+def enhance_insight_with_engagement(base_summary, engagement_signal, engagement_metrics=None):
+    metrics = engagement_metrics or {}
+    avg_views = metrics.get("avg_views")
+    avg_likes = metrics.get("avg_likes")
+    engagement_rate = metrics.get("engagement_rate")
+
+    metrics_context = ""
+    if avg_views is not None:
+        metrics_context = f" (avg views: {int(float(avg_views))}"
+        if avg_likes is not None:
+            metrics_context += f", avg likes: {int(float(avg_likes))}"
+        if engagement_rate is not None:
+            metrics_context += f", engagement rate: {float(engagement_rate):.2f}%"
+        metrics_context += ")"
+
+    if engagement_signal == "HOOK_OK_LOW_CONVERSION":
+        return (
+            f"{base_summary} Engagement signal: your content is being seen but not liked or saved"
+            f"{metrics_context}. The hook is pulling views, but the emotional or value trigger is too weak. "
+            f"Strengthen the opening hook and add a clearer pride, sacrifice, or debate payoff in the first 3 seconds."
+        )
+
+    if engagement_signal == "ATTENTION_WITHOUT_VALUE":
+        return (
+            f"{base_summary} Engagement signal: curiosity is high but content delivery is not converting"
+            f"{metrics_context}. Viewers are clicking in, but the post is not delivering enough value, emotion, or payoff. "
+            f"Tighten the middle of the video and land a stronger opinion or story beat before the call to action."
+        )
+
+    if engagement_signal == "DISTRIBUTION_LIMITED":
+        return (
+            f"{base_summary} Engagement signal: reach is the bottleneck"
+            f"{metrics_context}. The content may be fine, but distribution is limited. "
+            f"Improve posting time, hashtag targeting, and hook clarity to push average views above 300 before optimizing conversion."
+        )
+
+    return (
+        f"{base_summary} Engagement signal: performance looks balanced"
+        f"{metrics_context}. Views, likes, and engagement rate are in a healthy range relative to current thresholds."
+    )
+
 def _recommend_post_format(item):
     discovery_type = (item.get("discovery_type") or "").lower()
     category = (item.get("category") or "").lower()
@@ -1251,12 +1338,18 @@ def build_next_post(item):
         "reason_it_will_perform_better": reason
     }
 
-def build_virality_recommendation(results, emerging):
+def build_virality_recommendation(results, emerging, engagement_metrics=None):
     item = pick_recommendation_item(results, emerging)
     state = determine_virality_state(item)
+    engagement_signal = detect_engagement_signal(engagement_metrics)
+    base_summary = build_insight_summary(item, state)
+    insight_summary = enhance_insight_with_engagement(
+        base_summary, engagement_signal, engagement_metrics
+    )
     return {
         "state": state,
-        "insight_summary": build_insight_summary(item, state),
+        "engagement_signal": engagement_signal,
+        "insight_summary": insight_summary,
         "next_post": build_next_post(item),
         "based_on": {
             "keyword": item.get("keyword") if item else None,
@@ -1302,11 +1395,13 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
             lines.append(f"Viral Score: {item.get('viral_score', 'N/A')}")
             lines.append("-" * 50)
 
-    recommendation = build_virality_recommendation(results, emerging)
+    engagement_metrics = load_engagement_metrics()
+    recommendation = build_virality_recommendation(results, emerging, engagement_metrics)
     lines.append("")
     lines.append("VIRALITY RECOMMENDATION")
     lines.append("=" * 50)
     lines.append(f"State: {recommendation['state']}")
+    lines.append(f"Engagement Signal: {recommendation['engagement_signal']}")
     lines.append(f"Insight: {recommendation['insight_summary']}")
     lines.append(f"Hook: {recommendation['next_post']['hook']}")
     lines.append(f"Content Idea: {recommendation['next_post']['content_idea']}")
@@ -1318,6 +1413,7 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
 
     output = {
         "state": recommendation["state"],
+        "engagement_signal": recommendation["engagement_signal"],
         "insight_summary": recommendation["insight_summary"],
         "next_post": recommendation["next_post"],
         "results": results[:15],
