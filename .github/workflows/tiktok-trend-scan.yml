@@ -26,22 +26,37 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -e
-          python scripts/run_tiktok_trend_scan.py | tee scan_output.json
+          python scripts/run_tiktok_trend_scan.py --output scan_result.json 2>&1 | tee scan_output.log
           echo "--- Scan summary ---"
-          tail -20 scan_output.json
+          python3 -c "import json; r=json.load(open('scan_result.json')); print(json.dumps({k:r.get(k) for k in ['success','data_source','item_count','avg_virality_score'] if k in r}, indent=2)); print('store:', r.get('store_result')); print('apify:', {k:r.get('apify_fetch',{}).get(k) for k in ['success','item_count','token_present','apify_run_id','error']})"
 
       - name: Validate pipeline result
         if: always()
         run: |
-          if [ ! -f scan_output.json ]; then
-            echo "::error::Scan produced no output file."
+          if [ ! -f scan_result.json ]; then
+            echo "::error::Scan produced no scan_result.json — check scan_output.log"
             exit 1
           fi
           python3 << 'PYEOF'
           import json, sys
-          lines = open("scan_output.json").read().strip().splitlines()
-          summary = json.loads(lines[-1])
-          print("Parsed summary:", json.dumps(summary, indent=2))
+          result = json.load(open("scan_result.json"))
+          apify = result.get("apify_fetch") or {}
+          store = result.get("store_result") or {}
+          summary = {
+              "success": result.get("success"),
+              "data_source": result.get("data_source"),
+              "apify_fetch_succeeded": apify.get("success"),
+              "apify_items_returned": apify.get("item_count", 0),
+              "apify_raw_error": apify.get("error"),
+              "apify_token_present": apify.get("token_present"),
+              "apify_run_id": apify.get("apify_run_id"),
+              "extracted_item_count": result.get("item_count"),
+              "avg_virality_score": result.get("avg_virality_score", 0),
+              "supabase_rows_stored": store.get("stored", 0),
+              "supabase_rows_skipped": store.get("skipped", 0),
+              "supabase_error": store.get("error"),
+          }
+          print("Validation summary:", json.dumps(summary, indent=2))
           errors = []
           if not summary.get("success"):
               errors.append("scan returned success=false")
