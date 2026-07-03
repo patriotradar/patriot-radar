@@ -1,0 +1,31 @@
+name: Sync TikTok Feed UI to Dashboard
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-dashboard-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push TikTok feed UI to patriot-radar-dashboard
+        env:
+          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
+        run: |
+          set -e
+          git clone "https://x-access-token:${DASHBOARD_TOKEN}@github.com/patriotradar/patriot-radar-dashboard.git" dashboard
+          cp dashboard-sync/index.html dashboard/index.html
+          cp dashboard-sync/public-config.js dashboard/api/public-config.js
+          cp dashboard-sync/vercel.json dashboard/vercel.json
+          cp dashboard-sync/.env.example dashboard/.env.example
+          cd dashboard
+          git config user.name "Patriot Radar Bot"
+          git config user.email "bot@patriotradar.github.io"
+          git add index.html api/public-config.js vercel.json .env.example
+          if git diff --staged --quiet; then
+            echo "No dashboard UI changes to sync."
+            exit 0
+          fi
+          git commit -m "Sync TikTok trend_intelligence_feed UI from patriot-radar"
+          git push origin main

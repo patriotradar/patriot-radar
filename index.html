@@ -6,6 +6,7 @@
 <title>Patriot Radar</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/api/public-config.js" onerror="console.warn('[TrendFeed] /api/public-config.js unavailable — using inline Supabase config')"></script>
 
 <style>
 body{background:#07111f;color:white;font-family:Arial,sans-serif;padding:20px;margin:0}
@@ -145,11 +146,11 @@ button.admin{background:#7c3aed}
 </div>
 
 <script>
-const SUPABASE_URL = "https://kdwqnlgdanzigpdwyqbh.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_7WtTtv9S4dl5jO-YE9QXRg_Ldy3gU_G";
+const SUPABASE_URL = (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.supabaseUrl) || "https://kdwqnlgdanzigpdwyqbh.supabase.co";
+const SUPABASE_ANON_KEY = (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.supabaseAnonKey) || "sb_publishable_7WtTtv9S4dl5jO-YE9QXRg_Ldy3gU_G";
 const FEED_TABLE = "trend_intelligence_feed";
 const ADMIN_EMAILS = ["jamie.mahon1996@gmail.com"];
-const NO_TRENDS_MSG = "No trends available yet — run TikTok scan";
+const NO_TRENDS_MSG = "No trends available yet. Run TikTok scan.";
 const DEBUG_FEED = true;
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

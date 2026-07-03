@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/chat/completions.js": {
+      "maxDuration": 60
+    },
+    "api/public-config.js": {
+      "maxDuration": 10
+    }
+  }
+}
