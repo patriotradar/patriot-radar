@@ -1,0 +1,292 @@
+"""
+Persistence layer for external trend intelligence signals.
+
+Writes read-only TikTok extraction output to Supabase trend_intelligence_feed.
+Does not touch trends.py scoring, recommendations, or calibration.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import os
+from datetime import datetime, timezone
+from typing import Any
+
+DEFAULT_FEED_TABLE = "trend_intelligence_feed"
+SOURCE_TIKTOK = "tiktok"
+
+
+def _content_key(item: dict[str, Any]) -> str:
+    url = (item.get("url") or "").strip()
+    if url:
+        return url
+    preview = (item.get("caption_preview") or "").strip()
+    if preview:
+        return hashlib.sha256(preview.encode("utf-8")).hexdigest()[:32]
+    return hashlib.sha256(repr(item).encode("utf-8")).hexdigest()[:32]
+
+
+def _signal_strength(item: dict[str, Any], modifier: int = 0) -> int:
+    viral = float(item.get("virality", {}).get("viral_strength_score", 0) or 0)
+    fmt = float(item.get("format", {}).get("format_strength_score", 0) or 0)
+    base = int(round((viral * 0.7 + fmt * 0.3) * 100))
+    return max(0, min(100, base + modifier))
+
+
+def _trend_state(signal_strength: int, previous_strength: int | None = None) -> str:
+    if previous_strength is not None:
+        delta = signal_strength - previous_strength
+        if signal_strength >= 75:
+            return "peaking"
+        if delta <= -10:
+            return "fading"
+        if delta >= 10:
+            return "rising"
+    if signal_strength >= 75:
+        return "peaking"
+    if signal_strength >= 50:
+        return "rising"
+    return "emerging"
+
+
+def _parse_timestamp(value: str | None) -> str:
+    if not value:
+        return datetime.now(timezone.utc).isoformat()
+    return value
+
+
+def signals_to_feed_rows(
+    external_tiktok_signals: dict[str, Any],
+    previous_strengths: dict[str, int] | None = None,
+) -> list[dict[str, Any]]:
+    """Flatten extracted TikTok items into trend_intelligence_feed rows."""
+    if not external_tiktok_signals:
+        return []
+
+    items = external_tiktok_signals.get("extracted_items") or []
+    if not items:
+        return []
+
+    ts = _parse_timestamp(external_tiktok_signals.get("timestamp"))
+    prev = previous_strengths or {}
+    rows: list[dict[str, Any]] = []
+
+    for item in items:
+        key = _content_key(item)
+        base_strength = _signal_strength(item)
+        item_snapshot = {
+            "content_key": key,
+            "url": item.get("url", ""),
+            "author": item.get("author", ""),
+            "caption_preview": item.get("caption_preview", ""),
+            "extraction_status": item.get("extraction_status", ""),
+            "batch_timestamp": ts,
+        }
+
+        hook = item.get("hook") or {}
+        hook_type = hook.get("hook_type", "opinion")
+        hook_dedupe = f"{key}:hook:{hook_type}"
+        hook_strength = _signal_strength(item, 5)
+        rows.append({
+            "timestamp": ts,
+            "source": SOURCE_TIKTOK,
+            "type": "hook",
+            "signal_strength": hook_strength,
+            "trend_state": _trend_state(hook_strength, prev.get(hook_dedupe)),
+            "raw_data": {**item_snapshot, "signal": hook},
+            "summary": f"{hook_type} hook: {hook.get('hook_text', '')[:160]}".strip(),
+            "dedupe_key": hook_dedupe,
+        })
+
+        fmt = item.get("format") or {}
+        fmt_type = fmt.get("format_type", "unknown")
+        fmt_dedupe = f"{key}:format:{fmt_type}"
+        fmt_strength = int(round(float(fmt.get("format_strength_score", 0) or 0) * 100))
+        rows.append({
+            "timestamp": ts,
+            "source": SOURCE_TIKTOK,
+            "type": "format",
+            "signal_strength": max(0, min(100, fmt_strength)),
+            "trend_state": _trend_state(fmt_strength, prev.get(fmt_dedupe)),
+            "raw_data": {**item_snapshot, "signal": fmt},
+            "summary": f"Format: {fmt_type.replace('_', ' ')}",
+            "dedupe_key": fmt_dedupe,
+        })
+
+        emotion = item.get("emotion") or {}
+        emotion_name = emotion.get("dominant_emotion", "curiosity")
+        emotion_dedupe = f"{key}:emotion:{emotion_name}"
+        emotion_strength = _signal_strength(item, 3)
+        mixture = emotion.get("emotion_mixture") or {}
+        rows.append({
+            "timestamp": ts,
+            "source": SOURCE_TIKTOK,
+            "type": "emotion",
+            "signal_strength": emotion_strength,
+            "trend_state": _trend_state(emotion_strength, prev.get(emotion_dedupe)),
+            "raw_data": {**item_snapshot, "signal": emotion},
+            "summary": f"Emotion: {emotion_name}" + (
+                f" ({', '.join(f'{k} {v:.0%}' for k, v in list(mixture.items())[:3])})"
+                if mixture else ""
+            ),
+            "dedupe_key": emotion_dedupe,
+        })
+
+        topics = item.get("topics") or {}
+        primary = topics.get("primary_topic", "other")
+        secondary = topics.get("secondary_topics") or []
+        topic_dedupe = f"{key}:topic:{primary}"
+        topic_strength = _signal_strength(item, 2)
+        rows.append({
+            "timestamp": ts,
+            "source": SOURCE_TIKTOK,
+            "type": "topic",
+            "signal_strength": topic_strength,
+            "trend_state": _trend_state(topic_strength, prev.get(topic_dedupe)),
+            "raw_data": {**item_snapshot, "signal": topics},
+            "summary": f"Topic: {primary}" + (
+                f" (+ {', '.join(secondary[:3])})" if secondary else ""
+            ),
+            "dedupe_key": topic_dedupe,
+        })
+
+        linguistics = item.get("linguistics") or {}
+        clusters = linguistics.get("keyword_clusters") or []
+        phrases = linguistics.get("phrase_patterns") or []
+        if clusters or phrases:
+            cluster_dedupe = f"{key}:keyword_cluster:aggregate"
+            top_kw = ", ".join(c["keyword"] for c in clusters[:5])
+            top_phrases = ", ".join(phrases[:5])
+            cluster_strength = min(
+                100,
+                base_strength + len(clusters) * 3 + len(phrases) * 2,
+            )
+            rows.append({
+                "timestamp": ts,
+                "source": SOURCE_TIKTOK,
+                "type": "keyword_cluster",
+                "signal_strength": cluster_strength,
+                "trend_state": _trend_state(cluster_strength, prev.get(cluster_dedupe)),
+                "raw_data": {
+                    **item_snapshot,
+                    "signal": {
+                        "keyword_clusters": clusters,
+                        "phrase_patterns": phrases,
+                    },
+                },
+                "summary": f"Keywords: {top_kw or 'n/a'}" + (
+                    f" | Phrases: {top_phrases}" if top_phrases else ""
+                ),
+                "dedupe_key": cluster_dedupe,
+            })
+
+    return rows
+
+
+def _get_supabase_client():
+    supabase_url = os.getenv("SUPABASE_URL")
+    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not service_role_key:
+        return None
+    from supabase import create_client
+    return create_client(supabase_url, service_role_key)
+
+
+def _fetch_previous_strengths(
+    supabase,
+    table: str,
+    dedupe_keys: list[str],
+) -> dict[str, int]:
+    if not dedupe_keys:
+        return {}
+    try:
+        response = (
+            supabase.table(table)
+            .select("dedupe_key,signal_strength")
+            .in_("dedupe_key", dedupe_keys)
+            .execute()
+        )
+        rows = response.data or []
+        return {
+            row["dedupe_key"]: int(row.get("signal_strength", 0) or 0)
+            for row in rows
+            if row.get("dedupe_key")
+        }
+    except Exception:
+        return {}
+
+
+def store_trend_intelligence_rows(
+    rows: list[dict[str, Any]],
+    table: str | None = None,
+) -> dict[str, Any]:
+    """
+    Upsert feed rows into Supabase. Idempotent per dedupe_key (video/url signal).
+
+    Returns a result dict; never raises.
+    """
+    table_name = table or os.getenv("SUPABASE_FEED_TABLE", DEFAULT_FEED_TABLE)
+    if not rows:
+        return {"stored": 0, "skipped": 0, "error": None}
+
+    try:
+        supabase = _get_supabase_client()
+        if supabase is None:
+            return {
+                "stored": 0,
+                "skipped": len(rows),
+                "error": "missing_supabase_credentials",
+            }
+
+        dedupe_keys = [row["dedupe_key"] for row in rows if row.get("dedupe_key")]
+        previous = _fetch_previous_strengths(supabase, table_name, dedupe_keys)
+
+        for row in rows:
+            dedupe = row.get("dedupe_key")
+            if dedupe and dedupe in previous:
+                row["trend_state"] = _trend_state(
+                    int(row.get("signal_strength", 0)),
+                    previous[dedupe],
+                )
+
+        stored = 0
+        failed = 0
+        for row in rows:
+            try:
+                supabase.table(table_name).upsert(
+                    row,
+                    on_conflict="dedupe_key",
+                ).execute()
+                stored += 1
+            except Exception:
+                failed += 1
+
+        return {
+            "stored": stored,
+            "skipped": failed,
+            "error": None if failed == 0 else "partial_write_failure",
+        }
+    except Exception as exc:
+        return {"stored": 0, "skipped": len(rows), "error": str(exc)}
+
+
+def store_external_tiktok_signals(
+    external_tiktok_signals: dict[str, Any] | None,
+    table: str | None = None,
+) -> dict[str, Any]:
+    """
+    Persist external TikTok signals to trend_intelligence_feed.
+
+    Safe to call with empty input — returns without error.
+    """
+    try:
+        if not external_tiktok_signals:
+            return {"stored": 0, "skipped": 0, "error": None}
+        items = external_tiktok_signals.get("extracted_items") or []
+        if not items:
+            return {"stored": 0, "skipped": 0, "error": None}
+
+        rows = signals_to_feed_rows(external_tiktok_signals)
+        return store_trend_intelligence_rows(rows, table=table)
+    except Exception as exc:
+        return {"stored": 0, "skipped": 0, "error": str(exc)}

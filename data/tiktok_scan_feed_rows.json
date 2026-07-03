@@ -1,0 +1,743 @@
+[
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 71,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "6ee21836b42d1ab8bf4da673f29f825d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how British pride is making a comeback on TikTok. Unpopular opinion: flying the flag should be normal again. Nobody is talking about how British pride is making a comeback on T",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "hook_text": "Nobody is talking about how British pride is making a comeback on TikTok",
+        "hook_type": "curiosity"
+      }
+    },
+    "summary": "curiosity hook: Nobody is talking about how British pride is making a comeback on TikTok",
+    "dedupe_key": "6ee21836b42d1ab8bf4da673f29f825d:hook:curiosity"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 90,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "6ee21836b42d1ab8bf4da673f29f825d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how British pride is making a comeback on TikTok. Unpopular opinion: flying the flag should be normal again. Nobody is talking about how British pride is making a comeback on T",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "format_type": "unpopular_opinion",
+        "format_strength_score": 0.9
+      }
+    },
+    "summary": "Format: unpopular opinion",
+    "dedupe_key": "6ee21836b42d1ab8bf4da673f29f825d:format:unpopular_opinion"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 69,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "6ee21836b42d1ab8bf4da673f29f825d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how British pride is making a comeback on TikTok. Unpopular opinion: flying the flag should be normal again. Nobody is talking about how British pride is making a comeback on T",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "dominant_emotion": "pride",
+        "emotion_mixture": {
+          "pride": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: pride (pride 100%)",
+    "dedupe_key": "6ee21836b42d1ab8bf4da673f29f825d:emotion:pride"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 68,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "6ee21836b42d1ab8bf4da673f29f825d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how British pride is making a comeback on TikTok. Unpopular opinion: flying the flag should be normal again. Nobody is talking about how British pride is making a comeback on T",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "primary_topic": "culture",
+        "secondary_topics": [
+          "identity"
+        ]
+      }
+    },
+    "summary": "Topic: culture (+ identity)",
+    "dedupe_key": "6ee21836b42d1ab8bf4da673f29f825d:topic:culture"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 94,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "6ee21836b42d1ab8bf4da673f29f825d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how British pride is making a comeback on TikTok. Unpopular opinion: flying the flag should be normal again. Nobody is talking about how British pride is making a comeback on T",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "nobody",
+            "frequency": 3,
+            "velocity_signal": 0.07
+          },
+          {
+            "keyword": "talking",
+            "frequency": 3,
+            "velocity_signal": 0.07
+          },
+          {
+            "keyword": "how",
+            "frequency": 3,
+            "velocity_signal": 0.07
+          },
+          {
+            "keyword": "british",
+            "frequency": 3,
+            "velocity_signal": 0.07
+          },
+          {
+            "keyword": "pride",
+            "frequency": 3,
+            "velocity_signal": 0.07
+          },
+          {
+            "keyword": "making",
+            "frequency": 3,
+            "velocity_signal": 0.07
+          },
+          {
+            "keyword": "comeback",
+            "frequency": 3,
+            "velocity_signal": 0.07
+          },
+          {
+            "keyword": "tiktok",
+            "frequency": 3,
+            "velocity_signal": 0.07
+          }
+        ],
+        "phrase_patterns": [
+          "nobody is talking about",
+          "unpopular opinion"
+        ]
+      }
+    },
+    "summary": "Keywords: nobody, talking, how, british, pride | Phrases: nobody is talking about, unpopular opinion",
+    "dedupe_key": "6ee21836b42d1ab8bf4da673f29f825d:keyword_cluster:aggregate"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 87,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "6ab90571a5fe0af9d6c3f4bdf6118c55",
+      "url": "",
+      "author": "",
+      "caption_preview": "Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Y",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "hook_text": "Is it just me or does nobody respect our veterans anymore",
+        "hook_type": "question"
+      }
+    },
+    "summary": "question hook: Is it just me or does nobody respect our veterans anymore",
+    "dedupe_key": "6ab90571a5fe0af9d6c3f4bdf6118c55:hook:question"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 90,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "6ab90571a5fe0af9d6c3f4bdf6118c55",
+      "url": "",
+      "author": "",
+      "caption_preview": "Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Y",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "format_type": "yes_no_debate",
+        "format_strength_score": 0.9
+      }
+    },
+    "summary": "Format: yes no debate",
+    "dedupe_key": "6ab90571a5fe0af9d6c3f4bdf6118c55:format:yes_no_debate"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 85,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "6ab90571a5fe0af9d6c3f4bdf6118c55",
+      "url": "",
+      "author": "",
+      "caption_preview": "Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Y",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "dominant_emotion": "curiosity",
+        "emotion_mixture": {
+          "curiosity": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: curiosity (curiosity 100%)",
+    "dedupe_key": "6ab90571a5fe0af9d6c3f4bdf6118c55:emotion:curiosity"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 84,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "6ab90571a5fe0af9d6c3f4bdf6118c55",
+      "url": "",
+      "author": "",
+      "caption_preview": "Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Y",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "primary_topic": "culture",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: culture",
+    "dedupe_key": "6ab90571a5fe0af9d6c3f4bdf6118c55:topic:culture"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 100,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "6ab90571a5fe0af9d6c3f4bdf6118c55",
+      "url": "",
+      "author": "",
+      "caption_preview": "Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Yes or No? Is it just me or does nobody respect our veterans anymore? Y",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "nobody",
+            "frequency": 3,
+            "velocity_signal": 0.2
+          },
+          {
+            "keyword": "respect",
+            "frequency": 3,
+            "velocity_signal": 0.2
+          },
+          {
+            "keyword": "our",
+            "frequency": 3,
+            "velocity_signal": 0.2
+          },
+          {
+            "keyword": "veterans",
+            "frequency": 3,
+            "velocity_signal": 0.2
+          },
+          {
+            "keyword": "anymore",
+            "frequency": 3,
+            "velocity_signal": 0.2
+          }
+        ],
+        "phrase_patterns": [
+          "is it just me",
+          "? yes or no"
+        ]
+      }
+    },
+    "summary": "Keywords: nobody, respect, our, veterans, anymore | Phrases: is it just me, ? yes or no",
+    "dedupe_key": "6ab90571a5fe0af9d6c3f4bdf6118c55:keyword_cluster:aggregate"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 51,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "cbfe0d6aca5f47e0dd027123cfe47f6d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: how I learned about Churchill in school and why it changed my view on British history. Story time: how I learned about Churchill in school and why it changed my view on British history. St",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "hook_text": "Story time: how I learned about Churchill in school and why it changed my view on British history",
+        "hook_type": "storytime"
+      }
+    },
+    "summary": "storytime hook: Story time: how I learned about Churchill in school and why it changed my view on British history",
+    "dedupe_key": "cbfe0d6aca5f47e0dd027123cfe47f6d:hook:storytime"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 80,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "cbfe0d6aca5f47e0dd027123cfe47f6d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: how I learned about Churchill in school and why it changed my view on British history. Story time: how I learned about Churchill in school and why it changed my view on British history. St",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "format_type": "storytime",
+        "format_strength_score": 0.8
+      }
+    },
+    "summary": "Format: storytime",
+    "dedupe_key": "cbfe0d6aca5f47e0dd027123cfe47f6d:format:storytime"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 49,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "cbfe0d6aca5f47e0dd027123cfe47f6d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: how I learned about Churchill in school and why it changed my view on British history. Story time: how I learned about Churchill in school and why it changed my view on British history. St",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "dominant_emotion": "curiosity",
+        "emotion_mixture": {
+          "curiosity": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: curiosity (curiosity 100%)",
+    "dedupe_key": "cbfe0d6aca5f47e0dd027123cfe47f6d:emotion:curiosity"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 48,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "cbfe0d6aca5f47e0dd027123cfe47f6d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: how I learned about Churchill in school and why it changed my view on British history. Story time: how I learned about Churchill in school and why it changed my view on British history. St",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "primary_topic": "culture",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: culture",
+    "dedupe_key": "cbfe0d6aca5f47e0dd027123cfe47f6d:topic:culture"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 72,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "cbfe0d6aca5f47e0dd027123cfe47f6d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: how I learned about Churchill in school and why it changed my view on British history. Story time: how I learned about Churchill in school and why it changed my view on British history. St",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "story",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "time",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "how",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "learned",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "churchill",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "school",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "why",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "changed",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          }
+        ],
+        "phrase_patterns": [
+          "story time"
+        ]
+      }
+    },
+    "summary": "Keywords: story, time, how, learned, churchill | Phrases: story time",
+    "dedupe_key": "cbfe0d6aca5f47e0dd027123cfe47f6d:keyword_cluster:aggregate"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 96,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "756aca6fb7a68113aac482a794163c51",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: immigration policy needs an honest debate. This might be controversial but you need to hear this. Hot take: immigration policy needs an honest debate. This might be controversial but you nee",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "hook_text": "Hot take: immigration policy needs an honest debate",
+        "hook_type": "curiosity"
+      }
+    },
+    "summary": "curiosity hook: Hot take: immigration policy needs an honest debate",
+    "dedupe_key": "756aca6fb7a68113aac482a794163c51:hook:curiosity"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 85,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "756aca6fb7a68113aac482a794163c51",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: immigration policy needs an honest debate. This might be controversial but you need to hear this. Hot take: immigration policy needs an honest debate. This might be controversial but you nee",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "format_type": "hot_take",
+        "format_strength_score": 0.85
+      }
+    },
+    "summary": "Format: hot take",
+    "dedupe_key": "756aca6fb7a68113aac482a794163c51:format:hot_take"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 94,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "756aca6fb7a68113aac482a794163c51",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: immigration policy needs an honest debate. This might be controversial but you need to hear this. Hot take: immigration policy needs an honest debate. This might be controversial but you nee",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "dominant_emotion": "curiosity",
+        "emotion_mixture": {
+          "curiosity": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: curiosity (curiosity 100%)",
+    "dedupe_key": "756aca6fb7a68113aac482a794163c51:emotion:curiosity"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 93,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "756aca6fb7a68113aac482a794163c51",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: immigration policy needs an honest debate. This might be controversial but you need to hear this. Hot take: immigration policy needs an honest debate. This might be controversial but you nee",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "primary_topic": "politics",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: politics",
+    "dedupe_key": "756aca6fb7a68113aac482a794163c51:topic:politics"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 100,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "756aca6fb7a68113aac482a794163c51",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: immigration policy needs an honest debate. This might be controversial but you need to hear this. Hot take: immigration policy needs an honest debate. This might be controversial but you nee",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "hot",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "take",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "immigration",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "policy",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "needs",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "honest",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "debate",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "might",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          }
+        ],
+        "phrase_patterns": [
+          "you need to hear this",
+          "controversial",
+          "hot take"
+        ]
+      }
+    },
+    "summary": "Keywords: hot, take, immigration, policy, needs | Phrases: you need to hear this, controversial, hot take",
+    "dedupe_key": "756aca6fb7a68113aac482a794163c51:keyword_cluster:aggregate"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 68,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "079bf0b64e27708d07a3bceaedc21bca",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "hook_text": "5 things every proud Brit should know about the Battle of Britain",
+        "hook_type": "opinion"
+      }
+    },
+    "summary": "opinion hook: 5 things every proud Brit should know about the Battle of Britain",
+    "dedupe_key": "079bf0b64e27708d07a3bceaedc21bca:hook:opinion"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 80,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "079bf0b64e27708d07a3bceaedc21bca",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "format_type": "list_format",
+        "format_strength_score": 0.8
+      }
+    },
+    "summary": "Format: list format",
+    "dedupe_key": "079bf0b64e27708d07a3bceaedc21bca:format:list_format"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 66,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "079bf0b64e27708d07a3bceaedc21bca",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "dominant_emotion": "pride",
+        "emotion_mixture": {
+          "pride": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: pride (pride 100%)",
+    "dedupe_key": "079bf0b64e27708d07a3bceaedc21bca:emotion:pride"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 65,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "079bf0b64e27708d07a3bceaedc21bca",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "primary_topic": "identity",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: identity",
+    "dedupe_key": "079bf0b64e27708d07a3bceaedc21bca:topic:identity"
+  },
+  {
+    "timestamp": "2026-07-03T13:18:45.597069+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 89,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "079bf0b64e27708d07a3bceaedc21bca",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 things every proud Brit should know about the Battle of Britain. Educational breakdown incoming. 5 ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T13:18:45.597069+00:00",
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "things",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "every",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "proud",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "brit",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "should",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "know",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "battle",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "britain",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          }
+        ],
+        "phrase_patterns": [
+          "5 things"
+        ]
+      }
+    },
+    "summary": "Keywords: things, every, proud, brit, should | Phrases: 5 things",
+    "dedupe_key": "079bf0b64e27708d07a3bceaedc21bca:keyword_cluster:aggregate"
+  }
+]
