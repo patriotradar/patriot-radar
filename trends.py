@@ -1281,34 +1281,53 @@ def _recommend_post_format(item):
         return "POV response video answering the search question directly"
     return "Short-form patriotic talking-head with text hook in the first 2 seconds"
 
-def build_next_post(item):
+def build_next_post(item, engagement_signal="HEALTHY"):
     if not item:
+        defaults = {
+            "HOOK_OK_LOW_CONVERSION": {
+                "hook": "Most people get patriotic content wrong — this is why you're not growing.",
+                "content_idea": "15-second punch: name the mistake, reveal the fix, end with one emotional British pride trigger. No long intro.",
+                "format": "Short curiosity-gap talking-head (under 20 seconds)",
+            },
+            "ATTENTION_WITHOUT_VALUE": {
+                "hook": "Here is the step-by-step truth about building British pride content that actually converts.",
+                "content_idea": "3-step breakdown: problem → proof → takeaway. One clear example per step, no vague messaging.",
+                "format": "Educational step-by-step explainer with on-screen bullet points",
+            },
+            "DISTRIBUTION_LIMITED": {
+                "hook": "Everyone is talking about this British trend right now — here is the version that spreads.",
+                "content_idea": "Ride a broad trend hook, post 2-3 variations same day, use wider patriotic hashtags and a bold first-frame headline.",
+                "format": "Trend-reaction clip with viral text overlay and fast cuts",
+            },
+            "HEALTHY": {
+                "hook": "Is British pride still something people are proud to talk about? Yes or No?",
+                "content_idea": "Refine your best-performing patriotic theme: sharper hook, stronger save-worthy payoff, explicit share CTA.",
+                "format": "Yes/No debate post optimized for saves and shares",
+            },
+        }
+        chosen = defaults.get(engagement_signal, defaults["HEALTHY"])
         return {
-            "hook": "Is British pride still something people are proud to talk about? Yes or No?",
-            "content_idea": "Run a broad patriotism debate post to test audience response while waiting for a stronger trend signal.",
-            "format": "Yes/No debate post with comment-bait question overlay",
-            "reason_it_will_perform_better": "A simple debate hook keeps production fast and gives you baseline engagement data for the next scan cycle."
+            "hook": chosen["hook"],
+            "content_idea": chosen["content_idea"],
+            "format": chosen["format"],
+            "reason_it_will_perform_better": (
+                f"Tailored for {engagement_signal.lower().replace('_', ' ')} while waiting for a stronger trend signal."
+            ),
+            "engagement_signal_used": engagement_signal,
         }
 
-    hooks = item.get("hooks") or []
-    hook = item.get("question") or (hooks[0] if hooks else item.get("caption", ""))
     keyword = item.get("keyword", "").title()
+    keyword_lower = item.get("keyword", "").lower()
+    hooks = item.get("hooks") or []
+    base_hook = item.get("question") or (hooks[0] if hooks else item.get("caption", ""))
     caption = item.get("caption", "")
     product = item.get("product", "patriotic merchandise")
-    post_format = _recommend_post_format(item)
-
     discovery_type = (item.get("discovery_type") or item.get("category") or "content").replace("_", " ")
     platform_context = _format_platform_context(item).strip()
     if platform_context:
         platform_context = f" {platform_context.capitalize()}."
     else:
-        platform_context = f" Source signal: {discovery_type}."
-
-    content_idea = (
-        f"Open on the debate question about {keyword}, then add one concrete British example in the first 5 seconds. "
-        f"Close by asking viewers to comment YES or NO.{platform_context} "
-        f"Optional affiliate tie-in: {product}. Ready caption: {caption}"
-    )
+        platform_context = f" Trend source: {discovery_type}."
 
     rise = float(item.get("rise_percent", 0) or 0)
     content_score = int(item.get("content_score", 0) or 0)
@@ -1320,22 +1339,79 @@ def build_next_post(item):
     emotion = int(item.get("emotion", 0) or 0)
     debate = int(item.get("debate", 0) or 0)
 
-    reason = (
-        f"Opportunity gap is {opportunity_gap}/10 ({opportunity_label.lower()}), "
-        f"content score {content_score}/100"
-    )
-    if rise > 0:
-        reason += f", search interest rising {rise:.0f}%"
-    reason += (
-        f", and TikTok competition balance is {competition_score}/10. "
-        f"Strongest angles: Fresh {fresh}, British {british}, Emotion {emotion}, Debate {debate}."
-    )
+    if engagement_signal == "HOOK_OK_LOW_CONVERSION":
+        hook = f"Most people get {keyword} wrong — this is why your patriotic content is not converting."
+        content_idea = (
+            f"Open with a curiosity gap in under 2 seconds: 'Everyone talks about {keyword}, but almost nobody understands this.' "
+            f"Deliver one sharp emotional trigger (pride, sacrifice, or outrage) in the next 5 seconds — keep total length under 25 seconds. "
+            f"End with a single comment prompt, not a long explanation.{platform_context} "
+            f"Caption: {caption}"
+        )
+        post_format = "Short curiosity-gap hook video (15-25 seconds, fast cuts, bold text overlay)"
+        reason = (
+            f"Views are landing but likes are not — this shorter, higher-tension hook fixes the conversion gap on '{keyword_lower}'. "
+            f"Opportunity gap {opportunity_gap}/10 ({opportunity_label.lower()}), content score {content_score}/100. "
+            f"Lead with emotion ({emotion}/25) and debate ({debate}/25) before context."
+        )
+
+    elif engagement_signal == "ATTENTION_WITHOUT_VALUE":
+        hook = f"The truth about {keyword} — explained in 3 steps most creators skip."
+        content_idea = (
+            f"Step 1: State the confusion around {keyword} in one sentence. "
+            f"Step 2: Give one concrete British example or fact that removes ambiguity. "
+            f"Step 3: Land a clear opinion or takeaway — no vague 'what do you think?' without substance. "
+            f"Use on-screen labels for each step.{platform_context} "
+            f"Optional affiliate tie-in: {product}. Caption: {caption}"
+        )
+        post_format = "Step-by-step educational breakdown with numbered on-screen steps"
+        reason = (
+            f"Attention is arriving but value delivery is weak — this structure clarifies the message on '{keyword_lower}' "
+            f"and turns curiosity into saves. Content score {content_score}/100, "
+            f"debate angle {debate}/25, British relevance {british}/25."
+        )
+
+    elif engagement_signal == "DISTRIBUTION_LIMITED":
+        hook = f"Why is everyone in Britain suddenly searching {keyword}? (And what it means for you)"
+        content_idea = (
+            f"Use a broad-appeal trend hook on {keyword} — designed for reach, not depth. "
+            f"Post 2-3 variations across the next 48 hours with different opening lines. "
+            f"Pair with trending patriotic hashtags, a bold first-frame headline, and a simple yes/no or reaction format.{platform_context} "
+            f"Ready caption: {caption}"
+        )
+        post_format = "Trend-reaction viral format with bold headline overlay and high posting volume"
+        reason = (
+            f"Reach is the bottleneck — '{keyword_lower}' has "
+            f"{'rising search interest (+' + f'{rise:.0f}%)' if rise > 0 else 'topic visibility'} "
+            f"and opportunity gap {opportunity_gap}/10 ({opportunity_label.lower()}). "
+            f"Broader hooks and higher volume beat polish when average views are below 300."
+        )
+
+    else:
+        hook = base_hook or f"Is {keyword} still worth fighting for in modern Britain? Yes or No?"
+        content_idea = (
+            f"Double down on your best-performing angle for {keyword}: refine the existing hook, "
+            f"add one save-worthy line (a quote, fact, or bold opinion), and close with an explicit share CTA. "
+            f"Keep the format that is already working — tighten pacing and land the emotional peak earlier.{platform_context} "
+            f"Optional affiliate tie-in: {product}. Caption: {caption}"
+        )
+        post_format = _recommend_post_format(item) + " — optimized for saves and shares"
+        reason = (
+            f"Performance is balanced — refine and repeat what works on '{keyword_lower}'. "
+            f"Opportunity gap {opportunity_gap}/10 ({opportunity_label.lower()}), content score {content_score}/100"
+        )
+        if rise > 0:
+            reason += f", search interest rising {rise:.0f}%"
+        reason += (
+            f", TikTok competition balance {competition_score}/10. "
+            f"Strongest themes: Fresh {fresh}, British {british}, Emotion {emotion}, Debate {debate}."
+        )
 
     return {
         "hook": hook,
         "content_idea": content_idea,
         "format": post_format,
-        "reason_it_will_perform_better": reason
+        "reason_it_will_perform_better": reason,
+        "engagement_signal_used": engagement_signal,
     }
 
 def build_virality_recommendation(results, emerging, engagement_metrics=None):
@@ -1350,7 +1426,7 @@ def build_virality_recommendation(results, emerging, engagement_metrics=None):
         "state": state,
         "engagement_signal": engagement_signal,
         "insight_summary": insight_summary,
-        "next_post": build_next_post(item),
+        "next_post": build_next_post(item, engagement_signal),
         "based_on": {
             "keyword": item.get("keyword") if item else None,
             "category": item.get("category") if item else None,
@@ -1406,6 +1482,7 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
     lines.append(f"Hook: {recommendation['next_post']['hook']}")
     lines.append(f"Content Idea: {recommendation['next_post']['content_idea']}")
     lines.append(f"Format: {recommendation['next_post']['format']}")
+    lines.append(f"Engagement Signal Used: {recommendation['next_post'].get('engagement_signal_used', recommendation['engagement_signal'])}")
     lines.append(f"Why it will perform: {recommendation['next_post']['reason_it_will_perform_better']}")
 
     with open("results.txt", "w", encoding="utf-8") as f:
