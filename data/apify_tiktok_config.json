@@ -1,15 +1,47 @@
 {
-  "hashtags": [
-    "britishpride",
-    "patriotism",
-    "ukpolitics",
-    "britishhistory",
-    "england"
-  ],
-  "searchQueries": [
-    "British pride TikTok",
-    "patriotism UK debate",
-    "British veterans respect"
-  ],
-  "resultsPerPage": 10
+  "resultsPerPage": 10,
+  "anglePools": {
+    "emotional": [
+      "veteran gratitude stories uk",
+      "nostalgia old britain childhood memories",
+      "pride in local community england",
+      "emotional reunion military family uk",
+      "remembrance day personal story"
+    ],
+    "historical": [
+      "battle of britain facts explained",
+      "dunkirk evacuation untold stories",
+      "churchill leadership lessons history",
+      "ww2 home front british women",
+      "roman britain archaeology discovery"
+    ],
+    "aesthetic": [
+      "dark academia british aesthetic",
+      "cottagecore english countryside vibes",
+      "vintage london street photography",
+      "rainy day british mood aesthetic",
+      "coastal cliff walk cornwall views"
+    ],
+    "pov": [
+      "northern working class perspective uk",
+      "immigrant view on british culture",
+      "rural vs city life england pov",
+      "gen z view on patriotism uk",
+      "scottish independence debate young voter"
+    ],
+    "format": [
+      "yes or no debate british politics",
+      "storytime british history lesson",
+      "hot take unpopular opinion uk",
+      "5 things you should know britain",
+      "day in the life british army recruit"
+    ]
+  },
+  "hashtagAnglePools": {
+    "emotional": ["veteransuk", "remembranceday", "proudbrit"],
+    "historical": ["ww2history", "battleofbritain", "churchillquotes"],
+    "aesthetic": ["ukaesthetic", "britishcountryside", "londonvibes"],
+    "pov": ["northernuk", "workingclassuk", "britishhumour"],
+    "format": ["debateuk", "storytimeuk", "hottakeuk"]
+  }
 }

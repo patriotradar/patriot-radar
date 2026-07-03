@@ -7,6 +7,7 @@ create table if not exists public.trend_intelligence_feed (
   source text not null default 'tiktok',
   type text not null check (type in ('hook', 'format', 'emotion', 'topic', 'keyword_cluster')),
   signal_strength integer not null default 0 check (signal_strength >= 0 and signal_strength <= 100),
+  virality_score integer not null default 0 check (virality_score >= 0 and virality_score <= 100),
   trend_state text not null default 'emerging'
     check (trend_state in ('emerging', 'rising', 'peaking', 'fading')),
   raw_data jsonb not null default '{}'::jsonb,

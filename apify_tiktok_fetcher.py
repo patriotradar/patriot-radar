@@ -13,6 +13,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+from keyword_diversity import fetch_historical_keyword_roots, select_diverse_apify_targets
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_ACTOR_ID = "clockworks/tiktok-scraper"
@@ -93,6 +95,13 @@ def _apify_item_to_extractor_input(item: dict[str, Any]) -> dict[str, Any]:
         or ""
     )
 
+    engagement = {
+        "play_count": int(item.get("playCount") or item.get("play_count") or 0),
+        "digg_count": int(item.get("diggCount") or item.get("digg_count") or item.get("likes") or 0),
+        "share_count": int(item.get("shareCount") or item.get("share_count") or 0),
+        "comment_count": int(item.get("commentCount") or item.get("comment_count") or 0),
+    }
+
     return {
         "url": url,
         "caption": caption,
@@ -100,10 +109,11 @@ def _apify_item_to_extractor_input(item: dict[str, Any]) -> dict[str, Any]:
         "author": author,
         "title": caption,
         "source": "apify",
+        "engagement": engagement,
     }
 
 
-def fetch_tiktok_via_apify() -> dict[str, Any]:
+def fetch_tiktok_via_apify(historical_keywords: set[str] | None = None) -> dict[str, Any]:
     """
     Fetch TikTok videos via Apify actor.
 
@@ -141,8 +151,11 @@ def fetch_tiktok_via_apify() -> dict[str, Any]:
         "resultsPerPage": config.get("resultsPerPage", 10),
     }
 
-    hashtags = config.get("hashtags") or []
-    search_queries = config.get("searchQueries") or []
+    historical = historical_keywords if historical_keywords is not None else fetch_historical_keyword_roots()
+    diverse_targets = select_diverse_apify_targets(historical)
+
+    hashtags = diverse_targets.get("hashtags") or config.get("hashtags") or []
+    search_queries = diverse_targets.get("searchQueries") or config.get("searchQueries") or []
     if hashtags:
         run_input["hashtags"] = hashtags
     if search_queries:
@@ -190,6 +203,7 @@ def fetch_tiktok_via_apify() -> dict[str, Any]:
         result["items"] = usable
         result["item_count"] = len(usable)
         result["apify_run_id"] = run_id
+        result["angles_used"] = diverse_targets.get("angles_used", [])
 
         logger.info(
             "Apify TikTok fetch succeeded: run_id=%s raw_items=%d usable_items=%d",

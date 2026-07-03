@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from apify_tiktok_fetcher import fetch_tiktok_via_apify
+from keyword_diversity import fetch_historical_keyword_roots
 from tiktok_trend_extractor import extract_tiktok_trend_signals
 from trend_intelligence_store import store_external_tiktok_signals
 
@@ -38,6 +39,7 @@ _DEFAULT_SAMPLE_INPUTS = Path(__file__).resolve().parent / "data" / "tiktok_samp
 
 def ingest_external_tiktok_signals(
     tiktok_inputs: list[str | dict[str, Any]] | None = None,
+    historical_keywords: set[str] | None = None,
 ) -> dict[str, Any]:
     """
     Run TikTok trend extraction and return read-only external signals.
@@ -47,7 +49,7 @@ def ingest_external_tiktok_signals(
     try:
         if not tiktok_inputs:
             return dict(_EMPTY_TIKTOK_SIGNALS)
-        return extract_tiktok_trend_signals(tiktok_inputs)
+        return extract_tiktok_trend_signals(tiktok_inputs, historical_keywords=historical_keywords)
     except Exception:
         return dict(_EMPTY_TIKTOK_SIGNALS)
 
@@ -83,9 +85,13 @@ class TrendShiftEngine:
     def load_tiktok_signals(
         self,
         tiktok_inputs: list[str | dict[str, Any]] | None = None,
+        historical_keywords: set[str] | None = None,
     ) -> dict[str, Any]:
         """Ingest TikTok content and store as external_tiktok_signals."""
-        self.external_tiktok_signals = ingest_external_tiktok_signals(tiktok_inputs)
+        self.external_tiktok_signals = ingest_external_tiktok_signals(
+            tiktok_inputs,
+            historical_keywords=historical_keywords,
+        )
         return self.external_tiktok_signals
 
     def store_external_tiktok_signals(
@@ -124,19 +130,22 @@ def _resolve_scan_inputs(
     tiktok_inputs: list[str | dict[str, Any]] | None = None,
     sample_inputs_path: str | Path | None = None,
     use_apify: bool = True,
+    historical_keywords: set[str] | None = None,
 ) -> tuple[list[str | dict[str, Any]], dict[str, Any]]:
     """
     Resolve TikTok scan inputs: explicit inputs > Apify fetch > sample file.
 
     Returns (inputs, apify_fetch_result).
     """
+    historical = historical_keywords if historical_keywords is not None else fetch_historical_keyword_roots()
+
     if tiktok_inputs:
         logger.info("Using %d explicit TikTok input(s) (Apify skipped).", len(tiktok_inputs))
         return tiktok_inputs, {"success": False, "skipped": True, "reason": "explicit_inputs_provided"}
 
     apify_result: dict[str, Any] = {"success": False, "items": [], "item_count": 0, "error": None}
     if use_apify:
-        apify_result = fetch_tiktok_via_apify()
+        apify_result = fetch_tiktok_via_apify(historical_keywords=historical)
         if apify_result.get("success") and apify_result.get("items"):
             items = apify_result["items"]
             logger.info("Using %d TikTok item(s) from Apify.", len(items))
@@ -170,14 +179,18 @@ def run_tiktok_trend_scan(
     uses explicit inputs or sample captions. Never raises.
     """
     try:
+        historical = fetch_historical_keyword_roots()
+        logger.info("Keyword dedup: %d historical roots loaded.", len(historical))
+
         inputs, apify_result = _resolve_scan_inputs(
             tiktok_inputs=tiktok_inputs,
             sample_inputs_path=sample_inputs_path,
             use_apify=use_apify,
+            historical_keywords=historical,
         )
 
         engine = TrendShiftEngine()
-        signals = engine.load_tiktok_signals(inputs)
+        signals = engine.load_tiktok_signals(inputs, historical_keywords=historical)
 
         store_result = {"stored": 0, "skipped": 0, "error": None}
         extracted_count = len(signals.get("extracted_items") or [])

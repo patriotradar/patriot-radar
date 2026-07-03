@@ -15,6 +15,8 @@ from urllib.parse import urlparse
 
 import requests
 
+from keyword_diversity import dedupe_keywords, dedupe_phrases
+
 PLATFORM = "tiktok"
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -266,7 +268,41 @@ def _detect_format(text: str) -> dict[str, Any]:
     return {"format_type": best_type, "format_strength_score": round(best_score, 2)}
 
 
-def _detect_virality(text: str, hook: dict[str, str], fmt: dict[str, Any]) -> dict[str, Any]:
+def _engagement_virality_boost(engagement: dict[str, Any] | None) -> float:
+    """Lightweight engagement-based virality boost from Apify metrics (0.0–0.4)."""
+    if not engagement:
+        return 0.0
+    plays = float(engagement.get("play_count") or 0)
+    diggs = float(engagement.get("digg_count") or 0)
+    shares = float(engagement.get("share_count") or 0)
+    comments = float(engagement.get("comment_count") or 0)
+    if plays <= 0 and diggs <= 0:
+        return 0.0
+
+    import math
+    play_score = min(0.15, math.log10(max(plays, 1)) / 7)
+    engagement_rate = (diggs + shares * 2 + comments * 1.5) / max(plays, 1)
+    rate_score = min(0.15, engagement_rate * 50)
+    share_score = min(0.1, math.log10(max(shares, 1)) / 5)
+    return round(play_score + rate_score + share_score, 2)
+
+
+def _sentiment_intensity(emotion: dict[str, Any]) -> float:
+    """0.0–0.2 boost from dominant emotion mixture intensity."""
+    mixture = emotion.get("emotion_mixture") or {}
+    if not mixture:
+        return 0.0
+    top = max(mixture.values())
+    return round(min(0.2, top * 0.2), 2)
+
+
+def _detect_virality(
+    text: str,
+    hook: dict[str, str],
+    fmt: dict[str, Any],
+    emotion: dict[str, Any] | None = None,
+    engagement: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     lowered = text.lower()
     hook_words = len(hook.get("hook_text", "").split())
     fast_hook = hook_words > 0 and hook_words <= 12
@@ -298,6 +334,8 @@ def _detect_virality(text: str, hook: dict[str, str], fmt: dict[str, Any]) -> di
         + relatability_level * 0.25
         + (0.2 if share_triggers else 0.05)
         + fmt["format_strength_score"] * 0.2
+        + _engagement_virality_boost(engagement)
+        + _sentiment_intensity(emotion or {})
     )
 
     return {
@@ -306,8 +344,11 @@ def _detect_virality(text: str, hook: dict[str, str], fmt: dict[str, Any]) -> di
             "controversy_level": round(controversy_level, 2),
             "relatability_level": round(relatability_level, 2),
             "shareability_triggers": share_triggers,
+            "engagement_boost": _engagement_virality_boost(engagement),
+            "sentiment_intensity": _sentiment_intensity(emotion or {}),
         },
         "viral_strength_score": round(min(1.0, viral_strength), 2),
+        "virality_score": int(round(min(1.0, viral_strength) * 100)),
     }
 
 
@@ -330,15 +371,33 @@ def _extract_phrases(text: str) -> list[str]:
     return list(dict.fromkeys(phrases))
 
 
-def _cluster_keywords(keywords: list[str]) -> list[dict[str, Any]]:
-    counts = Counter(keywords)
+def _cluster_keywords(
+    keywords: list[str],
+    historical: set[str] | None = None,
+    batch_seen: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    hist = set(historical or [])
+    seen = batch_seen if batch_seen is not None else set()
+    diverse = dedupe_keywords(keywords, hist, seen, max_count=8)
+    if not diverse:
+        return []
+    counts = Counter(kw for kw in keywords if kw in diverse)
+    total = max(len(keywords), 1)
     return [
-        {"keyword": kw, "frequency": count, "velocity_signal": round(count / max(len(keywords), 1), 2)}
-        for kw, count in counts.most_common(8)
+        {
+            "keyword": kw,
+            "frequency": counts.get(kw, 1),
+            "velocity_signal": round(counts.get(kw, 1) / total, 2),
+        }
+        for kw in diverse
     ]
 
 
-def _extract_single_item(meta: dict[str, Any]) -> dict[str, Any] | None:
+def _extract_single_item(
+    meta: dict[str, Any],
+    historical: set[str] | None = None,
+    batch_seen: set[str] | None = None,
+) -> dict[str, Any] | None:
     text = _normalize_text(meta.get("caption"), meta.get("description"), meta.get("title"))
     if not text and meta.get("source") == "url_only":
         return {
@@ -357,6 +416,7 @@ def _extract_single_item(meta: dict[str, Any]) -> dict[str, Any] | None:
                     "shareability_triggers": [],
                 },
                 "viral_strength_score": 0.0,
+                "virality_score": 0,
             },
             "linguistics": {"keyword_clusters": [], "phrase_patterns": []},
         }
@@ -364,13 +424,17 @@ def _extract_single_item(meta: dict[str, Any]) -> dict[str, Any] | None:
     if not text:
         return None
 
+    hist = set(historical or [])
+    seen = batch_seen if batch_seen is not None else set()
+
     hook = _detect_hook(text)
     primary_topic, secondary_topics = _score_topics(text)
     emotion = _detect_emotions(text)
     fmt = _detect_format(text)
-    virality = _detect_virality(text, hook, fmt)
+    engagement = meta.get("engagement")
+    virality = _detect_virality(text, hook, fmt, emotion=emotion, engagement=engagement)
     keywords = _extract_keywords(text)
-    phrases = _extract_phrases(text)
+    phrases = dedupe_phrases(_extract_phrases(text), hist, seen)
 
     return {
         "url": meta.get("url", ""),
@@ -384,7 +448,7 @@ def _extract_single_item(meta: dict[str, Any]) -> dict[str, Any] | None:
         "format": fmt,
         "virality": virality,
         "linguistics": {
-            "keyword_clusters": _cluster_keywords(keywords),
+            "keyword_clusters": _cluster_keywords(keywords, historical=hist, batch_seen=seen),
             "phrase_patterns": phrases,
         },
     }
@@ -474,16 +538,22 @@ def _build_insight_summary(aggregated: dict[str, Any], item_count: int) -> str:
 
 def extract_tiktok_trend_signals(
     inputs: list[str | dict[str, Any]] | None,
+    historical_keywords: set[str] | None = None,
 ) -> dict[str, Any]:
     """
     Extract structured trend intelligence from TikTok URLs or metadata.
 
     Fails silently: returns an empty structured object when input is missing
     or invalid. Never raises to callers.
+
+    historical_keywords: roots of all previously stored keywords for dedup.
     """
     try:
         if not inputs:
             return _empty_batch()
+
+        historical = set(historical_keywords or [])
+        batch_seen: set[str] = set()
 
         resolved: list[dict[str, Any]] = []
         for raw in inputs:
@@ -493,7 +563,7 @@ def extract_tiktok_trend_signals(
 
         extracted_items: list[dict[str, Any]] = []
         for meta in resolved:
-            extracted = _extract_single_item(meta)
+            extracted = _extract_single_item(meta, historical=historical, batch_seen=batch_seen)
             if extracted:
                 extracted_items.append(extracted)
 

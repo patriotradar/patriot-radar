@@ -58,6 +58,51 @@ def _parse_timestamp(value: str | None) -> str:
     return value
 
 
+def _virality_score(item: dict[str, Any]) -> int:
+    """Return 0–100 virality score from item signals."""
+    virality = item.get("virality") or {}
+    if virality.get("virality_score") is not None:
+        return max(0, min(100, int(virality["virality_score"])))
+    raw = float(virality.get("viral_strength_score", 0) or 0)
+    return max(0, min(100, int(round(raw * 100))))
+
+
+def _row_base(
+    item: dict[str, Any],
+    ts: str,
+    key: str,
+    row_type: str,
+    signal_strength: int,
+    trend_state: str,
+    signal: dict[str, Any],
+    summary: str,
+    dedupe_key: str,
+) -> dict[str, Any]:
+    """Build a feed row with virality_score always populated."""
+    viral = _virality_score(item)
+    item_snapshot = {
+        "content_key": key,
+        "url": item.get("url", ""),
+        "author": item.get("author", ""),
+        "caption_preview": item.get("caption_preview", ""),
+        "extraction_status": item.get("extraction_status", ""),
+        "batch_timestamp": ts,
+        "virality_score": viral,
+        "virality": item.get("virality") or {},
+    }
+    return {
+        "timestamp": ts,
+        "source": SOURCE_TIKTOK,
+        "type": row_type,
+        "signal_strength": signal_strength,
+        "virality_score": viral,
+        "trend_state": trend_state,
+        "raw_data": {**item_snapshot, "signal": signal},
+        "summary": summary,
+        "dedupe_key": dedupe_key,
+    }
+
+
 def signals_to_feed_rows(
     external_tiktok_signals: dict[str, Any],
     previous_strengths: dict[str, int] | None = None,
@@ -77,81 +122,61 @@ def signals_to_feed_rows(
     for item in items:
         key = _content_key(item)
         base_strength = _signal_strength(item)
-        item_snapshot = {
-            "content_key": key,
-            "url": item.get("url", ""),
-            "author": item.get("author", ""),
-            "caption_preview": item.get("caption_preview", ""),
-            "extraction_status": item.get("extraction_status", ""),
-            "batch_timestamp": ts,
-        }
 
         hook = item.get("hook") or {}
         hook_type = hook.get("hook_type", "opinion")
         hook_dedupe = f"{key}:hook:{hook_type}"
         hook_strength = _signal_strength(item, 5)
-        rows.append({
-            "timestamp": ts,
-            "source": SOURCE_TIKTOK,
-            "type": "hook",
-            "signal_strength": hook_strength,
-            "trend_state": _trend_state(hook_strength, prev.get(hook_dedupe)),
-            "raw_data": {**item_snapshot, "signal": hook},
-            "summary": f"{hook_type} hook: {hook.get('hook_text', '')[:160]}".strip(),
-            "dedupe_key": hook_dedupe,
-        })
+        rows.append(_row_base(
+            item, ts, key, "hook", hook_strength,
+            _trend_state(hook_strength, prev.get(hook_dedupe)),
+            hook,
+            f"{hook_type} hook: {hook.get('hook_text', '')[:160]}".strip(),
+            hook_dedupe,
+        ))
 
         fmt = item.get("format") or {}
         fmt_type = fmt.get("format_type", "unknown")
         fmt_dedupe = f"{key}:format:{fmt_type}"
         fmt_strength = int(round(float(fmt.get("format_strength_score", 0) or 0) * 100))
-        rows.append({
-            "timestamp": ts,
-            "source": SOURCE_TIKTOK,
-            "type": "format",
-            "signal_strength": max(0, min(100, fmt_strength)),
-            "trend_state": _trend_state(fmt_strength, prev.get(fmt_dedupe)),
-            "raw_data": {**item_snapshot, "signal": fmt},
-            "summary": f"Format: {fmt_type.replace('_', ' ')}",
-            "dedupe_key": fmt_dedupe,
-        })
+        rows.append(_row_base(
+            item, ts, key, "format", max(0, min(100, fmt_strength)),
+            _trend_state(fmt_strength, prev.get(fmt_dedupe)),
+            fmt,
+            f"Format: {fmt_type.replace('_', ' ')}",
+            fmt_dedupe,
+        ))
 
         emotion = item.get("emotion") or {}
         emotion_name = emotion.get("dominant_emotion", "curiosity")
         emotion_dedupe = f"{key}:emotion:{emotion_name}"
         emotion_strength = _signal_strength(item, 3)
         mixture = emotion.get("emotion_mixture") or {}
-        rows.append({
-            "timestamp": ts,
-            "source": SOURCE_TIKTOK,
-            "type": "emotion",
-            "signal_strength": emotion_strength,
-            "trend_state": _trend_state(emotion_strength, prev.get(emotion_dedupe)),
-            "raw_data": {**item_snapshot, "signal": emotion},
-            "summary": f"Emotion: {emotion_name}" + (
+        rows.append(_row_base(
+            item, ts, key, "emotion", emotion_strength,
+            _trend_state(emotion_strength, prev.get(emotion_dedupe)),
+            emotion,
+            f"Emotion: {emotion_name}" + (
                 f" ({', '.join(f'{k} {v:.0%}' for k, v in list(mixture.items())[:3])})"
                 if mixture else ""
             ),
-            "dedupe_key": emotion_dedupe,
-        })
+            emotion_dedupe,
+        ))
 
         topics = item.get("topics") or {}
         primary = topics.get("primary_topic", "other")
         secondary = topics.get("secondary_topics") or []
         topic_dedupe = f"{key}:topic:{primary}"
         topic_strength = _signal_strength(item, 2)
-        rows.append({
-            "timestamp": ts,
-            "source": SOURCE_TIKTOK,
-            "type": "topic",
-            "signal_strength": topic_strength,
-            "trend_state": _trend_state(topic_strength, prev.get(topic_dedupe)),
-            "raw_data": {**item_snapshot, "signal": topics},
-            "summary": f"Topic: {primary}" + (
+        rows.append(_row_base(
+            item, ts, key, "topic", topic_strength,
+            _trend_state(topic_strength, prev.get(topic_dedupe)),
+            topics,
+            f"Topic: {primary}" + (
                 f" (+ {', '.join(secondary[:3])})" if secondary else ""
             ),
-            "dedupe_key": topic_dedupe,
-        })
+            topic_dedupe,
+        ))
 
         linguistics = item.get("linguistics") or {}
         clusters = linguistics.get("keyword_clusters") or []
@@ -164,24 +189,15 @@ def signals_to_feed_rows(
                 100,
                 base_strength + len(clusters) * 3 + len(phrases) * 2,
             )
-            rows.append({
-                "timestamp": ts,
-                "source": SOURCE_TIKTOK,
-                "type": "keyword_cluster",
-                "signal_strength": cluster_strength,
-                "trend_state": _trend_state(cluster_strength, prev.get(cluster_dedupe)),
-                "raw_data": {
-                    **item_snapshot,
-                    "signal": {
-                        "keyword_clusters": clusters,
-                        "phrase_patterns": phrases,
-                    },
-                },
-                "summary": f"Keywords: {top_kw or 'n/a'}" + (
+            rows.append(_row_base(
+                item, ts, key, "keyword_cluster", cluster_strength,
+                _trend_state(cluster_strength, prev.get(cluster_dedupe)),
+                {"keyword_clusters": clusters, "phrase_patterns": phrases},
+                f"Keywords: {top_kw or 'n/a'}" + (
                     f" | Phrases: {top_phrases}" if top_phrases else ""
                 ),
-                "dedupe_key": cluster_dedupe,
-            })
+                cluster_dedupe,
+            ))
 
     return rows
 
