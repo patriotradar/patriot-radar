@@ -3,7 +3,9 @@ from datetime import datetime
 import time
 import json
 import random
+import os
 import requests
+from caption_templates import apply_caption_pipeline
 
 CONTENT_KEYWORDS = [
     # Core
@@ -1285,6 +1287,10 @@ def main():
     all_results.sort(key=lambda x: x.get("content_score", 0), reverse=True)
 
     product_trends = sorted(product_results, key=lambda x: x["viral_score"], reverse=True)
+
+    enable_polish = os.environ.get("ENABLE_CAPTION_POLISH", "").lower() in ("1", "true", "yes")
+    all_results = apply_caption_pipeline(all_results, enable_polish=enable_polish)
+    scored_emerging = apply_caption_pipeline(scored_emerging, enable_polish=enable_polish)
 
     save_results(all_results, scored_emerging, product_trends, creator_insights)
 
