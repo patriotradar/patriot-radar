@@ -204,7 +204,10 @@ def signals_to_feed_rows(
 
 def _get_supabase_client():
     supabase_url = os.getenv("SUPABASE_URL")
-    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    service_role_key = (
+        os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        or os.getenv("SUPABASE_SECRET_KEY")
+    )
     if not supabase_url or not service_role_key:
         missing = []
         if not supabase_url:
@@ -218,6 +221,60 @@ def _get_supabase_client():
         return None
     from supabase import create_client
     return create_client(supabase_url, service_role_key)
+
+
+def _is_table_missing_error(exc: Exception | str) -> bool:
+    msg = str(exc)
+    return "PGRST205" in msg or "Could not find the table" in msg
+
+
+def verify_feed_table(table: str | None = None) -> dict[str, Any]:
+    """
+    Probe trend_intelligence_feed existence and row count via service role.
+
+    Returns {ok, table, row_count, error, table_missing}.
+    """
+    table_name = table or os.getenv("SUPABASE_FEED_TABLE", DEFAULT_FEED_TABLE)
+    result: dict[str, Any] = {
+        "ok": False,
+        "table": table_name,
+        "row_count": None,
+        "error": None,
+        "table_missing": False,
+    }
+    try:
+        supabase = _get_supabase_client()
+        if supabase is None:
+            result["error"] = "missing_supabase_credentials"
+            return result
+
+        response = (
+            supabase.table(table_name)
+            .select("id", count="exact")
+            .eq("source", SOURCE_TIKTOK)
+            .limit(1)
+            .execute()
+        )
+        result["ok"] = True
+        result["row_count"] = getattr(response, "count", None)
+        if result["row_count"] is None:
+            result["row_count"] = len(response.data or [])
+        logger.info(
+            "Supabase feed table probe: table=%s row_count=%s",
+            table_name,
+            result["row_count"],
+        )
+        return result
+    except Exception as exc:
+        result["error"] = str(exc)
+        if _is_table_missing_error(exc):
+            result["table_missing"] = True
+            result["error"] = (
+                f"table_missing:{table_name} — run sql/trend_intelligence_feed_setup.sql "
+                "in Supabase SQL Editor or scripts/apply_trend_feed_schema.py"
+            )
+        logger.error("Supabase feed table probe failed: %s", exc)
+        return result
 
 
 def _fetch_previous_strengths(
@@ -267,6 +324,22 @@ def store_trend_intelligence_rows(
                 "stored": 0,
                 "skipped": len(rows),
                 "error": "missing_supabase_credentials",
+            }
+
+        table_probe = verify_feed_table(table_name)
+        if table_probe.get("table_missing"):
+            return {
+                "stored": 0,
+                "skipped": len(rows),
+                "error": table_probe.get("error"),
+                "table_probe": table_probe,
+            }
+        if not table_probe.get("ok"):
+            return {
+                "stored": 0,
+                "skipped": len(rows),
+                "error": table_probe.get("error") or "feed_table_probe_failed",
+                "table_probe": table_probe,
             }
 
         dedupe_keys = [row["dedupe_key"] for row in rows if row.get("dedupe_key")]
@@ -333,17 +406,28 @@ def store_trend_intelligence_rows(
                 )
 
         logger.info(
-            "Supabase upsert finished: table=%s stored=%d failed=%d",
+            "Supabase upsert finished: table=%s stored=%d failed=%d row_count_before=%s",
             table_name,
             stored,
             failed,
+            table_probe.get("row_count"),
         )
         if failed and last_error:
             logger.error("Last Supabase upsert error: %s", last_error)
+            if _is_table_missing_error(last_error):
+                return {
+                    "stored": stored,
+                    "skipped": failed,
+                    "error": (
+                        f"table_missing:{table_name} — run sql/trend_intelligence_feed_setup.sql"
+                    ),
+                }
+        post_probe = verify_feed_table(table_name) if stored > 0 else table_probe
         return {
             "stored": stored,
             "skipped": failed,
             "error": None if failed == 0 else ("partial_write_failure: " + (last_error or "unknown")),
+            "table_probe": post_probe,
         }
     except Exception as exc:
         logger.exception("Supabase upsert failed: %s", exc)

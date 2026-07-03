@@ -452,8 +452,8 @@ function describeFeedError(error) {
   const msg = error.message || String(error);
   feedDebug("fetch error", { code: code, message: msg, details: error.details, hint: error.hint });
 
-  if (code === "PGRST205" || msg.indexOf("Could not find the table") !== -1) {
-    return "Upstream setup required: Supabase table trend_intelligence_feed does not exist. Run sql/trend_intelligence_feed.sql, then run the TikTok scan.";
+    if (code === "PGRST205" || msg.indexOf("Could not find the table") !== -1) {
+    return "Upstream setup required: Supabase table trend_intelligence_feed does not exist. Run sql/trend_intelligence_feed_setup.sql in Supabase SQL Editor, then run the TikTok scan workflow.";
   }
   if (code === "42501" || msg.toLowerCase().indexOf("permission") !== -1 || msg.toLowerCase().indexOf("policy") !== -1) {
     return "Cannot read trend feed — login required or RLS policy blocking read on trend_intelligence_feed.";

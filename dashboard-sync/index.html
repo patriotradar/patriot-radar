@@ -1763,6 +1763,7 @@ var TIKTOK_FEED_EMPTY_MSG = "No trends available yet. Run TikTok scan.";
 var TIKTOK_FEED_DEBUG = true;
 var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var tiktokTrendFeedCache = [];
+var tiktokFeedFetchStatus = { state: "idle", rowCount: 0, message: "", error: null };
 
 function tiktokFeedDebug(label, payload) {
   if (TIKTOK_FEED_DEBUG) console.log("[TikTokFeed] " + label, payload);
@@ -1795,6 +1796,17 @@ function extractTiktokKeywords(row) {
   return row.summary || "";
 }
 
+function renderTiktokFeedStatusBanner() {
+  var st = tiktokFeedFetchStatus || {};
+  if (st.state === "idle" || st.state === "loading") return "";
+  var color = st.state === "ok" ? "var(--green)" : (st.state === "empty" ? "var(--amber)" : "var(--red)");
+  var label = st.message || "";
+  if (st.state === "ok" && st.rowCount) {
+    label = "Fetched " + st.rowCount + " TikTok signal rows from Supabase";
+  }
+  return '<p style="font-size:11px;color:' + color + ';margin-bottom:10px;padding:8px 10px;background:rgba(0,0,0,.2);border-radius:8px;border:1px solid var(--border)">' + label + '</p>';
+}
+
 function renderTiktokTrendIntelligenceFeed(rows) {
   var el = document.getElementById("tiktokTrendIntelligence");
   if (!el) return;
@@ -1804,12 +1816,15 @@ function renderTiktokTrendIntelligenceFeed(rows) {
   if (safe.length) tiktokFeedDebug("render first row", safe[0]);
 
   if (!safe.length) {
-    el.innerHTML = '<div class="card"><div class="card-header"><h2 style="color:var(--amber)">TikTok Trend Intelligence</h2><div class="section-icon" style="background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.3);color:var(--amber)">&#9835;</div></div><p style="font-size:12px;color:var(--muted);padding:8px 0">' + TIKTOK_FEED_EMPTY_MSG + '</p></div>';
+    el.innerHTML = '<div class="card"><div class="card-header"><h2 style="color:var(--amber)">TikTok Trend Intelligence</h2><div class="section-icon" style="background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.3);color:var(--amber)">&#9835;</div></div>'
+      + renderTiktokFeedStatusBanner()
+      + '<p style="font-size:12px;color:var(--muted);padding:8px 0">' + TIKTOK_FEED_EMPTY_MSG + '</p></div>';
     return;
   }
 
   var h = '<div class="card card-glow" style="border-color:rgba(255,0,80,.35)">';
   h += '<div class="card-header"><h2 style="color:#ff0050">TikTok Trend Intelligence</h2><div class="section-icon" style="background:rgba(255,0,80,.1);border-color:rgba(255,0,80,.3);color:#ff0050">&#9835;</div></div>';
+  h += renderTiktokFeedStatusBanner();
   h += '<p style="font-size:11px;color:var(--muted);margin-bottom:12px">Live signals from <code style="color:var(--green)">trend_intelligence_feed</code> — ' + safe.length + ' rows</p>';
 
   for (var i = 0; i < Math.min(safe.length, 50); i++) {
@@ -1821,11 +1836,10 @@ function renderTiktokTrendIntelligenceFeed(rows) {
 
     h += '<div class="feed-item">';
     h += '<div class="feed-header">';
-    h += '<span class="feed-keyword">' + (row.type || "signal").replace(/_/g, " ") + '</span>';
+    h += '<span class="feed-keyword">' + (keywords || row.type || "signal").replace(/_/g, " ") + '</span>';
     h += tiktokTrendStateBadge(row.trend_state);
     h += '</div>';
-    if (keywords) h += '<div style="font-size:12px;color:var(--white);margin:6px 0;line-height:1.4">' + keywords + '</div>';
-    if (row.summary && row.summary !== keywords) h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + row.summary + '</div>';
+    if (keywords && row.summary && row.summary !== keywords) h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + row.summary + '</div>';
     h += '<div class="feed-metrics">';
     h += '<div class="feed-metric"><div class="fm-label">Strength</div><div class="fm-value rise-positive">' + strength + '</div></div>';
     h += '<div class="feed-metric"><div class="fm-label">Virality</div><div class="fm-value" style="color:var(--amber)">' + (virality != null ? virality : "—") + '</div></div>';
@@ -1845,7 +1859,7 @@ function describeTiktokFeedError(error) {
   var msg = error.message || String(error);
   tiktokFeedDebug("fetch error", { code: code, message: msg, details: error.details });
   if (code === "PGRST205" || msg.indexOf("Could not find the table") !== -1) {
-    return "Supabase table trend_intelligence_feed not found. Run sql/trend_intelligence_feed.sql in Supabase, then run the TikTok scan.";
+    return "Supabase table trend_intelligence_feed not found. Run sql/trend_intelligence_feed_setup.sql in Supabase, then run the TikTok scan.";
   }
   if (code === "42501" || /permission|policy|JWT/i.test(msg)) {
     return "Cannot read trend_intelligence_feed — please log in or check Supabase RLS read policy.";
@@ -1858,6 +1872,7 @@ async function refreshTiktokTrendIntelligenceFeed() {
   if (!el) return;
 
   tiktokFeedDebug("fetch start", { table: TIKTOK_FEED_TABLE, url: SUPABASE_URL });
+  tiktokFeedFetchStatus = { state: "loading", rowCount: 0, message: "Loading TikTok trends from Supabase...", error: null };
 
   el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Loading TikTok trends from Supabase...</p></div>';
 
@@ -1865,6 +1880,7 @@ async function refreshTiktokTrendIntelligenceFeed() {
     var session = await supabaseClient.auth.getSession();
     if (!session.data || !session.data.session) {
       tiktokFeedDebug("fetch skipped", "not authenticated");
+      tiktokFeedFetchStatus = { state: "auth_required", rowCount: 0, message: "Login required to load TikTok trend intelligence.", error: null };
       el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Login required to load TikTok trend intelligence.</p></div>';
       return;
     }
@@ -1876,25 +1892,42 @@ async function refreshTiktokTrendIntelligenceFeed() {
       .order("timestamp", { ascending: false })
       .limit(200);
 
+    tiktokFeedDebug("Supabase response status", resp.status + " " + (resp.statusText || ""));
     tiktokFeedDebug("Supabase response length", resp.data ? resp.data.length : 0);
     if (resp.data && resp.data.length) tiktokFeedDebug("Supabase first row", resp.data[0]);
 
     if (resp.error) {
-      el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + describeTiktokFeedError(resp.error) + '</p></div>';
+      var errMsg = describeTiktokFeedError(resp.error);
+      tiktokFeedFetchStatus = { state: "error", rowCount: 0, message: errMsg, error: resp.error };
+      el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + errMsg + '</p></div>';
       return;
     }
 
     tiktokTrendFeedCache = resp.data || [];
     if (!tiktokTrendFeedCache.length) {
       tiktokFeedDebug("fetch result", "zero rows returned");
+      tiktokFeedFetchStatus = {
+        state: "empty",
+        rowCount: 0,
+        message: "Supabase query returned 0 rows for source=tiktok. Run GitHub Actions workflow TikTok Trend Intelligence Scan.",
+        error: null,
+      };
       renderTiktokTrendIntelligenceFeed([]);
       return;
     }
 
+    tiktokFeedFetchStatus = {
+      state: "ok",
+      rowCount: tiktokTrendFeedCache.length,
+      message: "Fetched " + tiktokTrendFeedCache.length + " TikTok signal rows",
+      error: null,
+    };
     renderTiktokTrendIntelligenceFeed(tiktokTrendFeedCache);
   } catch (err) {
     tiktokFeedDebug("fetch exception", err);
-    el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + describeTiktokFeedError(err) + '</p></div>';
+    var catchMsg = describeTiktokFeedError(err);
+    tiktokFeedFetchStatus = { state: "error", rowCount: 0, message: catchMsg, error: err };
+    el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + catchMsg + '</p></div>';
   }
 }
 
