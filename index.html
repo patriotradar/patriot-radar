@@ -149,12 +149,35 @@ const SUPABASE_URL = "https://kdwqnlgdanzigpdwyqbh.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_7WtTtv9S4dl5jO-YE9QXRg_Ldy3gU_G";
 const FEED_TABLE = "trend_intelligence_feed";
 const ADMIN_EMAILS = ["jamie.mahon1996@gmail.com"];
+const NO_TRENDS_MSG = "No trends available yet — run TikTok scan";
+const DEBUG_FEED = true;
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
 let isAdminUser = false;
 let trendFeedCache = [];
+let lastFeedFetchStatus = { state: "idle", message: "", rowCount: 0, error: null };
+
+function feedDebug(label, payload) {
+  if (DEBUG_FEED) {
+    console.log("[TrendFeed] " + label, payload);
+  }
+}
+
+function emptyFeedMessage(message) {
+  return '<p class="section-empty">' + message + "</p>";
+}
+
+function renderEmptyFeedSections(message) {
+  const html = emptyFeedMessage(message);
+  document.getElementById("risingTopics").innerHTML = html;
+  document.getElementById("hookPatterns").innerHTML = html;
+  document.getElementById("emotionalShifts").innerHTML = html;
+  document.getElementById("formatShifts").innerHTML = html;
+  document.getElementById("keywordClusters").innerHTML = html;
+  document.getElementById("feedLastUpdated").innerText = message;
+}
 
 async function checkSession() {
   const { data } = await supabaseClient.auth.getSession();
@@ -250,7 +273,7 @@ function groupByType(rows, type) {
 
 function metaLine(row, extra) {
   let parts = [];
-  parts.push('Strength: <span class="feed-strength">' + row.signal_strength + '/100</span>');
+  parts.push('Strength: <span class="feed-strength">' + (Number(row.signal_strength) || 0) + '/100</span>');
   const v = viralityLabel(row);
   if (v) parts.push(v);
   if (extra) parts.push(extra);
@@ -258,9 +281,13 @@ function metaLine(row, extra) {
   return parts.join(' | ');
 }
 
+function safeRows(rows) {
+  return Array.isArray(rows) ? rows.filter(function(r) { return r && typeof r === "object"; }) : [];
+}
+
 function renderRisingTopics(rows) {
-  const topics = groupByType(rows, "topic");
-  if (!topics.length) return '<p class="section-empty">No rising topics detected yet.</p>';
+  const topics = groupByType(safeRows(rows), "topic");
+  if (!topics.length) return emptyFeedMessage(NO_TRENDS_MSG);
 
   const grouped = {};
   topics.forEach(function(row) {
@@ -292,8 +319,8 @@ function renderRisingTopics(rows) {
 }
 
 function renderHookPatterns(rows) {
-  const hooks = groupByType(rows, "hook");
-  if (!hooks.length) return '<p class="section-empty">No hook patterns detected yet.</p>';
+  const hooks = groupByType(safeRows(rows), "hook");
+  if (!hooks.length) return emptyFeedMessage(NO_TRENDS_MSG);
 
   const grouped = {};
   hooks.forEach(function(row) {
@@ -322,8 +349,8 @@ function renderHookPatterns(rows) {
 }
 
 function renderEmotionalShifts(rows) {
-  const emotions = groupByType(rows, "emotion");
-  if (!emotions.length) return '<p class="section-empty">No emotional shifts detected yet.</p>';
+  const emotions = groupByType(safeRows(rows), "emotion");
+  if (!emotions.length) return emptyFeedMessage(NO_TRENDS_MSG);
 
   const dist = {};
   let total = 0;
@@ -351,8 +378,8 @@ function renderEmotionalShifts(rows) {
 }
 
 function renderFormatShifts(rows) {
-  const formats = groupByType(rows, "format");
-  if (!formats.length) return '<p class="section-empty">No format shifts detected yet.</p>';
+  const formats = groupByType(safeRows(rows), "format");
+  if (!formats.length) return emptyFeedMessage(NO_TRENDS_MSG);
 
   const grouped = {};
   formats.forEach(function(row) {
@@ -382,8 +409,8 @@ function renderFormatShifts(rows) {
 }
 
 function renderKeywordClusters(rows) {
-  const clusters = groupByType(rows, "keyword_cluster");
-  if (!clusters.length) return '<p class="section-empty">No keyword clusters detected yet.</p>';
+  const clusters = groupByType(safeRows(rows), "keyword_cluster");
+  if (!clusters.length) return emptyFeedMessage(NO_TRENDS_MSG);
 
   let html = "";
   clusters.forEach(function(row) {
@@ -402,40 +429,90 @@ function renderKeywordClusters(rows) {
 }
 
 function renderTrendIntelligenceFeed(rows) {
-  document.getElementById("risingTopics").innerHTML = renderRisingTopics(rows);
-  document.getElementById("hookPatterns").innerHTML = renderHookPatterns(rows);
-  document.getElementById("emotionalShifts").innerHTML = renderEmotionalShifts(rows);
-  document.getElementById("formatShifts").innerHTML = renderFormatShifts(rows);
-  document.getElementById("keywordClusters").innerHTML = renderKeywordClusters(rows);
+  const safe = safeRows(rows);
+  feedDebug("render input length", safe.length);
+  if (safe.length) feedDebug("render first row", safe[0]);
 
-  const latest = rows.length ? rows[0].timestamp : null;
-  document.getElementById("feedLastUpdated").innerText = rows.length
-    ? "Last updated: " + formatTimestamp(latest) + " (" + rows.length + " signals)"
-    : "No TikTok trend signals stored yet. Run a scan to populate the feed.";
+  document.getElementById("risingTopics").innerHTML = renderRisingTopics(safe);
+  document.getElementById("hookPatterns").innerHTML = renderHookPatterns(safe);
+  document.getElementById("emotionalShifts").innerHTML = renderEmotionalShifts(safe);
+  document.getElementById("formatShifts").innerHTML = renderFormatShifts(safe);
+  document.getElementById("keywordClusters").innerHTML = renderKeywordClusters(safe);
+
+  const latest = safe.length ? safe[0].timestamp : null;
+  document.getElementById("feedLastUpdated").innerText = safe.length
+    ? "Last updated: " + formatTimestamp(latest) + " (" + safe.length + " signals)"
+    : NO_TRENDS_MSG;
+}
+
+function describeFeedError(error) {
+  if (!error) return NO_TRENDS_MSG;
+  const code = error.code || "";
+  const msg = error.message || String(error);
+  feedDebug("fetch error", { code: code, message: msg, details: error.details, hint: error.hint });
+
+  if (code === "PGRST205" || msg.indexOf("Could not find the table") !== -1) {
+    return "Upstream setup required: Supabase table trend_intelligence_feed does not exist. Run sql/trend_intelligence_feed.sql, then run the TikTok scan.";
+  }
+  if (code === "42501" || msg.toLowerCase().indexOf("permission") !== -1 || msg.toLowerCase().indexOf("policy") !== -1) {
+    return "Cannot read trend feed — login required or RLS policy blocking read on trend_intelligence_feed.";
+  }
+  return "Trend feed fetch failed: " + msg;
 }
 
 async function refreshTrendIntelligenceFeed() {
+  feedDebug("fetch start", { table: FEED_TABLE, url: SUPABASE_URL, loggedIn: !!currentUser });
+
+  if (!currentUser) {
+    lastFeedFetchStatus = { state: "auth_required", message: "Login required to load trends", rowCount: 0, error: null };
+    feedDebug("fetch skipped", "no authenticated session");
+    renderEmptyFeedSections("Login required to view TikTok trends.");
+    return;
+  }
+
+  document.getElementById("feedLastUpdated").innerText = "Loading trend feed from Supabase...";
+
   try {
-    const { data, error } = await supabaseClient
+    const { data, error, status, statusText } = await supabaseClient
       .from(FEED_TABLE)
       .select("*")
       .eq("source", "tiktok")
       .order("timestamp", { ascending: false })
       .limit(200);
 
+    feedDebug("Supabase response status", status + " " + statusText);
+    feedDebug("Supabase response length", data ? data.length : 0);
+    if (data && data.length) feedDebug("Supabase first row", data[0]);
+
     if (error) {
-      console.warn("Trend feed load error:", error.message);
+      const userMessage = describeFeedError(error);
+      lastFeedFetchStatus = { state: "error", message: userMessage, rowCount: 0, error: error };
       trendFeedCache = [];
-      renderTrendIntelligenceFeed([]);
+      renderEmptyFeedSections(userMessage);
       return;
     }
 
     trendFeedCache = data || [];
+    lastFeedFetchStatus = {
+      state: trendFeedCache.length ? "ok" : "empty",
+      message: trendFeedCache.length ? "ok" : NO_TRENDS_MSG,
+      rowCount: trendFeedCache.length,
+      error: null,
+    };
+
+    if (!trendFeedCache.length) {
+      feedDebug("fetch result", "zero rows — upstream ingestion may not have run yet");
+      renderEmptyFeedSections(NO_TRENDS_MSG);
+      return;
+    }
+
     renderTrendIntelligenceFeed(trendFeedCache);
   } catch (err) {
-    console.warn("Trend feed unavailable:", err);
+    feedDebug("fetch exception", err);
+    const userMessage = describeFeedError(err);
+    lastFeedFetchStatus = { state: "error", message: userMessage, rowCount: 0, error: err };
     trendFeedCache = [];
-    renderTrendIntelligenceFeed([]);
+    renderEmptyFeedSections(userMessage);
   }
 }
 
