@@ -11,7 +11,7 @@ from recommendation_output import (
     humanise_next_post,
     load_recommendation_history,
     save_recommendation_history,
-    _build_recommendation_for_item,
+    build_recommendation_for_item,
     _humanise_hook,
     _is_generic_hook,
     _strip_analytics_language,
@@ -134,14 +134,14 @@ class TestRepetitionControl(unittest.TestCase):
             None,
             {},
             history,
-            _build_recommendation_for_item,
+            build_recommendation_for_item,
         )
         self.assertEqual(item["keyword"], "remembrance")
 
     def test_finalize_writes_history(self):
         with tempfile.TemporaryDirectory() as tmp:
             history_path = os.path.join(tmp, "history.json")
-            draft = _build_recommendation_for_item(SAMPLE_ITEM, None)
+            draft = build_recommendation_for_item(SAMPLE_ITEM, None)
             final = finalize_recommendation(
                 draft,
                 [SAMPLE_ITEM],

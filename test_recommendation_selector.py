@@ -11,7 +11,7 @@ from recommendation_selector import (
     _compose_final_score,
     _score_candidate,
 )
-from recommendation_output import _build_recommendation_for_item
+from recommendation_output import build_recommendation_for_item
 
 
 SAMPLE_ITEM = {
@@ -92,7 +92,7 @@ class TestFinalSelectorAuthority(unittest.TestCase):
             None,
             {},
             [],
-            _build_recommendation_for_item,
+            build_recommendation_for_item,
         )
         self.assertIsNotNone(item)
         self.assertIn(item["keyword"], ("british pride", "remembrance"))
@@ -108,10 +108,10 @@ class TestFinalSelectorAuthority(unittest.TestCase):
             }
         ]
         scored_a = _score_candidate(
-            SAMPLE_ITEM, "HEALTHY", {}, history, _build_recommendation_for_item, None
+            SAMPLE_ITEM, "HEALTHY", {}, history, build_recommendation_for_item, None
         )
         scored_b = _score_candidate(
-            SAMPLE_ITEM_B, "HEALTHY", {}, history, _build_recommendation_for_item, None
+            SAMPLE_ITEM_B, "HEALTHY", {}, history, build_recommendation_for_item, None
         )
         self.assertGreater(scored_a.repetition_penalty, scored_b.repetition_penalty)
 
@@ -121,7 +121,7 @@ class TestFinalSelectorAuthority(unittest.TestCase):
             None,
             {},
             history,
-            _build_recommendation_for_item,
+            build_recommendation_for_item,
         )
         self.assertEqual(item["keyword"], "remembrance")
 
@@ -133,7 +133,7 @@ class TestFinalSelectorAuthority(unittest.TestCase):
             None,
             {},
             [],
-            _build_recommendation_for_item,
+            build_recommendation_for_item,
             structural_fallback=fallback,
         )
         self.assertIsNone(item)

@@ -7,11 +7,12 @@ build_virality_recommendation() to produce creator-ready text.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
 from copy import deepcopy
+
+from recommendation_signals import dominant_emotion, emotional_trigger, format_family, stable_index
 
 HISTORY_FILE = "recommendation_history.json"
 HISTORY_LIMIT = 3
@@ -48,72 +49,6 @@ GENERIC_HOOK_MARKERS = (
     "explained in 3 steps",
     "suddenly searching",
 )
-
-FORMAT_FAMILIES = (
-    ("debate", ("yes/no", "debate", "comment-bait")),
-    ("reaction", ("reaction", "news reaction", "trend-reaction")),
-    ("explainer", ("explainer", "step-by-step", "educational", "carousel")),
-    ("talking_head", ("talking-head", "talking head", "pov")),
-    ("curiosity", ("curiosity-gap", "curiosity gap")),
-)
-
-
-def _candidate_rank_key(item):
-    """Deprecated ranking helper — selection authority is recommendation_selector.py."""
-    return (
-        float(item.get("opportunity_gap", 0) or 0),
-        float(item.get("content_score", 0) or 0),
-        float(item.get("viral_score", 0) or 0),
-    )
-
-
-def _stable_index(seed: str, modulo: int) -> int:
-    digest = hashlib.md5(seed.encode("utf-8")).hexdigest()
-    return int(digest[:8], 16) % modulo
-
-
-def _format_family(post_format: str) -> str:
-    lowered = (post_format or "").lower()
-    for family, markers in FORMAT_FAMILIES:
-        if any(marker in lowered for marker in markers):
-            return family
-    if "carousel" in lowered:
-        return "explainer"
-    if "clip" in lowered:
-        return "reaction"
-    return "talking_head"
-
-
-def _dominant_emotion(item) -> str:
-    if not item:
-        return "pride"
-    emotion = int(item.get("emotion", 0) or 0)
-    debate = int(item.get("debate", 0) or 0)
-    british = int(item.get("british", 0) or 0)
-    if debate >= emotion and debate >= 18:
-        return "debate"
-    if emotion >= 18:
-        return "pride"
-    if british >= 18:
-        return "British identity"
-    return "curiosity"
-
-
-def _emotional_trigger(item, engagement_signal: str, post_format: str) -> str:
-    signal_map = {
-        "HOOK_OK_LOW_CONVERSION": "curiosity",
-        "ATTENTION_WITHOUT_VALUE": "education",
-        "DISTRIBUTION_LIMITED": "reach",
-        "HEALTHY": _dominant_emotion(item),
-    }
-    trigger = signal_map.get(engagement_signal, _dominant_emotion(item))
-    family = _format_family(post_format)
-    if family == "debate":
-        return "debate"
-    if family == "explainer":
-        return "education"
-    return trigger
-
 
 def _topic_angle(keyword: str) -> str:
     kw = keyword.lower().strip()
@@ -241,16 +176,16 @@ def _humanise_hook(hook: str, keyword: str, item, engagement_signal: str) -> str
     pool = pools.get(engagement_signal, question_hooks + opinion_hooks)
 
     if _is_generic_hook(hook) or not hook:
-        choice = pool[_stable_index(seed, len(pool))]
+        choice = pool[stable_index(seed, len(pool))]
         return _strip_analytics_language(choice)
 
     cleaned = hook
     cleaned = re.sub(r"\s*Yes or No\?\s*$", "", cleaned, flags=re.IGNORECASE).strip()
     cleaned = re.sub(r"^Most people get .+ wrong — this is why your patriotic content is not converting\.?$",
-                     pool[_stable_index(seed, len(pool))], cleaned, flags=re.IGNORECASE)
+                     pool[stable_index(seed, len(pool))], cleaned, flags=re.IGNORECASE)
     cleaned = _strip_analytics_language(cleaned)
     if _is_generic_hook(cleaned):
-        return pool[_stable_index(seed, len(pool))]
+        return pool[stable_index(seed, len(pool))]
     return cleaned
 
 
@@ -281,7 +216,7 @@ def _humanise_content_idea(raw: str, keyword: str, item, engagement_signal: str)
         "HEALTHY": specific_frames,
     }
     frames = signal_frames.get(engagement_signal, specific_frames)
-    chosen = frames[_stable_index(seed, len(frames))]
+    chosen = frames[stable_index(seed, len(frames))]
 
     if not raw or any(
         phrase in raw.lower()
@@ -328,8 +263,8 @@ def _humanise_reason(
     engagement_signal: str,
     post_format: str,
 ) -> str:
-    emotion = _dominant_emotion(item)
-    family = _format_family(post_format)
+    emotion = dominant_emotion(item)
+    family = format_family(post_format)
     family_labels = {
         "debate": "debate format",
         "reaction": "reaction-style clip",
@@ -426,7 +361,7 @@ def humanise_next_post(next_post: dict, item, engagement_signal: str) -> dict:
     return post
 
 
-def _build_recommendation_for_item(item, engagement_metrics):
+def build_recommendation_for_item(item, engagement_metrics):
     from trends import (
         build_insight_summary,
         build_next_post,
@@ -464,6 +399,7 @@ def finalize_recommendation(
     engagement_metrics=None,
     history_path: str = HISTORY_FILE,
     performance_posts=None,
+    persist_history: bool = True,
 ) -> dict:
     """
     Orchestration only — selection authority is final_recommendation_selector().
@@ -482,7 +418,7 @@ def finalize_recommendation(
         engagement_metrics,
         calibration_context,
         history,
-        _build_recommendation_for_item,
+        build_recommendation_for_item,
         structural_fallback=recommendation,
     )
 
@@ -502,14 +438,15 @@ def finalize_recommendation(
     keyword = (item.get("keyword") if item else final.get("based_on", {}).get("keyword")) or ""
     post_format = final["next_post"].get("format", "")
 
-    save_recommendation_history(
-        {
-            "keyword": keyword,
-            "format_family": _format_family(post_format),
-            "emotional_trigger": trigger,
-            "hook": final["next_post"].get("hook", ""),
-        },
-        path=history_path,
-    )
+    if persist_history:
+        save_recommendation_history(
+            {
+                "keyword": keyword,
+                "format_family": format_family(post_format),
+                "emotional_trigger": trigger,
+                "hook": final["next_post"].get("hook", ""),
+            },
+            path=history_path,
+        )
 
     return final

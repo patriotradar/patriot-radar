@@ -215,20 +215,6 @@ def is_patriotic_relevant(query):
         return False
     return True
 
-def make_caption(keyword):
-    kw = keyword.title()
-    question = QUESTIONS.get(keyword.lower(), f"Is {kw} being ignored in modern Britain? Yes or No?")
-    captions = [
-        f"🇬🇧 {question} Comment below! #britain #patriotic #british #england #proud",
-        f"🇬🇧 {question} Drop your answer below! #british #england #patriot #uk #proud",
-        f"🇬🇧 {question} Let us know in the comments! #britain #english #patriotic #uk",
-        f"🇬🇧 Every generation should understand this. {question} #british #proud #england #uk",
-        f"🇬🇧 This is important. {question} Comment YES or NO! #britain #patriotic #english"
-    ]
-    import hashlib
-    idx = int(hashlib.md5(keyword.lower().encode()).hexdigest(), 16) % len(captions)
-    return captions[idx]
-
 def make_product(keyword):
     keyword = keyword.lower()
     if "army" in keyword: return "British Army history books"
@@ -303,7 +289,6 @@ def analyse_keywords(pytrends, keywords, category):
                 "rise_percent": round(rise_percent, 1),
                 "viral_score": round(viral_score, 1),
                 "question": QUESTIONS.get(keyword, f"Is {keyword.title()} being ignored in modern Britain? Yes or No?"),
-                "caption": make_caption(keyword),
                 "product": make_product(keyword)
             })
 
@@ -1077,29 +1062,11 @@ def fallback_results():
             "rise_percent": random.randint(10, 70),
             "viral_score": score,
             "question": QUESTIONS.get(keyword, f"Is {keyword.title()} being ignored in modern Britain? Yes or No?"),
-            "caption": make_caption(keyword),
             "product": make_product(keyword)
         })
 
     fallback.sort(key=lambda x: x["viral_score"], reverse=True)
     return fallback
-
-def pick_recommendation_item(results, emerging):
-    candidates = []
-    for item in (results or [])[:5]:
-        candidates.append(item)
-    for item in (emerging or [])[:5]:
-        candidates.append(item)
-    if not candidates:
-        return None
-    return max(
-        candidates,
-        key=lambda x: (
-            float(x.get("opportunity_gap", 0) or 0),
-            float(x.get("content_score", 0) or 0),
-            float(x.get("viral_score", 0) or 0),
-        ),
-    )
 
 def determine_virality_state(item):
     if not item:
@@ -1417,27 +1384,17 @@ def build_next_post(item, engagement_signal="HEALTHY"):
     }
 
 def build_virality_recommendation(results, emerging, engagement_metrics=None):
-    item = pick_recommendation_item(results, emerging)
-    state = determine_virality_state(item)
-    engagement_signal = detect_engagement_signal(engagement_metrics)
-    base_summary = build_insight_summary(item, state)
-    insight_summary = enhance_insight_with_engagement(
-        base_summary, engagement_signal, engagement_metrics
-    )
-    return {
-        "state": state,
-        "engagement_signal": engagement_signal,
-        "insight_summary": insight_summary,
-        "next_post": build_next_post(item, engagement_signal),
-        "based_on": {
-            "keyword": item.get("keyword") if item else None,
-            "category": item.get("category") if item else None,
-            "content_score": item.get("content_score") if item else None,
-            "rise_percent": item.get("rise_percent") if item else None,
-            "opportunity_gap": item.get("opportunity_gap") if item else None,
-            "opportunity_label": item.get("opportunity_label") if item else None,
-        },
-    }
+    """
+    Structural recommendation draft used as fallback input for the selector.
+
+    NOT the decision authority — final_recommendation_selector() chooses the winner.
+    """
+    from recommendation_output import build_recommendation_for_item
+    from recommendation_selector import compute_base_score, gather_candidates
+
+    candidates = gather_candidates(results, emerging)
+    item = max(candidates, key=compute_base_score) if candidates else None
+    return build_recommendation_for_item(item, engagement_metrics)
 
 def save_results(results, emerging, product_trends=None, creator_insights=None):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1458,7 +1415,7 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
         lines.append(f"Viral Score: {item['viral_score']}")
         lines.append(f"Content Score: {item.get('content_score', 0)}/100 (Fresh:{item.get('fresh', 0)} British:{item.get('british', 0)} Emotion:{item.get('emotion', 0)} Debate:{item.get('debate', 0)})")
         lines.append(f"Question: {item['question']}")
-        lines.append(f"Caption: {item['caption']}")
+        lines.append(f"Caption: {item.get('caption', '')}")
         lines.append(f"Product: {item['product']}")
         lines.append("-" * 50)
 
@@ -1473,6 +1430,7 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
             lines.append(f"Viral Score: {item.get('viral_score', 'N/A')}")
             lines.append("-" * 50)
 
+    # Stage 7: Recommendation decision (selector) + humanisation output layer
     engagement_metrics = load_engagement_metrics()
     recommendation = build_virality_recommendation(results, emerging, engagement_metrics)
     from recommendation_output import finalize_recommendation
@@ -1618,7 +1576,6 @@ def main():
                     "platform_count": platform_count,
                     "question": hooks[0],
                     "hooks": hooks,
-                    "caption": make_caption(item["keyword"]),
                     "product": make_product(item["keyword"])
                 }
                 scored_emerging.append(entry)
@@ -1640,7 +1597,6 @@ def main():
             "platform_count": platform_count,
             "question": hooks[0],
             "hooks": hooks,
-            "caption": make_caption(item["keyword"]),
             "product": make_product(item["keyword"])
         }
         scored_emerging.append(entry)
@@ -1673,10 +1629,12 @@ def main():
 
     product_trends = sorted(product_results, key=lambda x: x["viral_score"], reverse=True)
 
+    # Stage 6: Caption engine (deterministic assembly; optional polish)
     enable_polish = os.environ.get("ENABLE_CAPTION_POLISH", "").lower() in ("1", "true", "yes")
     all_results = apply_caption_pipeline(all_results, enable_polish=enable_polish)
     scored_emerging = apply_caption_pipeline(scored_emerging, enable_polish=enable_polish)
 
+    # Stages 7-8: Recommendation decision + output persistence
     save_results(all_results, scored_emerging, product_trends, creator_insights)
 
 if __name__ == "__main__":

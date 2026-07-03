@@ -24,6 +24,8 @@ from pathlib import Path
 import requests
 
 from trends import build_virality_recommendation
+from recommendation_output import finalize_recommendation
+from user_calibration import flatten_performance_posts
 
 DEFAULT_TRENDS_URL = (
     "https://raw.githubusercontent.com/patriotradar/patriot-radar-dashboard/main/results.json"
@@ -42,21 +44,8 @@ def load_trends_snapshot(path_or_url: str) -> dict:
         return json.load(f)
 
 
-def flatten_performance_entries(performance: dict) -> list[dict]:
-    entries = []
-    if not isinstance(performance, dict):
-        return entries
-    for posts in performance.values():
-        if not isinstance(posts, list):
-            continue
-        for post in posts:
-            if isinstance(post, dict):
-                entries.append(post)
-    return entries
-
-
 def aggregate_engagement_metrics(performance: dict) -> dict | None:
-    entries = flatten_performance_entries(performance)
+    entries = flatten_performance_posts(performance)
     if not entries:
         return None
 
@@ -105,7 +94,16 @@ def build_user_output(
 
     results = trends.get("results") or []
     emerging = trends.get("emerging") or []
-    recommendation = build_virality_recommendation(results, emerging, engagement_metrics)
+    performance_posts = flatten_performance_posts(performance)
+    structural = build_virality_recommendation(results, emerging, engagement_metrics)
+    recommendation = finalize_recommendation(
+        structural,
+        results,
+        emerging,
+        engagement_metrics,
+        performance_posts=performance_posts,
+        persist_history=False,
+    )
 
     now = datetime.now(timezone.utc).isoformat()
     return {

@@ -10,16 +10,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from recommendation_signals import emotional_trigger, format_family
+
 # Minimum composite score before falling back to structural recommendation.
 MIN_QUALITY_THRESHOLD = 2.0
-
-FORMAT_FAMILIES = (
-    ("debate", ("yes/no", "debate", "comment-bait")),
-    ("reaction", ("reaction", "news reaction", "trend-reaction")),
-    ("explainer", ("explainer", "step-by-step", "educational", "carousel")),
-    ("talking_head", ("talking-head", "talking head", "pov")),
-    ("curiosity", ("curiosity-gap", "curiosity gap")),
-)
 
 
 @dataclass
@@ -33,47 +27,6 @@ class CandidateSignals:
     viral_potential_score: float
     low_confidence: bool
     final_score: float
-
-
-def _format_family(post_format: str) -> str:
-    lowered = (post_format or "").lower()
-    for family, markers in FORMAT_FAMILIES:
-        if any(marker in lowered for marker in markers):
-            return family
-    if "carousel" in lowered:
-        return "explainer"
-    if "clip" in lowered:
-        return "reaction"
-    return "talking_head"
-
-
-def _dominant_emotion(item: dict) -> str:
-    emotion = int(item.get("emotion", 0) or 0)
-    debate = int(item.get("debate", 0) or 0)
-    british = int(item.get("british", 0) or 0)
-    if debate >= emotion and debate >= 18:
-        return "debate"
-    if emotion >= 18:
-        return "pride"
-    if british >= 18:
-        return "British identity"
-    return "curiosity"
-
-
-def _emotional_trigger(item: dict, engagement_signal: str, post_format: str) -> str:
-    signal_map = {
-        "HOOK_OK_LOW_CONVERSION": "curiosity",
-        "ATTENTION_WITHOUT_VALUE": "education",
-        "DISTRIBUTION_LIMITED": "reach",
-        "HEALTHY": _dominant_emotion(item),
-    }
-    trigger = signal_map.get(engagement_signal, _dominant_emotion(item))
-    family = _format_family(post_format)
-    if family == "debate":
-        return "debate"
-    if family == "explainer":
-        return "education"
-    return trigger
 
 
 def gather_candidates(results, emerging) -> list[dict]:
@@ -141,7 +94,7 @@ def repetition_penalty_signal(
     """
     penalty = 0.0
     topic = (keyword or "").lower().strip()
-    family = _format_family(post_format)
+    family = format_family(post_format)
 
     for past in history:
         if (past.get("keyword") or "").lower().strip() == topic and past.get("format_family") == family:
@@ -182,7 +135,7 @@ def _score_candidate(
     next_post = draft.get("next_post") or {}
     post_format = next_post.get("format", "")
     keyword = item.get("keyword", "")
-    trigger = _emotional_trigger(item, engagement_signal, post_format)
+    trigger = emotional_trigger(item, engagement_signal, post_format)
 
     base_score = compute_base_score(item)
     calibration_boost = calibrated_selection_boost(item, calibration_context or {}, engagement_signal)
@@ -248,9 +201,9 @@ def final_recommendation_selector(
     from trends import detect_engagement_signal
 
     if build_recommendation_for_item is None:
-        from recommendation_output import _build_recommendation_for_item
+        from recommendation_output import build_recommendation_for_item as default_builder
 
-        build_recommendation_for_item = _build_recommendation_for_item
+        build_recommendation_for_item = default_builder
 
     engagement_signal = detect_engagement_signal(engagement_metrics)
     candidates = gather_candidates(results, emerging)
