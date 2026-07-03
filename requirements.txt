@@ -1,3 +1,5 @@
 pytrends
 pandas
 requests
+supabase
+apify-client

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Patriot Radar</title>
 
@@ -11,13 +12,32 @@ body{background:#07111f;color:white;font-family:Arial,sans-serif;padding:20px;ma
 h1{text-align:center;margin-top:25px}
 .subtitle{text-align:center;color:#cbd5e1;margin-bottom:25px}
 .card{background:#111c2e;border-radius:18px;padding:20px;margin-bottom:18px;border:1px solid #26374f}
-h2{color:#ff4b5c}
-input{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:none;font-size:16px}
-button{width:100%;padding:14px;border:none;border-radius:12px;background:#ff4b5c;color:white;font-size:16px;margin-top:10px}
+h2{color:#ff4b5c;font-size:20px;margin-bottom:12px}
+h3{color:#fbbf24;font-size:14px;margin:12px 0 8px}
+input{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:none;font-size:16px;box-sizing:border-box}
+button{width:100%;padding:14px;border:none;border-radius:12px;background:#ff4b5c;color:white;font-size:16px;margin-top:10px;cursor:pointer}
+button.secondary{background:#1e3a5f}
+button.admin{background:#7c3aed}
 .score{color:#4ade80;font-weight:bold}
 .trend{padding:10px 0;border-bottom:1px solid #223149}
 .hidden{display:none}
 .small{color:#cbd5e1;font-size:14px;text-align:center}
+.tab-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{flex:1;min-width:100px;padding:10px 8px;background:#111c2e;border:1px solid #26374f;border-radius:10px;color:#cbd5e1;font-size:13px;cursor:pointer}
+.tab-btn.active{background:#ff4b5c;color:white;border-color:#ff4b5c}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.feed-item{padding:12px;margin-bottom:8px;background:#0a1525;border:1px solid #223149;border-radius:10px;font-size:13px}
+.feed-meta{font-size:11px;color:#94a3b8;margin-top:6px}
+.feed-strength{color:#4ade80;font-weight:bold}
+.feed-virality{color:#fbbf24;font-weight:bold}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:bold;text-transform:uppercase;margin-right:6px}
+.badge-emerging{background:#1e3a5f;color:#93c5fd}
+.badge-rising{background:#14532d;color:#86efac}
+.badge-peaking{background:#713f12;color:#fcd34d}
+.badge-fading{background:#3f1d1d;color:#fca5a5}
+.section-empty{color:#94a3b8;font-size:13px;padding:8px 0}
+.admin-card{border-color:#7c3aed}
 </style>
 </head>
 
@@ -28,14 +48,11 @@ button{width:100%;padding:14px;border:none;border-radius:12px;background:#ff4b5c
 
 <div id="authBox" class="card">
   <h2>Login</h2>
-
   <input id="email" type="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
-
   <button onclick="login()">Login</button>
   <button onclick="signup()">Create Account</button>
   <button onclick="resetPassword()">Forgot Password / Create New Password</button>
-
   <p id="authMessage" class="small"></p>
 </div>
 
@@ -50,39 +67,94 @@ button{width:100%;padding:14px;border:none;border-radius:12px;background:#ff4b5c
 
   <button onclick="logout()">Logout</button>
 
-  <div class="card">
-    <h2>🔥 Top Opportunity</h2>
-
-    <p><strong>Keyword:</strong> British Army</p>
-    <p><strong>Score:</strong> <span class="score">66/100</span></p>
-
-    <p><strong>Question:</strong></p>
-    <p id="question">Should Britain invest more in the British Army?</p>
-    <button onclick="copyText('question')">Copy Question</button>
-
-    <p><strong>Caption:</strong></p>
-    <p id="caption">British Army is being searched today. What do you think?</p>
-    <button onclick="copyText('caption')">Copy Caption</button>
-
-    <p><strong>Affiliate Product:</strong></p>
-    <p>British Army history books</p>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn" data-tab="emerging" onclick="switchTab('emerging')">Emerging Trends</button>
+    <button class="tab-btn hidden" data-tab="admin" id="adminTabBtn" onclick="switchTab('admin')">Admin</button>
   </div>
 
-  <div class="card">
-    <h2>📈 Other Trends</h2>
-    <div class="trend">UK Politics</div>
-    <div class="trend">Veterans</div>
-    <div class="trend">Union Jack</div>
-    <div class="trend">Armed Forces</div>
+  <div id="tab-overview" class="tab-content active">
+    <div class="card">
+      <h2>🔥 Top Opportunity</h2>
+      <p><strong>Keyword:</strong> British Army</p>
+      <p><strong>Score:</strong> <span class="score">66/100</span></p>
+      <p><strong>Question:</strong></p>
+      <p id="question">Should Britain invest more in the British Army?</p>
+      <button onclick="copyText('question')">Copy Question</button>
+      <p><strong>Caption:</strong></p>
+      <p id="caption">British Army is being searched today. What do you think?</p>
+      <button onclick="copyText('caption')">Copy Caption</button>
+      <p><strong>Affiliate Product:</strong></p>
+      <p>British Army history books</p>
+    </div>
+    <div class="card">
+      <h2>📈 Other Trends</h2>
+      <div class="trend">UK Politics</div>
+      <div class="trend">Veterans</div>
+      <div class="trend">Union Jack</div>
+      <div class="trend">Armed Forces</div>
+    </div>
+  </div>
+
+  <div id="tab-emerging" class="tab-content">
+    <div class="card">
+      <h2>📡 TikTok Trend Intelligence</h2>
+      <p class="small" id="feedLastUpdated" style="text-align:left;margin-bottom:12px">Loading external signals...</p>
+      <button class="secondary" onclick="refreshTrendIntelligenceFeed()">Refresh Feed</button>
+    </div>
+
+    <div class="card">
+      <h2>📈 Rising Topics</h2>
+      <div id="risingTopics"><p class="section-empty">Loading...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>🎣 Hook Patterns</h2>
+      <div id="hookPatterns"><p class="section-empty">Loading...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>💭 Emotional Shifts</h2>
+      <div id="emotionalShifts"><p class="section-empty">Loading...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>🎬 Format Shifts</h2>
+      <div id="formatShifts"><p class="section-empty">Loading...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>🔤 Keyword Clusters</h2>
+      <div id="keywordClusters"><p class="section-empty">Loading...</p></div>
+    </div>
+  </div>
+
+  <div id="tab-admin" class="tab-content">
+    <div class="card admin-card">
+      <h2>🛠 Admin: TikTok Trend Scan</h2>
+      <p class="small" style="text-align:left;margin-bottom:12px">
+        Triggers live TikTok fetch via Apify (when APIFY_API_TOKEN is set) and writes to trend_intelligence_feed.
+        Production scans run via GitHub Actions (TikTok Trend Intelligence Scan workflow).
+      </p>
+      <button class="admin" onclick="runTiktokTrendScan()">Run TikTok Trend Scan</button>
+      <button class="secondary" onclick="refreshTrendIntelligenceFeed()">Refresh Dashboard Feed</button>
+      <p id="adminScanMessage" class="small" style="margin-top:12px"></p>
+    </div>
   </div>
 
 </div>
 
 <script>
-const SUPABASE_URL = "const SUPABASE_URL = "https://kdwqnlgdanzigpdwyqbh.supabase.co";";
+const SUPABASE_URL = "https://kdwqnlgdanzigpdwyqbh.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_7WtTtv9S4dl5jO-YE9QXRg_Ldy3gU_G";
+const FEED_TABLE = "trend_intelligence_feed";
+const ADMIN_EMAILS = ["jamie.mahon1996@gmail.com"];
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let isAdminUser = false;
+let trendFeedCache = [];
 
 async function checkSession() {
   const { data } = await supabaseClient.auth.getSession();
@@ -94,7 +166,31 @@ async function checkSession() {
   }
 
   if (data.session) {
+    currentUser = data.session.user;
+    detectAdmin();
     showDashboard();
+    await refreshTrendIntelligenceFeed();
+  }
+}
+
+function detectAdmin() {
+  isAdminUser = false;
+  if (currentUser && currentUser.user_metadata && currentUser.user_metadata.role === "admin") {
+    isAdminUser = true;
+  }
+  if (!isAdminUser && currentUser && currentUser.email) {
+    for (let i = 0; i < ADMIN_EMAILS.length; i++) {
+      if (currentUser.email.toLowerCase() === ADMIN_EMAILS[i].toLowerCase()) {
+        isAdminUser = true;
+        break;
+      }
+    }
+  }
+  const adminBtn = document.getElementById("adminTabBtn");
+  if (isAdminUser) {
+    adminBtn.classList.remove("hidden");
+  } else {
+    adminBtn.classList.add("hidden");
   }
 }
 
@@ -104,10 +200,310 @@ function showDashboard() {
   document.getElementById("dashboard").classList.remove("hidden");
 }
 
+function switchTab(tabId) {
+  document.querySelectorAll(".tab-btn").forEach(function(btn) {
+    btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId);
+  });
+  document.querySelectorAll(".tab-content").forEach(function(panel) {
+    panel.classList.toggle("active", panel.id === "tab-" + tabId);
+  });
+  if (tabId === "emerging") {
+    refreshTrendIntelligenceFeed();
+  }
+}
+
+function getViralityScore(row) {
+  if (row.virality_score != null && row.virality_score !== undefined) {
+    return Number(row.virality_score);
+  }
+  const raw = row.raw_data || {};
+  if (raw.virality_score != null) return Number(raw.virality_score);
+  const virality = raw.virality || {};
+  if (virality.virality_score != null) return Number(virality.virality_score);
+  if (virality.viral_strength_score != null) return Math.round(Number(virality.viral_strength_score) * 100);
+  return null;
+}
+
+function viralityLabel(row) {
+  const score = getViralityScore(row);
+  if (score == null) return "";
+  return 'Virality: <span class="feed-virality">' + score + '/100</span>';
+}
+
+function stateBadge(state) {
+  const cls = "badge badge-" + (state || "emerging");
+  return '<span class="' + cls + '">' + (state || "emerging") + "</span>";
+}
+
+function formatTimestamp(ts) {
+  if (!ts) return "Unknown time";
+  try {
+    return new Date(ts).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+  } catch (e) {
+    return ts;
+  }
+}
+
+function groupByType(rows, type) {
+  return rows.filter(function(r) { return r.type === type; });
+}
+
+function metaLine(row, extra) {
+  let parts = [];
+  parts.push('Strength: <span class="feed-strength">' + row.signal_strength + '/100</span>');
+  const v = viralityLabel(row);
+  if (v) parts.push(v);
+  if (extra) parts.push(extra);
+  parts.push(formatTimestamp(row.timestamp));
+  return parts.join(' | ');
+}
+
+function renderRisingTopics(rows) {
+  const topics = groupByType(rows, "topic");
+  if (!topics.length) return '<p class="section-empty">No rising topics detected yet.</p>';
+
+  const grouped = {};
+  topics.forEach(function(row) {
+    const signal = (row.raw_data && row.raw_data.signal) || {};
+    const topic = signal.primary_topic || "other";
+    if (!grouped[topic]) grouped[topic] = { count: 0, strength: 0, virality: 0, latest: row.timestamp, sampleRow: row };
+    grouped[topic].count += 1;
+    grouped[topic].strength = Math.max(grouped[topic].strength, Number(row.signal_strength || 0));
+    const v = getViralityScore(row);
+    if (v != null) grouped[topic].virality = Math.max(grouped[topic].virality, v);
+    if (new Date(row.timestamp) > new Date(grouped[topic].latest)) {
+      grouped[topic].latest = row.timestamp;
+      grouped[topic].sampleRow = row;
+    }
+  });
+
+  let html = "";
+  Object.keys(grouped).sort(function(a, b) { return grouped[b].strength - grouped[a].strength; }).forEach(function(topic) {
+    const g = grouped[topic];
+    html += '<div class="feed-item">';
+    html += '<strong>' + topic.replace(/_/g, " ") + '</strong> ';
+    html += stateBadge(g.strength >= 60 ? "rising" : "emerging");
+    html += '<div class="feed-meta">Velocity: <span class="feed-strength">' + g.strength + '/100</span>';
+    if (g.virality) html += ' | Virality: <span class="feed-virality">' + g.virality + '/100</span>';
+    html += ' | Mentions: ' + g.count + ' | ' + formatTimestamp(g.latest) + '</div>';
+    html += '</div>';
+  });
+  return html;
+}
+
+function renderHookPatterns(rows) {
+  const hooks = groupByType(rows, "hook");
+  if (!hooks.length) return '<p class="section-empty">No hook patterns detected yet.</p>';
+
+  const grouped = {};
+  hooks.forEach(function(row) {
+    const signal = (row.raw_data && row.raw_data.signal) || {};
+    const hookType = signal.hook_type || "unknown";
+    if (!grouped[hookType]) grouped[hookType] = { count: 0, virality: 0, examples: [], latest: row.timestamp };
+    grouped[hookType].count += 1;
+    const v = getViralityScore(row);
+    if (v != null) grouped[hookType].virality = Math.max(grouped[hookType].virality, v);
+    if (signal.hook_text) grouped[hookType].examples.push(signal.hook_text);
+    if (new Date(row.timestamp) > new Date(grouped[hookType].latest)) grouped[hookType].latest = row.timestamp;
+  });
+
+  let html = "";
+  Object.keys(grouped).sort(function(a, b) { return grouped[b].count - grouped[a].count; }).forEach(function(hookType) {
+    const g = grouped[hookType];
+    html += '<div class="feed-item">';
+    html += '<strong>' + hookType + '</strong> <span class="feed-strength">×' + g.count + '</span>';
+    html += '<div class="feed-meta">' + formatTimestamp(g.latest);
+    if (g.virality) html += ' | Virality: <span class="feed-virality">' + g.virality + '/100</span>';
+    html += '</div>';
+    if (g.examples[0]) html += '<div style="margin-top:6px;font-size:12px;color:#cbd5e1">"' + g.examples[0] + '"</div>';
+    html += '</div>';
+  });
+  return html;
+}
+
+function renderEmotionalShifts(rows) {
+  const emotions = groupByType(rows, "emotion");
+  if (!emotions.length) return '<p class="section-empty">No emotional shifts detected yet.</p>';
+
+  const dist = {};
+  let total = 0;
+  emotions.forEach(function(row) {
+    const signal = (row.raw_data && row.raw_data.signal) || {};
+    const emotion = signal.dominant_emotion || "curiosity";
+    dist[emotion] = (dist[emotion] || 0) + 1;
+    total += 1;
+  });
+
+  let html = '<div class="feed-item"><strong>Distribution</strong><div class="feed-meta">';
+  Object.keys(dist).sort(function(a, b) { return dist[b] - dist[a]; }).forEach(function(emotion) {
+    const pct = Math.round((dist[emotion] / total) * 100);
+    html += emotion + ': <span class="feed-strength">' + pct + '%</span> &nbsp; ';
+  });
+  html += '</div></div>';
+
+  emotions.slice(0, 8).forEach(function(row) {
+    html += '<div class="feed-item">';
+    html += stateBadge(row.trend_state) + ' ' + (row.summary || "");
+    html += '<div class="feed-meta">' + metaLine(row) + '</div>';
+    html += '</div>';
+  });
+  return html;
+}
+
+function renderFormatShifts(rows) {
+  const formats = groupByType(rows, "format");
+  if (!formats.length) return '<p class="section-empty">No format shifts detected yet.</p>';
+
+  const grouped = {};
+  formats.forEach(function(row) {
+    const signal = (row.raw_data && row.raw_data.signal) || {};
+    const fmt = signal.format_type || "unknown";
+    if (!grouped[fmt]) grouped[fmt] = { count: 0, strength: 0, virality: 0, states: {}, latest: row.timestamp };
+    grouped[fmt].count += 1;
+    grouped[fmt].strength = Math.max(grouped[fmt].strength, Number(row.signal_strength || 0));
+    const v = getViralityScore(row);
+    if (v != null) grouped[fmt].virality = Math.max(grouped[fmt].virality, v);
+    grouped[fmt].states[row.trend_state] = (grouped[fmt].states[row.trend_state] || 0) + 1;
+    if (new Date(row.timestamp) > new Date(grouped[fmt].latest)) grouped[fmt].latest = row.timestamp;
+  });
+
+  let html = "";
+  Object.keys(grouped).sort(function(a, b) { return grouped[b].strength - grouped[a].strength; }).forEach(function(fmt) {
+    const g = grouped[fmt];
+    const dominantState = Object.keys(g.states).sort(function(a, b) { return g.states[b] - g.states[a]; })[0];
+    html += '<div class="feed-item">';
+    html += '<strong>' + fmt.replace(/_/g, " ") + '</strong> ' + stateBadge(dominantState);
+    html += '<div class="feed-meta">Strength: <span class="feed-strength">' + g.strength + '/100</span>';
+    if (g.virality) html += ' | Virality: <span class="feed-virality">' + g.virality + '/100</span>';
+    html += ' | Samples: ' + g.count + ' | ' + formatTimestamp(g.latest) + '</div>';
+    html += '</div>';
+  });
+  return html;
+}
+
+function renderKeywordClusters(rows) {
+  const clusters = groupByType(rows, "keyword_cluster");
+  if (!clusters.length) return '<p class="section-empty">No keyword clusters detected yet.</p>';
+
+  let html = "";
+  clusters.forEach(function(row) {
+    const signal = (row.raw_data && row.raw_data.signal) || {};
+    const keywords = (signal.keyword_clusters || []).map(function(k) { return k.keyword; }).join(", ");
+    const phrases = (signal.phrase_patterns || []).join(", ");
+    html += '<div class="feed-item">';
+    html += stateBadge(row.trend_state) + ' <strong>Cluster</strong>';
+    html += '<div style="margin-top:6px;font-size:12px">' + (row.summary || "") + '</div>';
+    if (keywords) html += '<div class="feed-meta">Keywords: ' + keywords + '</div>';
+    if (phrases) html += '<div class="feed-meta">Phrases: ' + phrases + '</div>';
+    html += '<div class="feed-meta">' + metaLine(row) + '</div>';
+    html += '</div>';
+  });
+  return html;
+}
+
+function renderTrendIntelligenceFeed(rows) {
+  document.getElementById("risingTopics").innerHTML = renderRisingTopics(rows);
+  document.getElementById("hookPatterns").innerHTML = renderHookPatterns(rows);
+  document.getElementById("emotionalShifts").innerHTML = renderEmotionalShifts(rows);
+  document.getElementById("formatShifts").innerHTML = renderFormatShifts(rows);
+  document.getElementById("keywordClusters").innerHTML = renderKeywordClusters(rows);
+
+  const latest = rows.length ? rows[0].timestamp : null;
+  document.getElementById("feedLastUpdated").innerText = rows.length
+    ? "Last updated: " + formatTimestamp(latest) + " (" + rows.length + " signals)"
+    : "No TikTok trend signals stored yet. Run a scan to populate the feed.";
+}
+
+async function refreshTrendIntelligenceFeed() {
+  try {
+    const { data, error } = await supabaseClient
+      .from(FEED_TABLE)
+      .select("*")
+      .eq("source", "tiktok")
+      .order("timestamp", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      console.warn("Trend feed load error:", error.message);
+      trendFeedCache = [];
+      renderTrendIntelligenceFeed([]);
+      return;
+    }
+
+    trendFeedCache = data || [];
+    renderTrendIntelligenceFeed(trendFeedCache);
+  } catch (err) {
+    console.warn("Trend feed unavailable:", err);
+    trendFeedCache = [];
+    renderTrendIntelligenceFeed([]);
+  }
+}
+
+async function runTiktokTrendScan() {
+  if (!isAdminUser) {
+    document.getElementById("adminScanMessage").innerText = "Admin access required.";
+    return;
+  }
+
+  const msg = document.getElementById("adminScanMessage");
+  msg.innerText = "Running TikTok trend scan...";
+
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("run-tiktok-trend-scan", {
+      body: { source: "dashboard_admin" },
+    });
+
+    if (!error && data && data.success !== false) {
+      msg.innerText = "Scan complete. Refreshing feed...";
+      await refreshTrendIntelligenceFeed();
+      msg.innerText = "Scan complete. Stored " + (data.store_result && data.store_result.stored || 0) + " signals.";
+      switchTab("emerging");
+      return;
+    }
+  } catch (e) {
+    // Edge function may not be deployed; fall through to client-side sample upsert.
+  }
+
+  await runTiktokTrendScanFallback(msg);
+}
+
+async function runTiktokTrendScanFallback(msgEl) {
+  msgEl.innerText = "Loading sample scan data and writing to feed...";
+
+  try {
+    const resp = await fetch("data/tiktok_scan_feed_rows.json");
+    if (!resp.ok) {
+      msgEl.innerText = "Sample feed data not found. Run: python scripts/run_tiktok_trend_scan.py";
+      return;
+    }
+
+    const rows = await resp.json();
+    if (!rows || !rows.length) {
+      msgEl.innerText = "No sample rows to store.";
+      return;
+    }
+
+    let stored = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const { error } = await supabaseClient
+        .from(FEED_TABLE)
+        .upsert(row, { onConflict: "dedupe_key" });
+      if (!error) stored += 1;
+    }
+
+    msgEl.innerText = "Sample scan stored " + stored + "/" + rows.length + " signals.";
+    await refreshTrendIntelligenceFeed();
+    switchTab("emerging");
+  } catch (err) {
+    msgEl.innerText = "Scan fallback failed. Trigger GitHub Actions workflow or run: python scripts/run_tiktok_trend_scan.py";
+    console.warn(err);
+  }
+}
+
 async function signup() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-
   const { error } = await supabaseClient.auth.signUp({
     email,
     password,
@@ -115,7 +511,6 @@ async function signup() {
       emailRedirectTo: "https://patriotradar.github.io/patriot-radar-dashboard/"
     }
   });
-
   document.getElementById("authMessage").innerText =
     error ? error.message : "Check your email to confirm your account.";
 }
@@ -123,37 +518,30 @@ async function signup() {
 async function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
-
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) {
     document.getElementById("authMessage").innerText = error.message;
   } else {
+    const { data } = await supabaseClient.auth.getSession();
+    currentUser = data.session ? data.session.user : null;
+    detectAdmin();
     showDashboard();
+    await refreshTrendIntelligenceFeed();
   }
 }
 
 async function resetPassword() {
   const email = document.getElementById("email").value;
-
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
     redirectTo: "https://patriotradar.github.io/patriot-radar-dashboard/"
   });
-
   document.getElementById("authMessage").innerText =
     error ? error.message : "Check your email to create a new password.";
 }
 
 async function updatePassword() {
   const newPassword = document.getElementById("newPassword").value;
-
-  const { error } = await supabaseClient.auth.updateUser({
-    password: newPassword
-  });
-
+  const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
   if (error) {
     document.getElementById("resetMessage").innerText = error.message;
   } else {
