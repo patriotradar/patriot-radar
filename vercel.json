@@ -1,5 +1,8 @@
 {
   "functions": {
+    "api/chat/completions.js": {
+      "maxDuration": 60
+    },
     "api/tiktok-live-state.js": {
       "maxDuration": 30
     },

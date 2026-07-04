@@ -46,12 +46,6 @@ def _queue_dedupe_key(account_id: str, caption: str, hook: str, product_name: st
     return "content_queue:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
 
 
-def _initial_status_for_mode(automation_mode: str) -> str:
-    if automation_mode == "approval_required":
-        return "pending"
-    return "queued"
-
-
 def _normalize_hashtags(hashtags: Any) -> list[str]:
     if not hashtags:
         return []
@@ -60,6 +54,12 @@ def _normalize_hashtags(hashtags: Any) -> list[str]:
     if isinstance(hashtags, list):
         return [str(h).strip() for h in hashtags if str(h).strip()]
     return []
+
+
+def _initial_status_for_mode(automation_mode: str) -> str:
+    if automation_mode == "approval_required":
+        return "pending"
+    return "queued"
 
 
 def _build_queue_items(
