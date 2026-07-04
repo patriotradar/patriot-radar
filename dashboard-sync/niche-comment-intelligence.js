@@ -582,6 +582,14 @@
       } else {
         renderResults({ niche: "", keywords: [], videos: [], emerging_phrases: [], trending_comments: [] });
       }
+
+      if (window.TikTokInsightsHardening && typeof window.TikTokInsightsHardening.refresh === "function") {
+        try {
+          window.TikTokInsightsHardening.refresh(rawCache, currentNiche);
+        } catch (hardeningErr) {
+          console.warn("[TikTokInsightsHardening]", hardeningErr);
+        }
+      }
     } catch (err) {
       renderShell(describeError(err), true);
     }
@@ -618,6 +626,7 @@
 
   window.refreshNicheCommentIntelligence = refreshNicheCommentIntelligence;
   window.computeNicheCommentSignals = computeSignals;
+  window.getNicheCommentRawCache = function () { return rawCache; };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

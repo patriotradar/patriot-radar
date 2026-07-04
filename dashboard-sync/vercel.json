@@ -5,6 +5,9 @@
     },
     "api/public-config.js": {
       "maxDuration": 10
+    },
+    "api/tiktok-insights.js": {
+      "maxDuration": 30
     }
   }
 }
