@@ -5151,7 +5151,7 @@ function renderPrimary(item) {
   h += '<div class="primary-section-label">Caption</div>';
   h += '<div id="ai-caption-primary" style="display:none;font-size:13px;color:var(--white);background:rgba(0,255,136,.03);border:1px solid rgba(0,255,136,.12);padding:12px;border-radius:10px;margin-bottom:8px;line-height:1.6;cursor:pointer" onclick="copyText(\'ai-caption-primary\')"></div>';
   h += '<div id="primaryCaption" class="primary-content-box" style="font-size:13px;color:var(--muted)">' + (item.caption || "Tap AI Enhance above to generate a ready-to-post caption") + '</div>';
-  h += '<button class="copy-btn" onclick="copyText(document.getElementById(\'ai-caption-primary\').style.display!==\'none\'?\'ai-caption-primary\':\'primaryCaption\')">&#9776; Copy Caption</button>';
+  h += '<button class="copy-btn" onclick="copyText(\'ai-caption-primary\')">&#9776; Copy Caption</button>';
 
   h += '<div id="ai-engage-primary" style="display:none;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">&#129504; AI Engagement Plays</div></div>';
 
@@ -6959,6 +6959,52 @@ function getNicheSystemPrompt(niche) {
   return sys;
 }
 
+function parseAIEnhanceResponse(content) {
+  var cleaned = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  if (cleaned.indexOf("{") > 0) cleaned = cleaned.substring(cleaned.indexOf("{"));
+  if (cleaned.lastIndexOf("}") < cleaned.length - 1) cleaned = cleaned.substring(0, cleaned.lastIndexOf("}") + 1);
+  return JSON.parse(cleaned);
+}
+
+async function aiEnhanceFetch(model, messages, maxTokens) {
+  var resp = await fetch("/api/chat/completions", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({model: model, messages: messages, temperature: 0.8, max_tokens: maxTokens})
+  });
+  if (!resp.ok) {
+    var errBody = "";
+    try { errBody = await resp.text(); } catch(ex) {}
+    return { ok: false, status: resp.status, error: errBody.slice(0, 200) };
+  }
+  var data = await resp.json();
+  var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!content) return { ok: false, status: 200, error: "Empty AI response" };
+  try {
+    return { ok: true, status: 200, result: parseAIEnhanceResponse(content) };
+  } catch(pe) {
+    return { ok: false, status: 200, error: pe.message };
+  }
+}
+
+async function runAIEnhanceAttempts(fullMessages, liteMessages) {
+  var steps = [
+    { model: "llama-3.3-70b-versatile", messages: fullMessages, maxTokens: 700 },
+    { model: "llama-3.3-70b-versatile", messages: fullMessages, maxTokens: 700 },
+    { model: "llama-3.1-8b-instant", messages: fullMessages, maxTokens: 700 },
+    { model: "llama-3.1-8b-instant", messages: liteMessages, maxTokens: 500 }
+  ];
+  var lastErr = "";
+  for (var i = 0; i < steps.length; i++) {
+    if (i === 1) await new Promise(function(r) { setTimeout(r, 2000); });
+    var step = steps[i];
+    var res = await aiEnhanceFetch(step.model, step.messages, step.maxTokens);
+    if (res.ok && res.result) return res.result;
+    lastErr = res.error || ("HTTP " + res.status);
+  }
+  throw new Error(lastErr || "All AI attempts failed");
+}
+
 async function aiEnhanceSection(keyword, sectionId) {
   var btn = document.getElementById("ai-btn-" + sectionId);
   if (btn) { btn.disabled = true; btn.innerHTML = "&#129504; Generating..."; }
@@ -6973,24 +7019,12 @@ async function aiEnhanceSection(keyword, sectionId) {
     var audienceCtx = getEnhancedAudienceContext();
     var roleCtx2 = isBusinessMode() ? "a local business in the " + niche + " industry" + (USER_BUSINESS_LOCATION ? " based in " + USER_BUSINESS_LOCATION : "") : "a creator in the " + niche + " niche";
     var sysPrompt = getNicheSystemPrompt(niche);
-    var prompt = "Generate content for " + roleCtx2 + " about the topic: " + keyword + "." + audienceCtx + "\n\nRespond in this exact JSON format (no markdown, just raw JSON):\n{\"hooks\":[\"Hook 1 (under 80 chars, attention-grabbing opening line)\",\"Hook 2\",\"Hook 3\",\"Hook 4\",\"Hook 5\"],\"caption\":\"A full, ready-to-post TikTok/Instagram caption about this topic. 3-5 sentences. Include emoji. End with a question to drive comments.\",\"engagement\":{\"poll\":\"A poll question about this topic\",\"question\":\"An open-ended question to ask the audience\",\"cta\":\"A specific call to action\"},\"hashtags\":[\"hashtag1\",\"hashtag2\",\"hashtag3\",\"hashtag4\",\"hashtag5\",\"hashtag6\",\"hashtag7\",\"hashtag8\"]}";
-    var messages = sysPrompt ? [{role: "system", content: sysPrompt}, {role: "user", content: prompt}] : [{role: "user", content: prompt}];
-    var resp = await fetch("/api/chat/completions", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({model: "llama-3.3-70b-versatile", messages: messages, temperature: 0.8, max_tokens: 700})
-    });
-    if (!resp.ok) {
-      var errBody = "";
-      try { errBody = await resp.text(); } catch(ex) {}
-      throw new Error("API " + resp.status + ": " + errBody.slice(0, 100));
-    }
-    var data = await resp.json();
-    var content = data.choices[0].message.content;
-    var cleaned = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    if (cleaned.indexOf("{") > 0) cleaned = cleaned.substring(cleaned.indexOf("{"));
-    if (cleaned.lastIndexOf("}") < cleaned.length - 1) cleaned = cleaned.substring(0, cleaned.lastIndexOf("}") + 1);
-    var result = JSON.parse(cleaned);
+    var jsonSchema = "{\"hooks\":[\"Hook 1 (under 80 chars, attention-grabbing opening line)\",\"Hook 2\",\"Hook 3\",\"Hook 4\",\"Hook 5\"],\"caption\":\"A full, ready-to-post TikTok/Instagram caption about this topic. 3-5 sentences. Include emoji. End with a question to drive comments.\",\"engagement\":{\"poll\":\"A poll question about this topic\",\"question\":\"An open-ended question to ask the audience\",\"cta\":\"A specific call to action\"},\"hashtags\":[\"hashtag1\",\"hashtag2\",\"hashtag3\",\"hashtag4\",\"hashtag5\",\"hashtag6\",\"hashtag7\",\"hashtag8\"]}";
+    var prompt = "Generate content for " + roleCtx2 + " about the topic: " + keyword + "." + audienceCtx + "\n\nRespond in this exact JSON format (no markdown, just raw JSON):\n" + jsonSchema;
+    var fullMessages = sysPrompt ? [{role: "system", content: sysPrompt}, {role: "user", content: prompt}] : [{role: "user", content: prompt}];
+    var litePrompt = "Create social media content for " + roleCtx2 + " about \"" + keyword + "\". Return raw JSON only (no markdown):\n{\"hooks\":[\"Hook 1\",\"Hook 2\",\"Hook 3\"],\"caption\":\"Ready-to-post caption with emoji ending in a question\",\"engagement\":{\"poll\":\"Poll question?\",\"question\":\"Open question?\",\"cta\":\"Call to action\"},\"hashtags\":[\"tag1\",\"tag2\",\"tag3\",\"tag4\",\"tag5\"]}";
+    var liteMessages = [{role: "user", content: litePrompt}];
+    var result = await runAIEnhanceAttempts(fullMessages, liteMessages);
     if (!isPatrioticNiche(USER_NICHE)) {
       if (result.hooks) result.hooks = filterPatrioticHooks(result.hooks);
       if (result.hooks && result.hooks.length === 0) result.hooks = ["Discover the latest " + keyword + " trends", "Why " + keyword + " matters for your wellbeing", "The truth about " + keyword + " that experts agree on", keyword + " explained - everything you need to know", "How " + keyword + " can transform your routine"];
@@ -7021,6 +7055,10 @@ function renderAIContent(ai, sectionId) {
   if (capEl && ai.caption) {
     capEl.innerHTML = ai.caption;
     capEl.style.display = "block";
+    if (sectionId === "primary") {
+      var staticCap = document.getElementById("primaryCaption");
+      if (staticCap) staticCap.style.display = "none";
+    }
   }
   var engEl = document.getElementById("ai-engage-" + sectionId);
   if (engEl && ai.engagement) {
