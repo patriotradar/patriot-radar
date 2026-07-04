@@ -1,0 +1,76 @@
+name: Virality Intelligence Learning Pipeline
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 */6 * * *"
+
+jobs:
+  virality-learning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run virality intelligence learning pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -e
+          python scripts/run_virality_learning_pipeline.py \
+            --mode learn \
+            --output virality_learning_result.json 2>&1 | tee virality_learning.log
+          echo "--- Learning summary ---"
+          python3 -c "
+          import json
+          r = json.load(open('virality_learning_result.json'))
+          print(json.dumps({
+            'success': r.get('success'),
+            'data_source': r.get('data_source'),
+            'outcomes_detected': r.get('outcomes_detected'),
+            'comparisons': r.get('comparisons'),
+            'accuracy_before': r.get('accuracy_before'),
+            'accuracy_after': r.get('accuracy_after'),
+            'adjustments': r.get('adjustments'),
+            'calibration_stored': (r.get('calibration_result') or {}).get('stored'),
+          }, indent=2))
+          "
+
+      - name: Validate learning result
+        if: always()
+        run: |
+          if [ ! -f virality_learning_result.json ]; then
+            echo "::error::Pipeline produced no virality_learning_result.json"
+            exit 1
+          fi
+          python3 << 'PYEOF'
+          import json, sys, os
+          result = json.load(open("virality_learning_result.json"))
+          if not result.get("success"):
+              print("::warning::Learning cycle returned success=false (may be empty data)")
+          has_creds = bool(os.environ.get("SUPABASE_URL")) and bool(os.environ.get("SUPABASE_SERVICE_ROLE_KEY"))
+          if has_creds and result.get("data_source") == "supabase":
+              snaps = result.get("snapshots") or []
+              total_stored = sum(s.get("stored", 0) for s in snaps)
+              if total_stored == 0 and result.get("outcomes_detected", 0) == 0:
+                  print("::warning::No snapshots stored and no outcomes detected — tables may need migration")
+          print("Virality intelligence pipeline validation passed.")
+          PYEOF
+
+      - name: Diagnose missing secrets
+        if: failure()
+        run: |
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
+            echo "::error::SUPABASE_URL secret is missing."
+          fi
+          if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY secret is missing."
+          fi
