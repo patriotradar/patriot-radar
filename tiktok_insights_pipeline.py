@@ -33,6 +33,9 @@ from tiktok_pipeline_hardening import (
 )
 from tiktok_trend_extractor import extract_tiktok_trend_signals
 from tiktok_trending_products_engine import generateTrendingProducts
+from tiktok_content_publisher import queueContentForPosting
+from tiktok_performance_tracker import trackContentPerformance
+from tiktok_learning_engine import updateContentStrategy
 from trend_intelligence_store import store_external_tiktok_signals
 
 logger = logging.getLogger(__name__)
@@ -213,6 +216,29 @@ def run_hardened_tiktok_pipeline(
             logger.warning("Content pack generation skipped: %s", exc)
             errors.append(f"content_pack: {exc}")
 
+        queue_result: dict[str, Any] = {"queued": 0, "skipped": 0, "posted": 0, "error": None, "items": []}
+        performance_result: dict[str, Any] = {"tracked": 0, "skipped": 0, "error": None, "snapshots": []}
+        strategy_result: dict[str, Any] = {"updated": False, "weights": {}, "error": None}
+
+        try:
+            queue_result = queueContentForPosting(
+                account_id=resolved_account_id,
+                content_pack=content_pack,
+                emerging_products=emerging_products,
+            )
+        except Exception as exc:
+            logger.warning("Content queue skipped: %s", exc)
+
+        try:
+            performance_result = trackContentPerformance(resolved_account_id)
+        except Exception as exc:
+            logger.warning("Performance tracking skipped: %s", exc)
+
+        try:
+            strategy_result = updateContentStrategy(resolved_account_id)
+        except Exception as exc:
+            logger.warning("Strategy update skipped: %s", exc)
+
         rec_result = generate_post_recommendations(validated_insights, cleaned_videos)
         recommended_posts = rec_result.get("recommended_posts") or []
 
@@ -264,6 +290,9 @@ def run_hardened_tiktok_pipeline(
                 "insight_summary": signals.get("insight_summary", ""),
                 "aggregated_signals": signals.get("aggregated_signals") or {},
                 "niche_signals": niche_signals,
+                "content_queue": queue_result,
+                "performance_tracking": performance_result,
+                "strategy_update": strategy_result,
                 "computed_at": datetime.now(timezone.utc).isoformat(),
             },
         )
@@ -330,6 +359,29 @@ def run_hardened_pipeline_from_raw_rows(
             apify_feedback={},
         )
 
+        queue_result: dict[str, Any] = {"queued": 0, "skipped": 0, "posted": 0, "error": None, "items": []}
+        performance_result: dict[str, Any] = {"tracked": 0, "skipped": 0, "error": None, "snapshots": []}
+        strategy_result: dict[str, Any] = {"updated": False, "weights": {}, "error": None}
+
+        try:
+            queue_result = queueContentForPosting(
+                account_id=resolved_account_id,
+                content_pack=content_pack,
+                emerging_products=emerging_products,
+            )
+        except Exception as exc:
+            logger.warning("Content queue skipped: %s", exc)
+
+        try:
+            performance_result = trackContentPerformance(resolved_account_id)
+        except Exception as exc:
+            logger.warning("Performance tracking skipped: %s", exc)
+
+        try:
+            strategy_result = updateContentStrategy(resolved_account_id)
+        except Exception as exc:
+            logger.warning("Strategy update skipped: %s", exc)
+
         recs = generate_post_recommendations(validated, cleaned_videos)
 
         return build_safe_pipeline_response(
@@ -345,6 +397,9 @@ def run_hardened_pipeline_from_raw_rows(
             extra={
                 "success": True,
                 "gate_stats": gate.get("stats") or {},
+                "content_queue": queue_result,
+                "performance_tracking": performance_result,
+                "strategy_update": strategy_result,
                 "computed_at": datetime.now(timezone.utc).isoformat(),
             },
         )
