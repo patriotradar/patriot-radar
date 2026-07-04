@@ -19,6 +19,7 @@ from niche_comment_signal_processor import (
     build_niche_keywords,
     group_raw_rows_by_video,
 )
+from tiktok_pipeline_hardening import clean_comments
 
 _WORD_RE = re.compile(r"[a-z0-9']+")
 _STOPWORDS = frozenset({
@@ -416,7 +417,7 @@ def compute_virality_predictions(
 
     filtered_videos: list[dict[str, Any]] = []
     for video in videos:
-        comments = _filter_signal_comments(video.get("comments") or [])
+        comments = _filter_signal_comments(clean_comments(video.get("comments") or []))
         if len(comments) < MIN_COMMENTS_PER_VIDEO:
             continue
         filtered_videos.append({**video, "comments": comments})

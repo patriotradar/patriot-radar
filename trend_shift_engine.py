@@ -14,6 +14,7 @@ from typing import Any
 
 from apify_tiktok_fetcher import fetch_tiktok_via_apify
 from keyword_diversity import fetch_historical_keyword_roots
+from tiktok_pipeline_hardening import compute_trend_scores, validate_videos
 from tiktok_trend_extractor import extract_tiktok_trend_signals
 from trend_intelligence_store import store_external_tiktok_signals
 
@@ -234,6 +235,18 @@ def run_tiktok_trend_scan(
             if virality_scores else 0
         )
 
+        trend_scores = [
+            item.get("trend_score")
+            for item in extracted_items
+            if item.get("trend_score")
+        ]
+        if not trend_scores:
+            try:
+                gate = validate_videos(inputs if all(isinstance(i, dict) for i in inputs) else [])
+                trend_scores = compute_trend_scores(gate.get("accepted") or [])
+            except Exception:
+                trend_scores = []
+
         logger.info(
             "Extraction complete: source=%s input_count=%d extracted=%d avg_virality=%.1f",
             data_source,
@@ -265,6 +278,11 @@ def run_tiktok_trend_scan(
             "data_source": data_source,
             "avg_virality_score": avg_virality,
             "insight_summary": signals.get("insight_summary", ""),
+            "trend_scores": trend_scores,
+            "videos": [],
+            "insights": [],
+            "recommended_posts": [],
+            "errors": [],
         }
     except Exception as exc:
         logger.exception("TikTok trend scan failed: %s", exc)
