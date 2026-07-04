@@ -253,6 +253,10 @@
     }
   }
 
+  function isTabSelector(selector) {
+    return typeof selector === "string" && selector.indexOf("[data-tab=") === 0;
+  }
+
   function applyModuleVisibility(liveState) {
     ensureAdminPanels();
     var visibleSet = buildVisibleSet();

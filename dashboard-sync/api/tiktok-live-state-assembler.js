@@ -14,6 +14,9 @@ const DEFAULT_FEED_TABLE = "trend_intelligence_feed";
 const DEFAULT_QUEUE_TABLE = "content_queue";
 const DEFAULT_PERFORMANCE_TABLE = "content_performance";
 const DEFAULT_CACHE_TABLE = "tiktok_insights_cache";
+const DEFAULT_INVENTORY_GAPS_TABLE = "tiktok_shop_inventory_gaps";
+const DEFAULT_VIRALITY_SNAPSHOTS_TABLE = "virality_snapshots";
+const DEFAULT_VIRALITY_CALIBRATION_TABLE = "virality_calibration_logs";
 
 function emptyContract() {
   return emptyLiveStateContract();
@@ -160,6 +163,93 @@ async function fetchApprovals(accountId) {
     status: asString(row.status),
     created_at: asString(row.created_at),
   }));
+}
+
+async function fetchInventoryGaps(accountId) {
+  if (!accountId) return [];
+  const rows = await supabaseRequest(
+    `${DEFAULT_INVENTORY_GAPS_TABLE}?account_id=eq.${encodeURIComponent(accountId)}&select=content_id,product_name,category,status,inventory_gap_event,created_at&order=created_at.desc&limit=25`,
+    { method: "GET" }
+  );
+  if (!Array.isArray(rows)) return [];
+  return rows.map((row) => ({
+    content_id: asString(row.content_id, ""),
+    product_name: asString(row.product_name),
+    category: asString(row.category, "general"),
+    status: asString(row.status),
+    message: asString(
+      (row.inventory_gap_event && row.inventory_gap_event.message) || "",
+      "Inventory gap detected"
+    ),
+    created_at: asString(row.created_at),
+  }));
+}
+
+async function fetchInventoryPrevention(accountId) {
+  let path = `${DEFAULT_CACHE_TABLE}?select=payload&order=updated_at.desc&limit=1`;
+  if (accountId) path += `&account_id=eq.${encodeURIComponent(accountId)}`;
+  const rows = await supabaseRequest(path, { method: "GET" });
+  if (!Array.isArray(rows) || !rows.length) return [];
+  let payload = rows[0].payload || {};
+  if (typeof payload === "string") {
+    try {
+      payload = JSON.parse(payload);
+    } catch {
+      payload = {};
+    }
+  }
+  const prevention = asList(payload.inventory_prevention || payload.inventory_prevention_events);
+  return prevention
+    .filter((item) => item && typeof item === "object")
+    .map((item) => ({
+      product_name: asString(item.product_name || item.name),
+      category: asString(item.category, "general"),
+      available: item.available !== false,
+      demand_score: asNumber(item.demand_score),
+      message: asString(item.message, "Inventory prevention alert"),
+      priority: asString(item.priority, "medium"),
+    }));
+}
+
+async function fetchPrediction(accountId) {
+  const snapshots = await supabaseRequest(
+    `${DEFAULT_VIRALITY_SNAPSHOTS_TABLE}?select=video_id,virality_score,comment_velocity,acceleration,niche,snapshot_at&order=snapshot_at.desc&limit=10`,
+    { method: "GET" }
+  );
+  const calibrationRows = await supabaseRequest(
+    `${DEFAULT_VIRALITY_CALIBRATION_TABLE}?select=calibrated_at,accuracy_after,new_weights,outcomes_processed&order=calibrated_at.desc&limit=1`,
+    { method: "GET" }
+  );
+
+  const snapshotList = Array.isArray(snapshots)
+    ? snapshots.map((row) => ({
+        video_id: asString(row.video_id, ""),
+        virality_score: asNumber(row.virality_score),
+        comment_velocity: asNumber(row.comment_velocity),
+        acceleration: asNumber(row.acceleration),
+        niche: asString(row.niche),
+        snapshot_at: asString(row.snapshot_at),
+      }))
+    : [];
+
+  const calibration =
+    Array.isArray(calibrationRows) && calibrationRows.length
+      ? {
+          calibrated_at: asString(calibrationRows[0].calibrated_at),
+          accuracy_after: calibrationRows[0].accuracy_after != null ? asNumber(calibrationRows[0].accuracy_after) : null,
+          outcomes_processed: asNumber(calibrationRows[0].outcomes_processed),
+          weights: asDict(calibrationRows[0].new_weights),
+        }
+      : {};
+
+  if (!snapshotList.length && !Object.keys(calibration).length) return {};
+
+  return {
+    snapshot_count: snapshotList.length,
+    top_predictions: snapshotList.slice(0, 5),
+    calibration,
+    account_id: asString(accountId, ""),
+  };
 }
 
 async function fetchPerformance(accountId) {
@@ -314,6 +404,9 @@ async function assembleLiveState(accountId, userRecord) {
   let contentQueue = [];
   let approvals = [];
   let performance = {};
+  let inventoryGaps = [];
+  let inventoryPrevention = [];
+  let prediction = {};
   try {
     contentQueue = await fetchContentQueue(resolvedAccountId);
     approvals = await fetchApprovals(resolvedAccountId);
@@ -322,8 +415,25 @@ async function assembleLiveState(accountId, userRecord) {
     partialFailures.push("content_pipeline");
   }
 
+  try {
+    inventoryGaps = await fetchInventoryGaps(resolvedAccountId);
+  } catch {
+    partialFailures.push("inventory_gap_system");
+  }
+
+  try {
+    inventoryPrevention = await fetchInventoryPrevention(resolvedAccountId);
+  } catch {
+    partialFailures.push("inventory_prevention_system");
+  }
+
+  try {
+    prediction = await fetchPrediction(resolvedAccountId);
+  } catch {
+    partialFailures.push("learning_engine");
+  }
+
   const systemHealth = partialFailures.length ? "degraded" : "healthy";
-  const inventoryGaps = [];
   const { alerts, hiddenAlerts } = buildAlerts(inventoryGaps, systemHealth, partialFailures);
   const { todayFlow, primaryAction } = deriveFlowAndAction(
     trends,
@@ -346,11 +456,11 @@ async function assembleLiveState(accountId, userRecord) {
   state.trends = trends;
   state.products = products;
   state.inventory_gaps = inventoryGaps;
-  state.inventory_prevention = [];
+  state.inventory_prevention = inventoryPrevention;
   state.content_queue = contentQueue;
   state.approvals = approvals;
   state.performance = performance;
-  state.prediction = {};
+  state.prediction = prediction;
   state.alerts = alerts;
   state.hidden_alerts = hiddenAlerts;
   state.raw_logs = partialFailures.map((m) => ({ module: m, status: "unavailable" }));

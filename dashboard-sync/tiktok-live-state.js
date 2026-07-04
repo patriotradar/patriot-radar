@@ -137,6 +137,7 @@
     if (!access) return false;
     if (access.admin_override) return true;
     var visible = access.visible_modules || [];
+    if (module === "tiktok" && visible.indexOf("trends") !== -1) return true;
     return visible.indexOf(module) !== -1;
   }
 
@@ -260,6 +261,10 @@
     _cacheTs = Date.now();
     mount.innerHTML = render(state);
     global.TIKTOK_LIVE_STATE = state;
+
+    if (global.TiktokLiveStateIntegration && typeof global.TiktokLiveStateIntegration.apply === "function") {
+      global.TiktokLiveStateIntegration.apply(state);
+    }
 
     if (global.TiktokAccessControl) {
       if (state.access) global.TiktokAccessControl.setAccess(state.access);

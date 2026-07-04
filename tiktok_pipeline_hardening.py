@@ -664,8 +664,19 @@ def empty_pipeline_response() -> dict[str, Any]:
         "insights": [],
         "recommended_posts": [],
         "trend_scores": [],
-        "trending_products": [],
         "errors": [],
+        "niche": {
+            "niche": "unknown",
+            "confidence": 0.0,
+            "keywords": [],
+        },
+        "emerging_products": [],
+        "trending_products": [],
+        "content_pack": {
+            "captions": [],
+            "hashtags": [],
+            "hook_variations": [],
+        },
     }
 
 
@@ -675,18 +686,27 @@ def build_safe_pipeline_response(
     insights: list[dict[str, Any]] | None = None,
     recommended_posts: list[dict[str, Any]] | None = None,
     trend_scores: list[dict[str, Any]] | None = None,
-    trending_products: list[dict[str, Any]] | None = None,
     errors: list[str] | None = None,
+    niche: dict[str, Any] | None = None,
+    emerging_products: list[dict[str, Any]] | None = None,
+    trending_products: list[dict[str, Any]] | None = None,
+    content_pack: dict[str, Any] | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Output safety contract — always returns complete structure."""
+    default_niche = {"niche": "unknown", "confidence": 0.0, "keywords": []}
+    default_content_pack = {"captions": [], "hashtags": [], "hook_variations": []}
+
     response = {
         "videos": list(videos or []),
         "insights": list(insights or []),
         "recommended_posts": list(recommended_posts or []),
         "trend_scores": list(trend_scores or []),
-        "trending_products": list(trending_products or []),
         "errors": list(errors or []),
+        "niche": dict(niche) if niche else dict(default_niche),
+        "emerging_products": list(emerging_products or []),
+        "trending_products": list(trending_products or []),
+        "content_pack": dict(content_pack) if content_pack else dict(default_content_pack),
     }
     if extra:
         for key, value in extra.items():
