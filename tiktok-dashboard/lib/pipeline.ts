@@ -1,4 +1,5 @@
 import { scrapeTikTokComments, searchTikTokByNiche, selectTopViralVideos } from "./apify";
+import { generateInsights, type InsightsResult } from "./insights";
 import { storeTikTokResults } from "./supabase";
 
 export type PipelineStep =
@@ -11,6 +12,18 @@ export type PipelineStep =
   | "comment_fetch_failed"
   | "supabase_failed";
 
+export type ViralVideoResult = {
+  url: string;
+  views: number;
+  likes: number;
+  comments: number;
+  ageHours: number;
+  lowConfidence: boolean;
+  trendScore: number;
+  caption?: string;
+  author?: string;
+};
+
 export type ScanPipelineResult = {
   success: boolean;
   niche: string;
@@ -18,18 +31,10 @@ export type ScanPipelineResult = {
   searchResultCount: number;
   viralVideoCount: number;
   videoUrls: string[];
-  viralVideos: {
-    url: string;
-    views: number;
-    likes: number;
-    comments: number;
-    ageHours: number;
-    lowConfidence: boolean;
-    trendScore: number;
-    caption?: string;
-    author?: string;
-  }[];
+  viralVideos: ViralVideoResult[];
   comments: Record<string, unknown>[];
+  insights: InsightsResult;
+  trend_scores: { url: string; trendScore: number; caption?: string }[];
   stored: {
     id: string;
     created_at: string;
@@ -80,6 +85,15 @@ function hasRequiredConfig(): string | null {
   return null;
 }
 
+const EMPTY_INSIGHTS: InsightsResult = {
+  pain_points: [],
+  questions: [],
+  content_opportunities: [],
+  hooks: [],
+  buying_signals: [],
+  summary: "",
+};
+
 export async function runScanPipeline(niche: string): Promise<ScanPipelineResult> {
   const trimmedNiche = niche.trim();
 
@@ -91,6 +105,8 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
     videoUrls: [],
     viralVideos: [],
     comments: [],
+    insights: { ...EMPTY_INSIGHTS },
+    trend_scores: [],
     stored: null,
     apify: {},
   };
@@ -104,7 +120,6 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
     return fail(base, "config_missing", configError);
   }
 
-  // Step 1–3: search actor → wait → dataset
   const searchOutcome = await searchTikTokByNiche(trimmedNiche);
   if (!searchOutcome.ok) {
     const step: PipelineStep = searchOutcome.message.includes("defaultDatasetId")
@@ -125,7 +140,6 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
     });
   }
 
-  // Step 4–5: trend scores → top viral selection
   const viralVideos = selectTopViralVideos(searchOutcome.items, 10, 20);
   base.viralVideoCount = viralVideos.length;
   base.videoUrls = viralVideos.map((video) => video.url);
@@ -140,6 +154,11 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
     caption: extractCaption(video.item),
     author: extractAuthor(video.item),
   }));
+  base.trend_scores = base.viralVideos.map((video) => ({
+    url: video.url,
+    trendScore: video.trendScore,
+    caption: video.caption,
+  }));
 
   if (viralVideos.length === 0) {
     return fail(
@@ -150,7 +169,6 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
     );
   }
 
-  // Step 6: comment actor on selected URLs only
   const commentOutcome = await scrapeTikTokComments(base.videoUrls);
   if (!commentOutcome.ok) {
     const step: PipelineStep = commentOutcome.message.includes("defaultDatasetId")
@@ -171,10 +189,21 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
   };
   base.comments = commentOutcome.items;
 
-  // Step 7: Supabase store
+  try {
+    base.insights = await generateInsights({
+      comments: base.comments,
+      niche: trimmedNiche,
+      videoCaptions: base.viralVideos.map((video) => video.caption ?? "").filter(Boolean),
+    });
+  } catch {
+    base.insights = { ...EMPTY_INSIGHTS };
+  }
+
   const payload = {
-    viralVideos: base.viralVideos,
+    videos: base.viralVideos,
     comments: base.comments,
+    insights: base.insights,
+    trend_scores: base.trend_scores,
     meta: {
       searchResultCount: base.searchResultCount,
       viralVideoCount: base.viralVideoCount,

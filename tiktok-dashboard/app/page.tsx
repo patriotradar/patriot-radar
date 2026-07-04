@@ -2,7 +2,49 @@
 
 import { useState } from "react";
 
-type ScanResponse = Record<string, unknown>;
+type Insights = {
+  pain_points: string[];
+  questions: string[];
+  content_opportunities: string[];
+  hooks: string[];
+  buying_signals: string[];
+  summary: string;
+};
+
+type ViralVideo = {
+  caption?: string;
+  trendScore: number;
+  url?: string;
+};
+
+type ScanResponse = {
+  success?: boolean;
+  error?: string;
+  viralVideos?: ViralVideo[];
+  insights?: Insights;
+};
+
+function InsightList({ title, items }: { title: string; items: string[] }) {
+  if (items.length === 0) {
+    return (
+      <div>
+        <h3 className="mb-2 text-sm font-semibold text-zinc-200">{title}</h3>
+        <p className="text-sm text-zinc-500">Nothing strong enough to surface yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold text-zinc-200">{title}</h3>
+      <ul className="list-disc space-y-2 pl-5 text-sm text-zinc-300">
+        {items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default function Home() {
   const [niche, setNiche] = useState("");
@@ -31,7 +73,7 @@ export default function Home() {
       const data = (await res.json()) as ScanResponse;
 
       if (!res.ok) {
-        setError((data.error as string) || `Scan failed (${res.status})`);
+        setError(data.error || `Scan failed (${res.status})`);
         setResult(data);
         return;
       }
@@ -44,19 +86,22 @@ export default function Home() {
     }
   }
 
+  const insights = result?.insights;
+  const videos = result?.viralVideos ?? [];
+
   return (
     <div className="min-h-full bg-zinc-950 text-zinc-100">
       <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-8 px-6 py-16">
         <header className="space-y-2">
           <p className="text-sm font-medium uppercase tracking-widest text-pink-400">
-            TikTok Viral Research
+            TikTok Insights Engine
           </p>
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Niche comment intelligence dashboard
+            Niche intelligence dashboard
           </h1>
           <p className="max-w-xl text-zinc-400">
-            Enter a niche to search TikTok, filter the top viral videos by views,
-            scrape comments, and store results in Supabase.
+            Enter a niche to discover what is trending, what customers are saying,
+            and what content to create next.
           </p>
         </header>
 
@@ -97,8 +142,8 @@ export default function Home() {
 
           {loading && (
             <p className="mt-4 text-sm text-zinc-400">
-              Pipeline running: search → viral filter → comment scrape → Supabase
-              store. This can take a few minutes.
+              Pipeline running: search → viral scoring → comment scrape → insights
+              generation → Supabase store. This can take a few minutes.
             </p>
           )}
 
@@ -109,13 +154,54 @@ export default function Home() {
           )}
         </section>
 
-        {result && (
-          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
-            <h2 className="mb-3 text-lg font-medium">Results</h2>
-            <pre className="max-h-[32rem] overflow-auto rounded-xl bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-300">
-              {JSON.stringify(result, null, 2)}
-            </pre>
-          </section>
+        {result?.success && (
+          <div className="flex flex-col gap-6">
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
+              <h2 className="mb-4 text-lg font-medium text-pink-300">Rising Videos</h2>
+              {videos.length === 0 ? (
+                <p className="text-sm text-zinc-500">No rising videos found.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {videos.map((video) => (
+                    <li
+                      key={video.url ?? video.caption}
+                      className="rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3"
+                    >
+                      <p className="text-sm text-zinc-200">
+                        {video.caption?.trim() || "Untitled video"}
+                      </p>
+                      <p className="mt-1 text-xs text-pink-400">
+                        Trend score: {video.trendScore.toFixed(2)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            {insights && (
+              <section className="rounded-2xl border border-pink-900/40 bg-zinc-900/60 p-6">
+                <h2 className="mb-4 text-lg font-medium text-pink-300">Insights</h2>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <InsightList title="Pain points" items={insights.pain_points} />
+                  <InsightList title="Questions" items={insights.questions} />
+                  <InsightList
+                    title="Content opportunities"
+                    items={insights.content_opportunities}
+                  />
+                  <InsightList title="Hooks" items={insights.hooks} />
+                  <InsightList title="Buying signals" items={insights.buying_signals} />
+                </div>
+              </section>
+            )}
+
+            {insights?.summary && (
+              <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
+                <h2 className="mb-3 text-lg font-medium text-pink-300">Summary</h2>
+                <p className="text-sm leading-relaxed text-zinc-300">{insights.summary}</p>
+              </section>
+            )}
+          </div>
         )}
       </main>
     </div>
