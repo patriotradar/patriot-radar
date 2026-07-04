@@ -2,6 +2,11 @@ name: Sync TikTok Feed UI to Dashboard
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "dashboard-sync/**"
+      - ".github/workflows/sync-dashboard-tiktok-feed.yml"
 
 jobs:
   sync-dashboard-ui:
