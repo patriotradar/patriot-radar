@@ -1,5 +1,4 @@
--- trend_intelligence_feed (PGRST205 FIX)
--- Safe, idempotent migration
+-- Alias for sql/trend_intelligence_feed.sql (same content for apply scripts / docs).
 
 create table if not exists public.trend_intelligence_feed (
     id uuid primary key default gen_random_uuid(),
@@ -20,14 +19,12 @@ create table if not exists public.trend_intelligence_feed (
     dedupe_key text unique not null
 );
 
--- Legacy column support (safe if table was created with `timestamp` earlier)
 alter table public.trend_intelligence_feed
   add column if not exists created_at timestamptz default now();
 
 alter table public.trend_intelligence_feed
   add column if not exists virality_score int default 0;
 
--- Indexes
 create index if not exists idx_feed_source_created_at
   on public.trend_intelligence_feed (source, created_at desc);
 
@@ -37,10 +34,8 @@ create index if not exists idx_feed_virality
 create index if not exists idx_feed_dedupe
   on public.trend_intelligence_feed (dedupe_key);
 
--- SECURITY: lock table down properly
 alter table public.trend_intelligence_feed enable row level security;
 
--- READ access (dashboard)
 drop policy if exists "read authenticated" on public.trend_intelligence_feed;
 create policy "read authenticated"
   on public.trend_intelligence_feed
@@ -48,7 +43,6 @@ create policy "read authenticated"
   to authenticated
   using (true);
 
--- WRITE access (service role — GitHub Actions pipeline upserts)
 drop policy if exists "insert service only" on public.trend_intelligence_feed;
 create policy "insert service only"
   on public.trend_intelligence_feed
@@ -64,7 +58,6 @@ create policy "update service only"
   using (true)
   with check (true);
 
--- Drop superseded policies from earlier migrations
 drop policy if exists "allow read authenticated" on public.trend_intelligence_feed;
 drop policy if exists "allow insert authenticated" on public.trend_intelligence_feed;
 drop policy if exists "allow update authenticated" on public.trend_intelligence_feed;
