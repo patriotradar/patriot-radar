@@ -16,13 +16,14 @@ jobs:
           set -e
           git clone "https://x-access-token:${DASHBOARD_TOKEN}@github.com/patriotradar/patriot-radar-dashboard.git" dashboard
           cp dashboard-sync/index.html dashboard/index.html
+          cp dashboard-sync/niche-comment-intelligence.js dashboard/niche-comment-intelligence.js
           cp dashboard-sync/public-config.js dashboard/api/public-config.js
           cp dashboard-sync/vercel.json dashboard/vercel.json
           cp dashboard-sync/.env.example dashboard/.env.example
           cd dashboard
           git config user.name "Patriot Radar Bot"
           git config user.email "bot@patriotradar.github.io"
-          git add index.html api/public-config.js vercel.json .env.example
+          git add index.html niche-comment-intelligence.js api/public-config.js vercel.json .env.example
           if git diff --staged --quiet; then
             echo "No dashboard UI changes to sync."
             exit 0
