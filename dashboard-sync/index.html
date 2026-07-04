@@ -14,6 +14,10 @@
 <script src="niche-comment-intelligence.js"></script>
 <script src="niche-comment-virality-prediction.js"></script>
 <script src="virality-intelligence-dashboard.js"></script>
+<script src="commerce-mode.js"></script>
+<script src="commerce-dashboard.js"></script>
+<script src="tiktok-shop-inventory-gate.js"></script>
+<script src="tiktok-live-state.js"></script>
 
 <style>
 :root{
@@ -1314,6 +1318,11 @@ input[type=range]::-webkit-slider-thumb{
           <option value="revenue">Increase Revenue</option>
         </select>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <label style="margin:0;font-size:11px;flex:1">TikTok Shop / Affiliate</label>
+        <input type="checkbox" id="settingsCommerceToggle" onchange="CommerceMode.setCommerceMode(this.checked)" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer">
+        <span id="settingsCommerceLabel" style="font-size:10px;color:var(--muted);min-width:90px">Commerce mode OFF</span>
+      </div>
     </div>
 
     <div id="streakBar" class="streak-bar" style="display:none"></div>
@@ -1354,6 +1363,10 @@ input[type=range]::-webkit-slider-thumb{
       <button class="tab-btn" data-tab="aichat" onclick="switchTab('aichat')">Ask AI</button>
       <button class="tab-btn" data-tab="audit" onclick="switchTab('audit')">Audit</button>
       <button class="tab-btn" data-tab="notifications" onclick="switchTab('notifications')">Updates</button>
+      <button class="tab-btn" data-tab="products" data-commerce-tab onclick="switchTab('products')" style="display:none">Products</button>
+      <button class="tab-btn" data-tab="shop" data-commerce-tab onclick="switchTab('shop')" style="display:none">Shop</button>
+      <button class="tab-btn" data-tab="inventory" data-commerce-tab onclick="switchTab('inventory')" style="display:none">Inventory</button>
+      <button class="tab-btn" data-tab="revenue" data-commerce-tab onclick="switchTab('revenue')" style="display:none">Revenue</button>
       <button class="tab-btn" data-tab="admin" onclick="switchTab('admin')" id="adminTabBtn" style="display:none">Admin</button>
     </div>
 
@@ -1371,6 +1384,7 @@ input[type=range]::-webkit-slider-thumb{
       <div id="aiTrendInsights"></div>
       <div id="themeAnalysis"></div>
       <div id="intelligenceFeed"></div>
+      <div id="tiktokShopInventoryGate" data-commerce-panel style="display:none"></div>
       <div id="tiktokTrendIntelligence"></div>
       <div id="nicheCommentIntelligence"></div>
       <div id="nicheCommentViralityPrediction"></div>
@@ -1394,6 +1408,30 @@ input[type=range]::-webkit-slider-thumb{
     <div id="tab-platforms" class="tab-content">
       <div id="platformOptimizer"></div>
       <div id="videoAnalyzer"></div>
+    </div>
+
+    <div id="tab-products" class="tab-content" data-commerce-panel style="display:none">
+      <div class="card"><div class="card-header"><h2>Matched Products</h2><div class="section-icon" style="color:var(--green)">&#128176;</div></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Affiliate products matched to your trending keywords.</p>
+      <div id="commerceProductsPanel"></div></div>
+    </div>
+
+    <div id="tab-shop" class="tab-content" data-commerce-panel style="display:none">
+      <div class="card"><div class="card-header"><h2>TikTok Shop</h2><div class="section-icon" style="color:var(--purple)">&#128722;</div></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Your TikTok Shop catalog and Showcase items.</p>
+      <div id="commerceShopPanel"></div></div>
+    </div>
+
+    <div id="tab-inventory" class="tab-content" data-commerce-panel style="display:none">
+      <div class="card"><div class="card-header"><h2>Inventory Gaps</h2><div class="section-icon" style="color:var(--amber)">&#9888;</div></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Products detected in trends but missing from your Showcase.</p>
+      <div id="commerceInventoryPanel"></div></div>
+    </div>
+
+    <div id="tab-revenue" class="tab-content" data-commerce-panel style="display:none">
+      <div class="card"><div class="card-header"><h2>Revenue Suggestions</h2><div class="section-icon" style="color:var(--green)">&#128200;</div></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Monetisation actions based on detected product opportunities.</p>
+      <div id="commerceRevenuePanel"></div></div>
     </div>
 
     <div id="tab-admin" class="tab-content">
@@ -2125,8 +2163,11 @@ function adaptUIForMode() {
       + '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Audience DNA insights and growth tracking</div>'
       + '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Multi-source discovery (Google, Reddit, News)</div>'
       + '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Video analyzer with content scoring</div>'
-      + '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Product matching for affiliate revenue</div>';
+      + (typeof CommerceMode !== "undefined" && CommerceMode.isCommerceMode()
+        ? '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Product matching for affiliate revenue</div>'
+        : '');
   }
+  if (typeof CommerceMode !== "undefined") CommerceMode.applyCommerceUI();
 }
 
 var PATRIOTIC_TERMS = ["patriot","british","england","english","uk politics","union jack","britain","military","veteran","armed forces","royal","monarchy","churchill","remembrance","st george"];
@@ -3778,7 +3819,7 @@ function renderDailyPlan(results, emerging) {
   var slots = [
     { time: "8-10 AM", label: "MORNING", desc: "Best reach - post your strongest topic", color: "var(--green)" },
     { time: "4-5 PM", label: "AFTERNOON", desc: "Engagement slot - drives comments", color: "var(--amber)" },
-    { time: "7-8 PM", label: "EVENING", desc: "Pin a product to this one", color: "var(--blue)" }
+    { time: "7-8 PM", label: "EVENING", desc: (typeof CommerceMode !== "undefined" && CommerceMode.shouldShowProductCTA()) ? "Pin a product to this one" : "Evening engagement slot", color: "var(--blue)" }
   ];
 
   var KEYWORD_EMOTIONS = {
@@ -4123,7 +4164,7 @@ function renderDailyPlan(results, emerging) {
       h += '</div>';
     }
 
-    h += '<p style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px">All 3 slots use your niche trends | Slot 1 = top trend | Slot 2 = engagement | Slot 3 = product</p>';
+    h += '<p style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px">All 3 slots use your niche trends | Slot 1 = top trend | Slot 2 = engagement' + ((typeof CommerceMode !== "undefined" && CommerceMode.shouldShowProductCTA()) ? ' | Slot 3 = product' : '') + '</p>';
   } else {
     var freshSlots = [
       { slot: slots[1], pick: freshPick2, idx: 1 },
@@ -4889,7 +4930,7 @@ function recommendContent(item) {
   if (gk === "history") return "Historical Post";
   if (rp > 30 && vs > 40) return "Debate Question";
   if (gk === "remembrance") return "Tribute Post";
-  if (item.category === "product" || (item.product && item.product.toLowerCase().indexOf("product") === -1)) return "Product Post";
+  if (item.category === "product" || (typeof CommerceMode !== "undefined" && CommerceMode.shouldRecommendProductPost(item))) return "Product Post";
   if (rp > 15) return "News Post";
   if (gk === "culture" || gk === "heritage") return "Educational Post";
   return "Engagement Post";
@@ -5188,7 +5229,7 @@ function renderOpportunities(items) {
     h += '<span>24hr: <b>' + Number(item.latest_score || 0) + '</b></span>';
     h += '<span>Vitality: <b class="rise-positive">' + vit + '</b></span>';
     h += '</div>';
-    if (item.product) h += '<div class="opp-product">' + item.product + '</div>';
+    if (typeof CommerceMode !== "undefined" && CommerceMode.shouldShowProductInOpportunity(item)) h += '<div class="opp-product">' + item.product + '</div>';
     var oppCS = Number(item.content_score || 0);
     var oppGrade, oppGCls;
     if (oppCS >= 80) { oppGrade = "S"; oppGCls = "cs-grade-s"; }
@@ -9012,6 +9053,7 @@ function scrollToSection(id) {
 }
 
 function switchTab(tab) {
+  if (typeof CommerceMode !== "undefined") tab = CommerceMode.guardTabSwitch(tab);
   var tabs = document.querySelectorAll('.tab-content');
   for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
   var btns = document.querySelectorAll('.tab-btn');
@@ -9022,7 +9064,7 @@ function switchTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   localStorage.setItem('patriot_active_tab', tab);
   trackEvent("tab_switch", {tab: tab});
-  if (tab === "trends") { aiTrendInsights(); refreshTiktokTrendIntelligenceFeed(); }
+  if (tab === "trends") { aiTrendInsights(); refreshTiktokTrendIntelligenceFeed(); if (typeof CommerceMode !== "undefined" && CommerceMode.isCommerceMode() && typeof TiktokLiveStateClient !== "undefined") TiktokLiveStateClient.refresh(); }
   if (tab === "audit") renderAuditTab();
   if (tab === "aichat" && !document.getElementById("aiChatMessages").innerHTML) {
     var welcomeHtml = '<div class="ai-chat-msg ai-chat-ai">';
@@ -9103,6 +9145,9 @@ function buildCrossModuleContext() {
 
 function getGoalInstructions() {
   var goal = USER_SUCCESS_GOAL || "clients";
+  if (goal === "revenue" && typeof CommerceMode !== "undefined" && !CommerceMode.isCommerceMode()) {
+    goal = "clients";
+  }
   var goalMap = {
     clients: "Your PRIMARY metric is CLIENT ACQUISITION. Every recommendation should tie back to getting more walk-ins, bookings, enquiries, or leads. When suggesting content, always explain how it converts viewers into paying customers. Measure success by: new client enquiries, bookings made, DMs received asking about services.",
     followers: "Your PRIMARY metric is FOLLOWER GROWTH. Every recommendation should tie back to gaining new followers. Focus on shareability, discoverability, hashtag reach, and content that makes people hit follow. Measure success by: new followers per post, follow-back rate, profile visits.",
@@ -10537,6 +10582,18 @@ function renderWeeklyScorecard() {
 
 function renderAllSections(results, emerging, productTrends, creatorInsights) {
   results.sort(function(a, b) { return Number(b.viral_score || 0) - Number(a.viral_score || 0); });
+
+  var commerceResult = { products: [], productTrends: [], inventory_gaps: [], revenue_suggestions: [] };
+  if (typeof CommerceMode !== "undefined" && CommerceMode.isCommerceMode()) {
+    try {
+      commerceResult = CommerceMode.runCommercePipeline(results);
+      results = CommerceMode.enrichResultsWithProducts(results, commerceResult);
+    } catch (e) {}
+    if (typeof CommerceDashboard !== "undefined") {
+      CommerceDashboard.update(commerceResult);
+    }
+  }
+
   cachedResults = results;
 
   document.getElementById("keywordsAnalyzed").textContent = results.length;
@@ -10787,6 +10844,11 @@ var TUTORIAL_STEPS = [
 
 var tutorialStep = 0;
 
+function getActiveTutorialSteps() {
+  if (typeof CommerceMode !== "undefined") return CommerceMode.getTutorialSteps(TUTORIAL_STEPS);
+  return TUTORIAL_STEPS;
+}
+
 function startTutorial() {
   trackEvent("feature_use", {feature: "tutorial"});
   tutorialStep = 0;
@@ -10795,8 +10857,9 @@ function startTutorial() {
 }
 
 function renderTutorialStep() {
-  var s = TUTORIAL_STEPS[tutorialStep];
-  var total = TUTORIAL_STEPS.length;
+  var steps = getActiveTutorialSteps();
+  var s = steps[tutorialStep];
+  var total = steps.length;
   var h = '';
   h += '<div style="text-align:center;margin-bottom:16px">';
   h += '<span style="font-size:36px">' + s.icon + '</span>';
@@ -10834,7 +10897,8 @@ function renderTutorialStep() {
 }
 
 function nextTutorialStep() {
-  if (tutorialStep < TUTORIAL_STEPS.length - 1) { tutorialStep++; renderTutorialStep(); }
+  var steps = getActiveTutorialSteps();
+  if (tutorialStep < steps.length - 1) { tutorialStep++; renderTutorialStep(); }
 }
 
 function prevTutorialStep() {
@@ -11509,6 +11573,7 @@ async function showDashboard(sessionUser) {
       if (currentUser.user_metadata.business_type) USER_BUSINESS_TYPE = currentUser.user_metadata.business_type;
       if (currentUser.user_metadata.business_location) USER_BUSINESS_LOCATION = currentUser.user_metadata.business_location;
       if (currentUser.user_metadata.success_goal) USER_SUCCESS_GOAL = currentUser.user_metadata.success_goal;
+      if (typeof CommerceMode !== "undefined") CommerceMode.loadFromUser(currentUser);
     }
   } catch(e) {}
 
@@ -11524,6 +11589,7 @@ async function showDashboard(sessionUser) {
   if (daysLeft > 0) { showTrialBanner(daysLeft); }
 
   adaptUIForMode();
+  if (typeof CommerceMode !== "undefined") CommerceMode.applyCommerceUI();
   if (isBusinessMode()) {
     var creatorBtn = document.getElementById("settingsModeCreator");
     var businessBtn = document.getElementById("settingsModeBusiness");
@@ -11625,7 +11691,7 @@ async function betaSignup() {
     var goalEl2 = document.getElementById("signupCreatorGoal");
     if (goalEl2) successGoal = goalEl2.value || "followers";
   }
-  var signupData = {beta_consent: true, tos_agreed: true, tos_date: new Date().toISOString(), signup_date: new Date().toISOString(), niche: niche || "general", referred_by: DASH_REF_CODE || null, account_mode: SIGNUP_MODE, success_goal: successGoal};
+  var signupData = {beta_consent: true, tos_agreed: true, tos_date: new Date().toISOString(), signup_date: new Date().toISOString(), niche: niche || "general", referred_by: DASH_REF_CODE || null, account_mode: SIGNUP_MODE, success_goal: successGoal, commerce_mode: false};
   if (SIGNUP_MODE === "business") {
     signupData.business_name = bizName;
     signupData.business_type = bizType;
