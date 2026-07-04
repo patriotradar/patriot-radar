@@ -14,6 +14,7 @@
 <script src="niche-comment-intelligence.js"></script>
 <script src="niche-comment-virality-prediction.js"></script>
 <script src="virality-intelligence-dashboard.js"></script>
+<script src="tiktok-live-state.js"></script>
 
 <style>
 :root{
@@ -1816,7 +1817,7 @@ function renderTiktokTrendIntelligenceFeed(rows) {
 
   var h = '<div class="card card-glow" style="border-color:rgba(255,0,80,.35)">';
   h += '<div class="card-header"><h2 style="color:#ff0050">TikTok Trend Intelligence</h2><div class="section-icon" style="background:rgba(255,0,80,.1);border-color:rgba(255,0,80,.3);color:#ff0050">&#9835;</div></div>';
-  h += '<p style="font-size:11px;color:var(--muted);margin-bottom:12px">Live signals from <code style="color:var(--green)">trend_intelligence_feed</code> — ' + safe.length + ' rows</p>';
+  h += '<p style="font-size:11px;color:var(--muted);margin-bottom:12px">Live signals from <code style="color:var(--green)">/api/tiktok-live-state</code> — ' + safe.length + ' rows</p>';
 
   for (var i = 0; i < Math.min(safe.length, 50); i++) {
     var row = safe[i];
@@ -1863,44 +1864,47 @@ async function refreshTiktokTrendIntelligenceFeed() {
   var el = document.getElementById("tiktokTrendIntelligence");
   if (!el) return;
 
-  tiktokFeedDebug("fetch start", { table: TIKTOK_FEED_TABLE, url: SUPABASE_URL });
-
-  el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Loading TikTok trends from Supabase...</p></div>';
+  el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Loading TikTok live state...</p></div>';
 
   try {
-    var session = await supabaseClient.auth.getSession();
-    if (!session.data || !session.data.session) {
-      tiktokFeedDebug("fetch skipped", "not authenticated");
-      el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Login required to load TikTok trend intelligence.</p></div>';
+    if (typeof TiktokLiveState !== "undefined") {
+      TiktokLiveState.mount();
+    }
+
+    var accountId = (typeof USER_TIKTOK_HANDLE !== "undefined" && USER_TIKTOK_HANDLE)
+      ? USER_TIKTOK_HANDLE
+      : (USER_NICHE || "default");
+    var liveState = (typeof TiktokLiveState !== "undefined")
+      ? await TiktokLiveState.fetchLiveState(accountId)
+      : null;
+
+    if (!liveState || typeof liveState !== "object") {
+      el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">' + TIKTOK_FEED_EMPTY_MSG + '</p></div>';
       return;
     }
 
-    var resp = await supabaseClient
-      .from(TIKTOK_FEED_TABLE)
-      .select("*")
-      .eq("source", "tiktok")
-      .order("timestamp", { ascending: false })
-      .limit(200);
+    var trends = Array.isArray(liveState.trends) ? liveState.trends : [];
+    tiktokTrendFeedCache = trends.map(function(t) {
+      return {
+        type: t.type || "signal",
+        signal_strength: t.signal_strength || 0,
+        virality_score: t.virality_score || 0,
+        trend_state: t.trend_state || "emerging",
+        summary: t.summary || "",
+        timestamp: t.timestamp || "",
+        raw_data: {}
+      };
+    });
 
-    tiktokFeedDebug("Supabase response length", resp.data ? resp.data.length : 0);
-    if (resp.data && resp.data.length) tiktokFeedDebug("Supabase first row", resp.data[0]);
-
-    if (resp.error) {
-      el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + describeTiktokFeedError(resp.error) + '</p></div>';
-      return;
-    }
-
-    tiktokTrendFeedCache = resp.data || [];
     if (!tiktokTrendFeedCache.length) {
-      tiktokFeedDebug("fetch result", "zero rows returned");
       renderTiktokTrendIntelligenceFeed([]);
       return;
     }
 
     renderTiktokTrendIntelligenceFeed(tiktokTrendFeedCache);
   } catch (err) {
-    tiktokFeedDebug("fetch exception", err);
-    el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + describeTiktokFeedError(err) + '</p></div>';
+    tiktokFeedDebug("live state exception", err);
+    el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">Failed to load TikTok live state.</p></div>';
   }
 }
 
