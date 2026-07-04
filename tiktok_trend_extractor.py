@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 import requests
 
 from keyword_diversity import dedupe_keywords, dedupe_phrases
+from tiktok_pipeline_hardening import compute_trend_score, validate_videos
 
 PLATFORM = "tiktok"
 USER_AGENT = (
@@ -550,13 +551,21 @@ def extract_tiktok_trend_signals(
     """
     try:
         if not inputs:
-            return _empty_batch()
+            return dict(_EMPTY_TIKTOK_SIGNALS)
 
         historical = set(historical_keywords or [])
         batch_seen: set[str] = set()
 
+        # Data quality gate — reject low-quality videos before scoring/insights.
+        gate = validate_videos(
+            [inp if isinstance(inp, dict) else {"caption": str(inp)} for inp in inputs]
+        )
+        gated_inputs = gate.get("accepted") or []
+        if not gated_inputs:
+            gated_inputs = list(inputs)
+
         resolved: list[dict[str, Any]] = []
-        for raw in inputs:
+        for raw in gated_inputs:
             item = _resolve_item(raw)
             if item:
                 resolved.append(item)
@@ -565,6 +574,11 @@ def extract_tiktok_trend_signals(
         for meta in resolved:
             extracted = _extract_single_item(meta, historical=historical, batch_seen=batch_seen)
             if extracted:
+                try:
+                    trend_overlay = compute_trend_score({**meta, **extracted})
+                    extracted["trend_score"] = trend_overlay
+                except Exception:
+                    pass
                 extracted_items.append(extracted)
 
         aggregated = _aggregate_signals(extracted_items)

@@ -17,15 +17,17 @@ jobs:
           git clone "https://x-access-token:${DASHBOARD_TOKEN}@github.com/patriotradar/patriot-radar-dashboard.git" dashboard
           cp dashboard-sync/index.html dashboard/index.html
           cp dashboard-sync/niche-comment-intelligence.js dashboard/niche-comment-intelligence.js
+          cp dashboard-sync/tiktok-insights-hardening.js dashboard/tiktok-insights-hardening.js
           cp dashboard-sync/niche-comment-virality-prediction.js dashboard/niche-comment-virality-prediction.js
           cp dashboard-sync/virality-intelligence-dashboard.js dashboard/virality-intelligence-dashboard.js
           cp dashboard-sync/public-config.js dashboard/api/public-config.js
+          cp dashboard-sync/api/tiktok-insights.js dashboard/api/tiktok-insights.js
           cp dashboard-sync/vercel.json dashboard/vercel.json
           cp dashboard-sync/.env.example dashboard/.env.example
           cd dashboard
           git config user.name "Patriot Radar Bot"
           git config user.email "bot@patriotradar.github.io"
-          git add index.html niche-comment-intelligence.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js api/public-config.js vercel.json .env.example
+          git add index.html niche-comment-intelligence.js tiktok-insights-hardening.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js api/public-config.js api/tiktok-insights.js vercel.json .env.example
           if git diff --staged --quiet; then
             echo "No dashboard UI changes to sync."
             exit 0
