@@ -10,7 +10,7 @@ create table if not exists public.content_queue (
   hook text not null default '',
   product_name text not null default '',
   status text not null default 'queued'
-    check (status in ('queued', 'posted', 'failed')),
+    check (status in ('queued', 'pending', 'approved', 'blocked', 'posted', 'failed')),
   scheduled_time timestamptz,
   dedupe_key text not null,
   metadata jsonb not null default '{}'::jsonb,
@@ -59,6 +59,13 @@ create policy "Authenticated users read content queue"
   for select
   to authenticated
   using (true);
+
+create policy "Authenticated users update content queue status"
+  on public.content_queue
+  for update
+  to authenticated
+  using (true)
+  with check (true);
 
 create policy "Authenticated users read content performance"
   on public.content_performance

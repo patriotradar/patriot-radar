@@ -36,6 +36,7 @@ from tiktok_trending_products_engine import generateTrendingProducts
 from tiktok_content_publisher import queueContentForPosting
 from tiktok_performance_tracker import trackContentPerformance
 from tiktok_learning_engine import updateContentStrategy
+from tiktok_live_dashboard_state import build_live_state
 from trend_intelligence_store import store_external_tiktok_signals
 
 logger = logging.getLogger(__name__)
@@ -272,6 +273,13 @@ def run_hardened_tiktok_pipeline(
                 logger.warning("Niche comment signals skipped: %s", exc)
                 errors.append(f"niche_signals: {exc}")
 
+        live_state = build_live_state(
+            resolved_account_id,
+            apify_feedback=apify_feedback,
+            queue_result=queue_result,
+            learning_result=strategy_result,
+        )
+
         response = build_safe_pipeline_response(
             videos=cleaned_videos,
             insights=validated_insights,
@@ -293,6 +301,7 @@ def run_hardened_tiktok_pipeline(
                 "content_queue": queue_result,
                 "performance_tracking": performance_result,
                 "strategy_update": strategy_result,
+                "live_state": live_state,
                 "computed_at": datetime.now(timezone.utc).isoformat(),
             },
         )
@@ -384,6 +393,13 @@ def run_hardened_pipeline_from_raw_rows(
 
         recs = generate_post_recommendations(validated, cleaned_videos)
 
+        live_state = build_live_state(
+            resolved_account_id,
+            apify_feedback={},
+            queue_result=queue_result,
+            learning_result=strategy_result,
+        )
+
         return build_safe_pipeline_response(
             videos=cleaned_videos,
             insights=validated,
@@ -400,6 +416,7 @@ def run_hardened_pipeline_from_raw_rows(
                 "content_queue": queue_result,
                 "performance_tracking": performance_result,
                 "strategy_update": strategy_result,
+                "live_state": live_state,
                 "computed_at": datetime.now(timezone.utc).isoformat(),
             },
         )

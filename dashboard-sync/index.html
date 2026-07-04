@@ -21,6 +21,7 @@
 <script src="tiktok-shop-inventory-gate.js"></script>
 <script src="tiktok-content-mode-resolver.js"></script>
 <script src="tiktok-inventory-predictor.js"></script>
+<script src="tiktok-orchestration-dashboard.js"></script>
 
 <style>
 :root{
@@ -1391,6 +1392,7 @@ input[type=range]::-webkit-slider-thumb{
       <div id="tiktokInsightsHardening"></div>
       <div id="nicheCommentViralityPrediction"></div>
       <div id="viralityIntelligenceExtension"></div>
+      <div id="tiktokOrchestrationDashboard"></div>
     </div>
 
     <div id="tab-discovery" class="tab-content">
@@ -9076,6 +9078,7 @@ function switchTab(tab) {
   if (tab === "tiktok") {
     refreshTiktokTrendIntelligenceFeed();
     if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+    if (typeof refreshTiktokOrchestrationDashboard === "function") refreshTiktokOrchestrationDashboard();
   }
   if (tab === "audit") renderAuditTab();
   if (tab === "aichat" && !document.getElementById("aiChatMessages").innerHTML) {
@@ -11630,6 +11633,7 @@ async function showDashboard(sessionUser) {
   loadPerfFromSupabase();
   loadLiveStats();
   refreshTiktokTrendIntelligenceFeed();
+  if (typeof initTiktokOrchestrationDashboard === "function") initTiktokOrchestrationDashboard();
   loadReferralCard();
   if (!localStorage.getItem("cr_tutorial_done")) {
     setTimeout(function() { startTutorial(); }, 800);

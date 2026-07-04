@@ -1,7 +1,9 @@
 /**
  * Hardened TikTok insights API — always returns the output safety contract.
- * POST /api/tiktok-insights  { niche?: string, videos?: object[] }
+ * POST /api/tiktok-insights  { niche?: string, videos?: object[], account_id?: string }
  */
+
+const { emptyLiveState, buildLiveState } = require("./tiktok-live-dashboard-state");
 
 const QUALITY_THRESHOLD = 0.4;
 const DEFAULT_AGE_HOURS = 168;
@@ -22,6 +24,7 @@ function emptyResponse() {
     emerging_products: [],
     trending_products: [],
     content_pack: { captions: [], hashtags: [], hook_variations: [] },
+    live_state: emptyLiveState(),
   };
 }
 
@@ -412,7 +415,7 @@ function runPipeline(videos, niche) {
   };
 }
 
-module.exports = function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
 
@@ -430,13 +433,28 @@ module.exports = function handler(req, res) {
   try {
     const body = req.method === "POST" ? (req.body || {}) : {};
     const niche = String(body.niche || req.query?.niche || "").trim();
+    const accountId = String(body.account_id || req.query?.account_id || "").trim();
     const videos = Array.isArray(body.videos) ? body.videos : [];
 
     if (!videos.length) {
-      return res.status(200).json({ ...emptyResponse(), success: true, message: "no_videos_provided" });
+      const liveState = accountId
+        ? await buildLiveState(accountId, {})
+        : emptyLiveState();
+      return res.status(200).json({
+        ...emptyResponse(),
+        live_state: liveState,
+        success: true,
+        message: "no_videos_provided",
+      });
     }
 
     const result = runPipeline(videos, niche);
+    const derivedAccount =
+      accountId ||
+      String((result.videos || []).find((v) => v.author)?.author || "").trim();
+    result.live_state = derivedAccount
+      ? await buildLiveState(derivedAccount, {})
+      : emptyLiveState();
     return res.status(200).json(result);
   } catch (err) {
     return res.status(200).json({ ...emptyResponse(), errors: [String(err?.message || err)], success: false });

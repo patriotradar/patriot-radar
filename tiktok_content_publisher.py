@@ -14,6 +14,8 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from tiktok_automation_control import getAutomationMode
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_QUEUE_TABLE = "content_queue"
@@ -44,6 +46,12 @@ def _queue_dedupe_key(account_id: str, caption: str, hook: str, product_name: st
     return "content_queue:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
 
 
+def _initial_status_for_mode(automation_mode: str) -> str:
+    if automation_mode == "approval_required":
+        return "pending"
+    return "queued"
+
+
 def _normalize_hashtags(hashtags: Any) -> list[str]:
     if not hashtags:
         return []
@@ -58,6 +66,7 @@ def _build_queue_items(
     account_id: str,
     content_pack: dict[str, Any],
     emerging_products: list[dict[str, Any]] | None,
+    automation_mode: str = "queue_only",
 ) -> list[dict[str, Any]]:
     """Build queue row payloads from content pack and emerging products."""
     pack = content_pack if isinstance(content_pack, dict) else {}
@@ -84,6 +93,7 @@ def _build_queue_items(
         hooks = [""]
 
     now = datetime.now(timezone.utc)
+    initial_status = _initial_status_for_mode(automation_mode)
     items: list[dict[str, Any]] = []
     seen_keys: set[str] = set()
 
@@ -102,10 +112,14 @@ def _build_queue_items(
             "hashtags": hashtags,
             "hook": hook,
             "product_name": product_name,
-            "status": "queued",
+            "status": initial_status,
             "scheduled_time": scheduled_time,
             "dedupe_key": dedupe_key,
-            "metadata": {"source": "content_pack", "index": i},
+            "metadata": {
+                "source": "content_pack",
+                "index": i,
+                "automation_mode": automation_mode,
+            },
         })
 
     return items
@@ -127,14 +141,19 @@ def _fetch_existing_dedupe_keys(supabase, table: str, keys: list[str]) -> set[st
         return set()
 
 
-def _attempt_auto_post(supabase, table: str, row: dict[str, Any]) -> dict[str, Any]:
+def _attempt_auto_post(
+    supabase,
+    table: str,
+    row: dict[str, Any],
+    automation_mode: str,
+) -> dict[str, Any]:
     """
-    Attempt direct posting when AUTO_POST=true.
+    Attempt direct posting only when automation_mode is auto_post and AUTO_POST=true.
 
     No TikTok posting API is configured in this system; entries remain queued
     with metadata noting auto-post was requested but no poster is available.
     """
-    if not _is_auto_post_enabled():
+    if automation_mode != "auto_post" or not _is_auto_post_enabled():
         return row
 
     row = dict(row)
@@ -164,8 +183,14 @@ def queueContentForPosting(
         return result
 
     try:
+        automation_mode = getAutomationMode(account)
         table = os.getenv("CONTENT_QUEUE_TABLE", DEFAULT_QUEUE_TABLE)
-        items = _build_queue_items(account, content_pack or {}, emerging_products)
+        items = _build_queue_items(
+            account,
+            content_pack or {},
+            emerging_products,
+            automation_mode=automation_mode,
+        )
         if not items:
             return result
 
@@ -184,7 +209,7 @@ def queueContentForPosting(
                 result["skipped"] += 1
                 continue
 
-            payload = _attempt_auto_post(supabase, table, item)
+            payload = _attempt_auto_post(supabase, table, item, automation_mode)
             try:
                 response = (
                     supabase.table(table)
@@ -200,6 +225,7 @@ def queueContentForPosting(
                 result["error"] = str(exc)
 
         result["items"] = queued_items
+        result["automation_mode"] = automation_mode
         return result
 
     except Exception as exc:

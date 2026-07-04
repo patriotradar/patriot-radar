@@ -11,6 +11,9 @@
     },
     "api/tiktok-insights.js": {
       "maxDuration": 30
+    },
+    "api/tiktok-content-approval.js": {
+      "maxDuration": 15
     }
   }
 }
