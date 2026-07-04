@@ -101,6 +101,17 @@ def run_niche_comment_ingest(
     elif persist and not comment_count:
         logger.warning("No comments to persist to niche_comment_raw.")
 
+    hardened: dict[str, Any] = {"insights": [], "recommended_posts": [], "trend_scores": [], "errors": []}
+    try:
+        from tiktok_insights_pipeline import run_hardened_pipeline_from_raw_rows
+        from niche_comment_raw_store import videos_to_raw_rows
+
+        raw_rows = videos_to_raw_rows(videos)
+        hardened = run_hardened_pipeline_from_raw_rows(raw_rows, niche="")
+    except Exception as exc:
+        logger.warning("Hardened insights overlay skipped: %s", exc)
+        hardened["errors"] = [str(exc)]
+
     return {
         "success": comment_count > 0,
         "data_source": data_source,
@@ -108,4 +119,8 @@ def run_niche_comment_ingest(
         "video_count": len(videos),
         "comment_count": comment_count,
         "store_result": store_result,
+        "insights": hardened.get("insights") or [],
+        "recommended_posts": hardened.get("recommended_posts") or [],
+        "trend_scores": hardened.get("trend_scores") or [],
+        "errors": hardened.get("errors") or [],
     }
