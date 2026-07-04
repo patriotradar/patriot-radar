@@ -21,6 +21,9 @@ jobs:
           cp dashboard-sync/niche-comment-virality-prediction.js dashboard/niche-comment-virality-prediction.js
           cp dashboard-sync/virality-intelligence-dashboard.js dashboard/virality-intelligence-dashboard.js
           cp dashboard-sync/public-config.js dashboard/api/public-config.js
+          mkdir -p dashboard/api/chat
+          cp dashboard-sync/api/chat/completions.js dashboard/api/chat/completions.js
+          cp dashboard-sync/api/chat/audit-prompts.js dashboard/api/chat/audit-prompts.js
           cp dashboard-sync/api/tiktok-insights.js dashboard/api/tiktok-insights.js
           cp dashboard-sync/tiktok-live-state.js dashboard/tiktok-live-state.js
           cp dashboard-sync/tiktok-live-state-integration.js dashboard/tiktok-live-state-integration.js
@@ -36,7 +39,7 @@ jobs:
           cd dashboard
           git config user.name "Patriot Radar Bot"
           git config user.email "bot@patriotradar.github.io"
-          git add index.html niche-comment-intelligence.js tiktok-insights-hardening.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-integration.js tiktok-access-control.js tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js api/public-config.js api/tiktok-insights.js api/tiktok-live-state.js api/tiktok-live-state-assembler.js api/tiktok-access-control.js vercel.json .env.example
+          git add index.html niche-comment-intelligence.js tiktok-insights-hardening.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-integration.js tiktok-access-control.js tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js api/public-config.js api/chat/completions.js api/chat/audit-prompts.js api/tiktok-insights.js api/tiktok-live-state.js api/tiktok-live-state-assembler.js api/tiktok-access-control.js vercel.json .env.example
           if git diff --staged --quiet; then
             echo "No dashboard UI changes to sync."
             exit 0
