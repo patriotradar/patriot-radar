@@ -307,6 +307,187 @@
     };
   }
 
+  var STOP_WORDS = {
+    "the": 1, "and": 1, "for": 1, "are": 1, "but": 1, "not": 1, "you": 1, "all": 1, "can": 1,
+    "had": 1, "her": 1, "was": 1, "one": 1, "our": 1, "out": 1, "day": 1, "get": 1, "has": 1,
+    "him": 1, "his": 1, "how": 1, "its": 1, "may": 1, "new": 1, "now": 1, "old": 1, "see": 1,
+    "two": 1, "way": 1, "who": 1, "that": 1, "this": 1, "with": 1, "have": 1, "from": 1, "they": 1,
+    "been": 1, "said": 1, "each": 1, "which": 1, "their": 1, "will": 1, "other": 1, "about": 1,
+    "many": 1, "then": 1, "them": 1, "these": 1, "some": 1, "would": 1, "make": 1, "like": 1,
+    "into": 1, "time": 1, "very": 1, "when": 1, "come": 1, "here": 1, "just": 1, "what": 1,
+    "know": 1, "take": 1, "people": 1, "year": 1, "good": 1, "could": 1, "than": 1, "first": 1,
+    "down": 1, "did": 1, "more": 1, "being": 1, "only": 1, "those": 1, "going": 1, "really": 1,
+    "still": 1, "even": 1, "your": 1, "there": 1, "where": 1, "why": 1, "back": 1, "much": 1,
+    "before": 1, "right": 1, "too": 1, "any": 1, "same": 1, "also": 1, "after": 1, "over": 1,
+    "such": 1, "give": 1, "most": 1, "tell": 1, "does": 1, "work": 1, "well": 1, "video": 1,
+    "videos": 1, "comment": 1, "comments": 1, "tiktok": 1, "lol": 1, "omg": 1, "yes": 1, "yeah": 1
+  };
+
+  var PRODUCT_HINT_WORDS = {
+    "serum": 1, "cream": 1, "lotion": 1, "protein": 1, "powder": 1, "brand": 1, "product": 1,
+    "bought": 1, "buy": 1, "recommend": 1, "recommended": 1, "amazon": 1, "love": 1, "favorite": 1,
+    "dupe": 1, "routine": 1, "spf": 1, "retinol": 1, "collagen": 1, "whey": 1, "vitamin": 1
+  };
+
+  function clampVal(v, lo, hi) {
+    lo = lo || 0;
+    hi = hi || 1;
+    return Math.max(lo, Math.min(hi, v));
+  }
+
+  function extractProductPhrases(text) {
+    var tokens = String(text || "").toLowerCase().match(/[a-z0-9']+/g) || [];
+    var filtered = [];
+    for (var ti = 0; ti < tokens.length; ti++) {
+      if (tokens[ti].length >= 2 && !STOP_WORDS[tokens[ti]]) filtered.push(tokens[ti]);
+    }
+    var phrases = [];
+    for (var n = 2; n <= 3; n++) {
+      for (var p = 0; p <= filtered.length - n; p++) {
+        var phrase = filtered.slice(p, p + n).join(" ");
+        if (phrase.length >= 5) phrases.push(phrase);
+      }
+    }
+    return phrases;
+  }
+
+  function generateTrendingProducts(videos, comments, niche, trendScores) {
+    try {
+      var videosList = videos || [];
+      var commentsList = comments || [];
+      var scoresList = trendScores || [];
+      if (!commentsList.length && !videosList.length) return [];
+
+      var trendByVideo = {};
+      for (var si = 0; si < scoresList.length; si++) {
+        var ts = scoresList[si];
+        var tsVid = String(ts.video_id || "").trim();
+        if (tsVid) trendByVideo[tsVid] = ts;
+      }
+
+      var videoById = {};
+      for (var vi = 0; vi < videosList.length; vi++) {
+        var vid = videoIdentifier(videosList[vi]);
+        if (vid) videoById[vid] = videosList[vi];
+      }
+      var totalVideos = Math.max(Object.keys(videoById).length, 1);
+      var phraseData = {};
+
+      for (var ci = 0; ci < commentsList.length; ci++) {
+        var text = String(commentsList[ci].comment_text || commentsList[ci].text || "").trim().toLowerCase();
+        if (!text) continue;
+        var cVid = String(commentsList[ci].video_id || "").trim();
+        var extracted = extractProductPhrases(text);
+        for (var ei = 0; ei < extracted.length; ei++) {
+          var phrase = extracted[ei];
+          if (!phraseData[phrase]) phraseData[phrase] = { mention_count: 0, video_ids: {}, examples: [] };
+          phraseData[phrase].mention_count++;
+          if (cVid) phraseData[phrase].video_ids[cVid] = true;
+          if (phraseData[phrase].examples.length < 5) phraseData[phrase].examples.push(text.slice(0, 160));
+        }
+      }
+
+      var phraseKeys = Object.keys(phraseData);
+      if (!phraseKeys.length) return [];
+
+      var maxMentions = 1;
+      var maxVelocity = 1;
+      var maxEngagement = 1;
+      for (var pk = 0; pk < phraseKeys.length; pk++) {
+        if (phraseData[phraseKeys[pk]].mention_count > maxMentions) maxMentions = phraseData[phraseKeys[pk]].mention_count;
+      }
+      for (var si2 = 0; si2 < scoresList.length; si2++) {
+        var vel = Number(scoresList[si2].velocity_score) || 0;
+        if (vel > maxVelocity) maxVelocity = vel;
+      }
+      var vidKeys = Object.keys(videoById);
+      for (var vk = 0; vk < vidKeys.length; vk++) {
+        var eng = (videoLikes(videoById[vidKeys[vk]]) + videoCommentsCount(videoById[vidKeys[vk]])) / Math.max(videoViews(videoById[vidKeys[vk]]), 1);
+        if (eng > maxEngagement) maxEngagement = eng;
+      }
+      if (maxVelocity <= 0) maxVelocity = 1;
+      if (maxEngagement <= 0) maxEngagement = 1;
+
+      var nicheTokens = {};
+      if (niche) {
+        var nt = String(niche).toLowerCase().match(/[a-z0-9']+/g) || [];
+        for (var ni = 0; ni < nt.length; ni++) nicheTokens[nt[ni]] = true;
+      }
+      var nicheTokenCount = Object.keys(nicheTokens).length;
+
+      var results = [];
+      for (var pi = 0; pi < phraseKeys.length; pi++) {
+        var key = phraseKeys[pi];
+        var data = phraseData[key];
+        var mentionCount = data.mention_count;
+        var videoIds = Object.keys(data.video_ids);
+        var videoCount = videoIds.length;
+        var mentionFreq = mentionCount / maxMentions;
+        var videoSpread = videoCount / totalVideos;
+
+        var velSum = 0;
+        for (var vli = 0; vli < videoIds.length; vli++) {
+          velSum += Number((trendByVideo[videoIds[vli]] || {}).velocity_score) || 0;
+        }
+        var trendVelocityNorm = (velSum / Math.max(videoIds.length, 1)) / maxVelocity;
+
+        var engSum = 0;
+        var engCount = 0;
+        for (var eli = 0; eli < videoIds.length; eli++) {
+          if (videoById[videoIds[eli]]) {
+            engSum += (videoLikes(videoById[videoIds[eli]]) + videoCommentsCount(videoById[videoIds[eli]])) / Math.max(videoViews(videoById[videoIds[eli]]), 1);
+            engCount++;
+          }
+        }
+        var engagementNorm = (engSum / Math.max(engCount, 1)) / maxEngagement;
+
+        var phraseParts = key.split(" ");
+        var nicheRelevance;
+        if (nicheTokenCount) {
+          var overlap = 0;
+          for (var pt = 0; pt < phraseParts.length; pt++) {
+            if (nicheTokens[phraseParts[pt]]) overlap++;
+          }
+          var hintBonus = 0;
+          for (var ph = 0; ph < phraseParts.length; ph++) {
+            if (PRODUCT_HINT_WORDS[phraseParts[ph]]) { hintBonus = 0.3; break; }
+          }
+          nicheRelevance = clampVal(overlap / Math.max(nicheTokenCount, 1) + hintBonus);
+        } else {
+          nicheRelevance = 0.2;
+          for (var ph2 = 0; ph2 < phraseParts.length; ph2++) {
+            if (PRODUCT_HINT_WORDS[phraseParts[ph2]]) { nicheRelevance = 0.5; break; }
+          }
+        }
+
+        var score = clampVal(0.4 * mentionFreq + 0.2 * videoSpread + 0.2 * trendVelocityNorm + 0.1 * engagementNorm + 0.1 * nicheRelevance);
+        if (!(mentionCount >= 2 || videoCount >= 2 || score >= 0.6)) continue;
+
+        var confidence = clampVal(0.3 * mentionFreq + 0.3 * videoSpread + 0.2 * trendVelocityNorm + 0.2 * engagementNorm);
+        var evidence = data.examples.slice(0, 3);
+        if (videoCount >= 2) evidence.push("Mentioned across " + videoCount + " videos");
+        if (trendVelocityNorm > 0.7) evidence.push("Associated with high-velocity trending videos");
+        if (nicheRelevance > 0.5 && niche) evidence.push("Aligned with niche: " + niche);
+
+        results.push({
+          name: key.replace(/\b\w/g, function (c) { return c.toUpperCase(); }),
+          mention_count: mentionCount,
+          video_count: videoCount,
+          trend_velocity: Math.round(trendVelocityNorm * 10000) / 10000,
+          niche_relevance: Math.round(nicheRelevance * 10000) / 10000,
+          confidence: Math.round(confidence * 10000) / 10000,
+          evidence: evidence,
+          score: Math.round(score * 10000) / 10000
+        });
+      }
+
+      results.sort(function (a, b) { return b.score - a.score; });
+      return results.slice(0, 20);
+    } catch (e) {
+      return [];
+    }
+  }
+
   function groupRawRowsByVideo(rows) {
     var byVideo = {};
     for (var i = 0; i < (rows || []).length; i++) {
@@ -359,18 +540,19 @@
       }
       var rawInsights = generateInsights(cleanedVideos, flatComments, niche);
       var validated = validateInsights(rawInsights, flatComments);
-      var recs = generatePostRecommendations(validated);
       var trendScores = accepted.map(function (v) { return computeTrendScore(v); });
+      var trendingProducts = generateTrendingProducts(cleanedVideos, flatComments, niche, trendScores);
+      var recs = generatePostRecommendations(validated);
       return {
         videos: cleanedVideos,
         insights: validated,
         recommended_posts: recs.recommended_posts || [],
         trend_scores: trendScores,
+        trending_products: trendingProducts.length ? trendingProducts : [],
         errors: gate.errors || [],
         success: true,
         niche: { niche: niche || "unknown", confidence: 0.0, keywords: [] },
         emerging_products: [],
-        trending_products: [],
         content_pack: { captions: [], hashtags: [], hook_variations: [] }
       };
     } catch (err) {
@@ -454,15 +636,21 @@
       h += '</div></div>';
     }
 
-    if (trendingProducts.length > 0) {
-      h += '<div style="margin-top:16px"><h3 style="font-size:14px;margin-bottom:10px;color:var(--green)">Trending Products</h3>';
+    if (trendingProducts && trendingProducts.length > 0) {
+      h += '<div style="margin-top:16px"><h3 style="font-size:14px;margin-bottom:10px;color:var(--amber)">Trending Products</h3>';
       h += '<div style="display:grid;gap:10px">';
-      for (var tp = 0; tp < Math.min(trendingProducts.length, 5); tp++) {
-        var trend = trendingProducts[tp];
+      for (var tp = 0; tp < Math.min(trendingProducts.length, 8); tp++) {
+        var product = trendingProducts[tp];
         h += '<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px">';
-        h += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">' + escapeHtml(trend.name || trend.product || "") + '</div>';
-        h += '<span class="tag">' + safeInt(trend.mention_count, 0) + ' mentions</span> ';
-        h += '<span class="tag">score ' + Math.round((trend.score || 0) * 100) + '%</span>';
+        h += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">' + escapeHtml(product.name || product.product || "") + '</div>';
+        h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">';
+        h += '<span class="tag">score ' + escapeHtml(String(product.score)) + '</span>';
+        h += '<span class="tag">' + safeInt(product.mention_count, 0) + ' mentions</span>';
+        h += '<span class="tag">' + safeInt(product.video_count, 0) + ' videos</span>';
+        h += '</div>';
+        if (product.evidence && product.evidence.length) {
+          h += '<div style="font-size:11px;color:var(--muted)">' + escapeHtml(product.evidence[0]) + '</div>';
+        }
         h += '</div>';
       }
       h += '</div></div>';
@@ -496,6 +684,20 @@
     return data;
   }
 
+  function renderFromLiveState(liveState) {
+    var data = {
+      videos: (liveState && liveState.videos) || [],
+      insights: (liveState && liveState.insights) || [],
+      recommended_posts: (liveState && liveState.recommended_posts) || [],
+      trend_scores: (liveState && liveState.trend_scores) || [],
+      trending_products: (liveState && liveState.trending_products) || [],
+      errors: (liveState && liveState.errors) || [],
+      success: liveState ? liveState.success !== false : true,
+    };
+    renderResults(data);
+    return data;
+  }
+
   window.TikTokInsightsHardening = {
     validateVideos: validateVideos,
     cleanComments: cleanComments,
@@ -503,9 +705,11 @@
     generateInsights: generateInsights,
     validateInsights: validateInsights,
     generatePostRecommendations: generatePostRecommendations,
+    generateTrendingProducts: generateTrendingProducts,
     runHardenedPipeline: runHardenedPipeline,
     emptyPipelineResponse: emptyPipelineResponse,
-    refresh: refreshTiktokInsightsHardening
+    refresh: refreshTiktokInsightsHardening,
+    renderFromLiveState: renderFromLiveState
   };
 
   function hookNicheRefresh() {

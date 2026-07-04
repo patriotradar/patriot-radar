@@ -1,0 +1,27 @@
+[
+  {
+    "product_id": "tts_10001",
+    "name": "British Army history books",
+    "category": "military"
+  },
+  {
+    "product_id": "tts_10002",
+    "name": "Union Jack flags and patriotic decor",
+    "category": "flags"
+  },
+  {
+    "product_id": "tts_10003",
+    "name": "Royal family collectibles",
+    "category": "royal"
+  },
+  {
+    "product_id": "tts_10004",
+    "name": "British history books",
+    "category": "history"
+  },
+  {
+    "product_id": "tts_10005",
+    "name": "Proudly British merchandise",
+    "category": "general"
+  }
+]

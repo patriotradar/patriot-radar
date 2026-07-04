@@ -191,7 +191,7 @@ def fetch_historical_keyword_roots(limit: int = 500) -> set[str]:
             supabase.table(table)
             .select("summary,raw_data,type")
             .eq("source", "tiktok")
-            .order("timestamp", desc=True)
+            .order("created_at", desc=True)
             .limit(limit)
             .execute()
         )

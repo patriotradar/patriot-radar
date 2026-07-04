@@ -3,14 +3,17 @@
     "api/chat/completions.js": {
       "maxDuration": 60
     },
-    "api/public-config.js": {
-      "maxDuration": 10
+    "api/tiktok-live-state.js": {
+      "maxDuration": 30
     },
     "api/tiktok-insights.js": {
       "maxDuration": 30
     },
     "api/tiktok-content-approval.js": {
       "maxDuration": 15
+    },
+    "api/public-config.js": {
+      "maxDuration": 10
     }
   }
 }
