@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/tiktok-live-state.js": {
+      "maxDuration": 30
+    },
+    "api/public-config.js": {
+      "maxDuration": 10
+    }
+  }
+}

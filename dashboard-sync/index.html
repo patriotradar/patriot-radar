@@ -11,6 +11,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/api/public-config.js"></script>
+<script src="tiktok-access-control.js"></script>
+<script src="tiktok-live-state.js"></script>
 <script src="niche-comment-intelligence.js"></script>
 <script src="niche-comment-virality-prediction.js"></script>
 <script src="virality-intelligence-dashboard.js"></script>
@@ -11512,6 +11514,8 @@ async function showDashboard(sessionUser) {
     }
   } catch(e) {}
 
+  if (currentUser) window.currentUser = currentUser;
+
   var daysLeft = await getTrialDaysLeft(currentUser);
 
   if (daysLeft === 0 && !isAdmin) {
@@ -11537,7 +11541,25 @@ async function showDashboard(sessionUser) {
   trackUserActivity();
   if (FINANCIAL_NICHES.indexOf((USER_NICHE || "").toLowerCase()) !== -1) showFinancialDisclaimer();
 
-  checkAdminStatus();
+  if (typeof TiktokAccessControl !== "undefined") {
+    TiktokAccessControl.initFromSession(supabaseClient, currentUser ? currentUser.id : "").then(function(liveState) {
+      if (liveState && liveState.access && liveState.access.admin_override) {
+        isAdminUser = true;
+        var btn = document.getElementById("adminTabBtn");
+        if (btn) btn.style.display = "";
+        loadAdminPanel();
+      } else {
+        checkAdminStatus();
+      }
+      if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+    }).catch(function() {
+      checkAdminStatus();
+      if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+    });
+  } else {
+    checkAdminStatus();
+    if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+  }
   initNicheSwitcher();
   initVoiceInput();
   initGoalSelector();
