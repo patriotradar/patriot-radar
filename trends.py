@@ -2,8 +2,11 @@ from pytrends.request import TrendReq
 from datetime import datetime
 import time
 import json
+import os
 import random
+import os
 import requests
+from caption_templates import apply_caption_pipeline
 
 CONTENT_KEYWORDS = [
     # Core
@@ -212,20 +215,6 @@ def is_patriotic_relevant(query):
         return False
     return True
 
-def make_caption(keyword):
-    kw = keyword.title()
-    question = QUESTIONS.get(keyword.lower(), f"Is {kw} being ignored in modern Britain? Yes or No?")
-    captions = [
-        f"🇬🇧 {question} Comment below! #britain #patriotic #british #england #proud",
-        f"🇬🇧 {question} Drop your answer below! #british #england #patriot #uk #proud",
-        f"🇬🇧 {question} Let us know in the comments! #britain #english #patriotic #uk",
-        f"🇬🇧 Every generation should understand this. {question} #british #proud #england #uk",
-        f"🇬🇧 This is important. {question} Comment YES or NO! #britain #patriotic #english"
-    ]
-    import hashlib
-    idx = int(hashlib.md5(keyword.lower().encode()).hexdigest(), 16) % len(captions)
-    return captions[idx]
-
 def make_product(keyword):
     keyword = keyword.lower()
     if "army" in keyword: return "British Army history books"
@@ -300,7 +289,6 @@ def analyse_keywords(pytrends, keywords, category):
                 "rise_percent": round(rise_percent, 1),
                 "viral_score": round(viral_score, 1),
                 "question": QUESTIONS.get(keyword, f"Is {keyword.title()} being ignored in modern Britain? Yes or No?"),
-                "caption": make_caption(keyword),
                 "product": make_product(keyword)
             })
 
@@ -1074,12 +1062,339 @@ def fallback_results():
             "rise_percent": random.randint(10, 70),
             "viral_score": score,
             "question": QUESTIONS.get(keyword, f"Is {keyword.title()} being ignored in modern Britain? Yes or No?"),
-            "caption": make_caption(keyword),
             "product": make_product(keyword)
         })
 
     fallback.sort(key=lambda x: x["viral_score"], reverse=True)
     return fallback
+
+def determine_virality_state(item):
+    if not item:
+        return "NO_TRACTION"
+
+    rise = float(item.get("rise_percent", 0) or 0)
+    content_score = float(item.get("content_score", 0) or 0)
+    opportunity_gap = float(item.get("opportunity_gap", 0) or 0)
+    platform_count = int(item.get("platform_count", 0) or 0)
+    viral_score = float(item.get("viral_score", 0) or 0)
+    opportunity_label = item.get("opportunity_label", "")
+
+    growing_signals = 0
+    if rise > 0:
+        growing_signals += 1
+    if rise >= 15:
+        growing_signals += 1
+    if content_score >= 50:
+        growing_signals += 1
+    if opportunity_gap >= 6:
+        growing_signals += 1
+    if platform_count >= 2:
+        growing_signals += 1
+    if viral_score >= 25:
+        growing_signals += 1
+    if opportunity_label in ("High Opportunity", "Good Opportunity"):
+        growing_signals += 1
+
+    return "GROWING" if growing_signals >= 2 else "NO_TRACTION"
+
+def _format_platform_context(item):
+    platforms = item.get("platforms") or []
+    if not platforms and item.get("discovery_type"):
+        platforms = [item["discovery_type"]]
+    if not platforms:
+        return ""
+    readable = [p.replace("_", " ") for p in platforms]
+    if len(readable) == 1:
+        return f" on {readable[0]}"
+    return f" across {', '.join(readable[:-1])} and {readable[-1]}"
+
+def build_insight_summary(item, state):
+    if not item:
+        return "No strong patriotic trend signals were detected in this scan cycle."
+
+    keyword = item.get("keyword", "this topic").title()
+    rise = float(item.get("rise_percent", 0) or 0)
+    content_score = int(item.get("content_score", 0) or 0)
+    opportunity_label = item.get("opportunity_label", "Moderate")
+    platform_count = int(item.get("platform_count", 0) or 0)
+    discovery_type = (item.get("discovery_type") or item.get("category") or "content").replace("_", " ")
+    platform_context = _format_platform_context(item)
+
+    if state == "GROWING":
+        if platform_count >= 2:
+            momentum = f"'{keyword}' is gaining cross-platform attention{platform_context}"
+        elif rise >= 15:
+            momentum = f"'{keyword}' is accelerating with a {rise:.0f}% rise in recent search interest"
+        elif rise > 0:
+            momentum = f"'{keyword}' is building momentum with positive search movement"
+        else:
+            momentum = f"'{keyword}' is surfacing as a strong patriotic conversation topic"
+
+        return (
+            f"{momentum}. Content score is {content_score}/100 with {opportunity_label.lower()} "
+            f"({discovery_type}). This is a timely window to post before the topic becomes saturated."
+        )
+
+    if rise <= 0:
+        traction = f"'{keyword}' is visible but not yet climbing"
+    else:
+        traction = f"'{keyword}' has only light momentum (+{rise:.0f}%)"
+
+    return (
+        f"{traction}. Content score is {content_score}/100 and opportunity is {opportunity_label.lower()}. "
+        f"Post with a sharper hook or a more debate-led angle to break through."
+    )
+
+def load_engagement_metrics():
+    metrics = {}
+    env_map = {
+        "avg_views": "AVG_VIEWS",
+        "avg_likes": "AVG_LIKES",
+        "engagement_rate": "ENGAGEMENT_RATE",
+    }
+    for key, env_key in env_map.items():
+        value = os.getenv(env_key)
+        if value is not None and value != "":
+            metrics[key] = float(value)
+
+    metrics_path = "engagement_metrics.json"
+    if os.path.exists(metrics_path):
+        try:
+            with open(metrics_path, encoding="utf-8") as f:
+                file_metrics = json.load(f)
+            if isinstance(file_metrics, dict):
+                for key in env_map:
+                    if key in file_metrics and file_metrics[key] is not None:
+                        metrics[key] = float(file_metrics[key])
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            print(f"engagement_metrics.json load failed: {e}")
+
+    return metrics or None
+
+def detect_engagement_signal(engagement_metrics):
+    if not engagement_metrics:
+        return "HEALTHY"
+
+    avg_views = float(engagement_metrics.get("avg_views", 0) or 0)
+    avg_likes = float(engagement_metrics.get("avg_likes", 0) or 0)
+    engagement_rate = engagement_metrics.get("engagement_rate")
+
+    if avg_views < 300:
+        return "DISTRIBUTION_LIMITED"
+
+    if avg_views >= 300 and avg_likes <= 2:
+        return "HOOK_OK_LOW_CONVERSION"
+
+    if avg_views >= 300 and engagement_rate is not None and float(engagement_rate) < 1.0:
+        return "ATTENTION_WITHOUT_VALUE"
+
+    return "HEALTHY"
+
+def enhance_insight_with_engagement(base_summary, engagement_signal, engagement_metrics=None):
+    metrics = engagement_metrics or {}
+    avg_views = metrics.get("avg_views")
+    avg_likes = metrics.get("avg_likes")
+    engagement_rate = metrics.get("engagement_rate")
+
+    metrics_context = ""
+    if avg_views is not None:
+        metrics_context = f" (avg views: {int(float(avg_views))}"
+        if avg_likes is not None:
+            metrics_context += f", avg likes: {int(float(avg_likes))}"
+        if engagement_rate is not None:
+            metrics_context += f", engagement rate: {float(engagement_rate):.2f}%"
+        metrics_context += ")"
+
+    if engagement_signal == "HOOK_OK_LOW_CONVERSION":
+        return (
+            f"{base_summary} Engagement signal: your content is being seen but not liked or saved"
+            f"{metrics_context}. The hook is pulling views, but the emotional or value trigger is too weak. "
+            f"Strengthen the opening hook and add a clearer pride, sacrifice, or debate payoff in the first 3 seconds."
+        )
+
+    if engagement_signal == "ATTENTION_WITHOUT_VALUE":
+        return (
+            f"{base_summary} Engagement signal: curiosity is high but content delivery is not converting"
+            f"{metrics_context}. Viewers are clicking in, but the post is not delivering enough value, emotion, or payoff. "
+            f"Tighten the middle of the video and land a stronger opinion or story beat before the call to action."
+        )
+
+    if engagement_signal == "DISTRIBUTION_LIMITED":
+        return (
+            f"{base_summary} Engagement signal: reach is the bottleneck"
+            f"{metrics_context}. The content may be fine, but distribution is limited. "
+            f"Improve posting time, hashtag targeting, and hook clarity to push average views above 300 before optimizing conversion."
+        )
+
+    return (
+        f"{base_summary} Engagement signal: performance looks balanced"
+        f"{metrics_context}. Views, likes, and engagement rate are in a healthy range relative to current thresholds."
+    )
+
+def _recommend_post_format(item):
+    discovery_type = (item.get("discovery_type") or "").lower()
+    category = (item.get("category") or "").lower()
+    debate_score = int(item.get("debate", 0) or 0)
+    emotion_score = int(item.get("emotion", 0) or 0)
+    platform_count = int(item.get("platform_count", 0) or 0)
+
+    if discovery_type in ("news", "uk_trending", "twitter") or platform_count >= 2:
+        return "News reaction clip with bold on-screen headline"
+    if debate_score >= 18 or "?" in (item.get("question") or ""):
+        return "Yes/No debate post with comment-bait question overlay"
+    if emotion_score >= 18:
+        return "Emotional talking-head with archive or B-roll cutaways"
+    if category == "emerging":
+        return "Quick explainer carousel (3-5 slides)"
+    if discovery_type in ("reddit", "autocomplete", "creator_search"):
+        return "POV response video answering the search question directly"
+    return "Short-form patriotic talking-head with text hook in the first 2 seconds"
+
+def build_next_post(item, engagement_signal="HEALTHY"):
+    if not item:
+        defaults = {
+            "HOOK_OK_LOW_CONVERSION": {
+                "hook": "Most people get patriotic content wrong — this is why you're not growing.",
+                "content_idea": "15-second punch: name the mistake, reveal the fix, end with one emotional British pride trigger. No long intro.",
+                "format": "Short curiosity-gap talking-head (under 20 seconds)",
+            },
+            "ATTENTION_WITHOUT_VALUE": {
+                "hook": "Here is the step-by-step truth about building British pride content that actually converts.",
+                "content_idea": "3-step breakdown: problem → proof → takeaway. One clear example per step, no vague messaging.",
+                "format": "Educational step-by-step explainer with on-screen bullet points",
+            },
+            "DISTRIBUTION_LIMITED": {
+                "hook": "Everyone is talking about this British trend right now — here is the version that spreads.",
+                "content_idea": "Ride a broad trend hook, post 2-3 variations same day, use wider patriotic hashtags and a bold first-frame headline.",
+                "format": "Trend-reaction clip with viral text overlay and fast cuts",
+            },
+            "HEALTHY": {
+                "hook": "Is British pride still something people are proud to talk about? Yes or No?",
+                "content_idea": "Refine your best-performing patriotic theme: sharper hook, stronger save-worthy payoff, explicit share CTA.",
+                "format": "Yes/No debate post optimized for saves and shares",
+            },
+        }
+        chosen = defaults.get(engagement_signal, defaults["HEALTHY"])
+        return {
+            "hook": chosen["hook"],
+            "content_idea": chosen["content_idea"],
+            "format": chosen["format"],
+            "reason_it_will_perform_better": (
+                f"Tailored for {engagement_signal.lower().replace('_', ' ')} while waiting for a stronger trend signal."
+            ),
+            "engagement_signal_used": engagement_signal,
+        }
+
+    keyword = item.get("keyword", "").title()
+    keyword_lower = item.get("keyword", "").lower()
+    hooks = item.get("hooks") or []
+    base_hook = item.get("question") or (hooks[0] if hooks else item.get("caption", ""))
+    caption = item.get("caption", "")
+    product = item.get("product", "patriotic merchandise")
+    discovery_type = (item.get("discovery_type") or item.get("category") or "content").replace("_", " ")
+    platform_context = _format_platform_context(item).strip()
+    if platform_context:
+        platform_context = f" {platform_context.capitalize()}."
+    else:
+        platform_context = f" Trend source: {discovery_type}."
+
+    rise = float(item.get("rise_percent", 0) or 0)
+    content_score = int(item.get("content_score", 0) or 0)
+    opportunity_gap = float(item.get("opportunity_gap", 0) or 0)
+    opportunity_label = item.get("opportunity_label", "Moderate")
+    competition_score = int(item.get("competition_score", 0) or 0)
+    fresh = int(item.get("fresh", 0) or 0)
+    british = int(item.get("british", 0) or 0)
+    emotion = int(item.get("emotion", 0) or 0)
+    debate = int(item.get("debate", 0) or 0)
+
+    if engagement_signal == "HOOK_OK_LOW_CONVERSION":
+        hook = f"Most people get {keyword} wrong — this is why your patriotic content is not converting."
+        content_idea = (
+            f"Open with a curiosity gap in under 2 seconds: 'Everyone talks about {keyword}, but almost nobody understands this.' "
+            f"Deliver one sharp emotional trigger (pride, sacrifice, or outrage) in the next 5 seconds — keep total length under 25 seconds. "
+            f"End with a single comment prompt, not a long explanation.{platform_context} "
+            f"Caption: {caption}"
+        )
+        post_format = "Short curiosity-gap hook video (15-25 seconds, fast cuts, bold text overlay)"
+        reason = (
+            f"Views are landing but likes are not — this shorter, higher-tension hook fixes the conversion gap on '{keyword_lower}'. "
+            f"Opportunity gap {opportunity_gap}/10 ({opportunity_label.lower()}), content score {content_score}/100. "
+            f"Lead with emotion ({emotion}/25) and debate ({debate}/25) before context."
+        )
+
+    elif engagement_signal == "ATTENTION_WITHOUT_VALUE":
+        hook = f"The truth about {keyword} — explained in 3 steps most creators skip."
+        content_idea = (
+            f"Step 1: State the confusion around {keyword} in one sentence. "
+            f"Step 2: Give one concrete British example or fact that removes ambiguity. "
+            f"Step 3: Land a clear opinion or takeaway — no vague 'what do you think?' without substance. "
+            f"Use on-screen labels for each step.{platform_context} "
+            f"Optional affiliate tie-in: {product}. Caption: {caption}"
+        )
+        post_format = "Step-by-step educational breakdown with numbered on-screen steps"
+        reason = (
+            f"Attention is arriving but value delivery is weak — this structure clarifies the message on '{keyword_lower}' "
+            f"and turns curiosity into saves. Content score {content_score}/100, "
+            f"debate angle {debate}/25, British relevance {british}/25."
+        )
+
+    elif engagement_signal == "DISTRIBUTION_LIMITED":
+        hook = f"Why is everyone in Britain suddenly searching {keyword}? (And what it means for you)"
+        content_idea = (
+            f"Use a broad-appeal trend hook on {keyword} — designed for reach, not depth. "
+            f"Post 2-3 variations across the next 48 hours with different opening lines. "
+            f"Pair with trending patriotic hashtags, a bold first-frame headline, and a simple yes/no or reaction format.{platform_context} "
+            f"Ready caption: {caption}"
+        )
+        post_format = "Trend-reaction viral format with bold headline overlay and high posting volume"
+        reason = (
+            f"Reach is the bottleneck — '{keyword_lower}' has "
+            f"{'rising search interest (+' + f'{rise:.0f}%)' if rise > 0 else 'topic visibility'} "
+            f"and opportunity gap {opportunity_gap}/10 ({opportunity_label.lower()}). "
+            f"Broader hooks and higher volume beat polish when average views are below 300."
+        )
+
+    else:
+        hook = base_hook or f"Is {keyword} still worth fighting for in modern Britain? Yes or No?"
+        content_idea = (
+            f"Double down on your best-performing angle for {keyword}: refine the existing hook, "
+            f"add one save-worthy line (a quote, fact, or bold opinion), and close with an explicit share CTA. "
+            f"Keep the format that is already working — tighten pacing and land the emotional peak earlier.{platform_context} "
+            f"Optional affiliate tie-in: {product}. Caption: {caption}"
+        )
+        post_format = _recommend_post_format(item) + " — optimized for saves and shares"
+        reason = (
+            f"Performance is balanced — refine and repeat what works on '{keyword_lower}'. "
+            f"Opportunity gap {opportunity_gap}/10 ({opportunity_label.lower()}), content score {content_score}/100"
+        )
+        if rise > 0:
+            reason += f", search interest rising {rise:.0f}%"
+        reason += (
+            f", TikTok competition balance {competition_score}/10. "
+            f"Strongest themes: Fresh {fresh}, British {british}, Emotion {emotion}, Debate {debate}."
+        )
+
+    return {
+        "hook": hook,
+        "content_idea": content_idea,
+        "format": post_format,
+        "reason_it_will_perform_better": reason,
+        "engagement_signal_used": engagement_signal,
+    }
+
+def build_virality_recommendation(results, emerging, engagement_metrics=None):
+    """
+    Structural recommendation draft used as fallback input for the selector.
+
+    NOT the decision authority — final_recommendation_selector() chooses the winner.
+    """
+    from recommendation_output import build_recommendation_for_item
+    from recommendation_selector import compute_base_score, gather_candidates
+
+    candidates = gather_candidates(results, emerging)
+    item = max(candidates, key=compute_base_score) if candidates else None
+    return build_recommendation_for_item(item, engagement_metrics)
 
 def save_results(results, emerging, product_trends=None, creator_insights=None):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1100,7 +1415,7 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
         lines.append(f"Viral Score: {item['viral_score']}")
         lines.append(f"Content Score: {item.get('content_score', 0)}/100 (Fresh:{item.get('fresh', 0)} British:{item.get('british', 0)} Emotion:{item.get('emotion', 0)} Debate:{item.get('debate', 0)})")
         lines.append(f"Question: {item['question']}")
-        lines.append(f"Caption: {item['caption']}")
+        lines.append(f"Caption: {item.get('caption', '')}")
         lines.append(f"Product: {item['product']}")
         lines.append("-" * 50)
 
@@ -1115,14 +1430,44 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
             lines.append(f"Viral Score: {item.get('viral_score', 'N/A')}")
             lines.append("-" * 50)
 
+    # Stage 7: Recommendation decision (selector) + humanisation output layer
+    engagement_metrics = load_engagement_metrics()
+    recommendation = build_virality_recommendation(results, emerging, engagement_metrics)
+    from recommendation_output import finalize_recommendation
+    from user_calibration import load_performance_posts
+
+    recommendation = finalize_recommendation(
+        recommendation,
+        results,
+        emerging,
+        engagement_metrics,
+        performance_posts=load_performance_posts(),
+    )
+    lines.append("")
+    lines.append("VIRALITY RECOMMENDATION")
+    lines.append("=" * 50)
+    lines.append(f"State: {recommendation['state']}")
+    lines.append(f"Engagement Signal: {recommendation['engagement_signal']}")
+    lines.append(f"Insight: {recommendation['insight_summary']}")
+    lines.append(f"Hook: {recommendation['next_post']['hook']}")
+    lines.append(f"Content Idea: {recommendation['next_post']['content_idea']}")
+    lines.append(f"Format: {recommendation['next_post']['format']}")
+    lines.append(f"Engagement Signal Used: {recommendation['next_post'].get('engagement_signal_used', recommendation['engagement_signal'])}")
+    lines.append(f"Why it will perform: {recommendation['next_post']['reason_it_will_perform_better']}")
+
     with open("results.txt", "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
     output = {
+        "state": recommendation["state"],
+        "engagement_signal": recommendation["engagement_signal"],
+        "insight_summary": recommendation["insight_summary"],
+        "next_post": recommendation["next_post"],
         "results": results[:15],
         "emerging": emerging[:15],
         "product_trends": product_trends or [],
         "creator_insights": creator_insights or [],
+        "recommendation_meta": recommendation["based_on"],
         "last_updated": now
     }
 
@@ -1231,7 +1576,6 @@ def main():
                     "platform_count": platform_count,
                     "question": hooks[0],
                     "hooks": hooks,
-                    "caption": make_caption(item["keyword"]),
                     "product": make_product(item["keyword"])
                 }
                 scored_emerging.append(entry)
@@ -1253,7 +1597,6 @@ def main():
             "platform_count": platform_count,
             "question": hooks[0],
             "hooks": hooks,
-            "caption": make_caption(item["keyword"]),
             "product": make_product(item["keyword"])
         }
         scored_emerging.append(entry)
@@ -1286,6 +1629,12 @@ def main():
 
     product_trends = sorted(product_results, key=lambda x: x["viral_score"], reverse=True)
 
+    # Stage 6: Caption engine (deterministic assembly; optional polish)
+    enable_polish = os.environ.get("ENABLE_CAPTION_POLISH", "").lower() in ("1", "true", "yes")
+    all_results = apply_caption_pipeline(all_results, enable_polish=enable_polish)
+    scored_emerging = apply_caption_pipeline(scored_emerging, enable_polish=enable_polish)
+
+    # Stages 7-8: Recommendation decision + output persistence
     save_results(all_results, scored_emerging, product_trends, creator_insights)
 
 if __name__ == "__main__":
