@@ -11,6 +11,20 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/api/public-config.js"></script>
+<script src="tiktok-live-state-client.js"></script>
+<script src="tiktok-access-control.js"></script>
+<script src="tiktok-live-state.js"></script>
+<script src="tiktok-live-state-integration.js"></script>
+<script src="niche-comment-intelligence.js"></script>
+<script src="tiktok-insights-hardening.js"></script>
+<script src="niche-comment-virality-prediction.js"></script>
+<script src="virality-intelligence-dashboard.js"></script>
+<script src="commerce-mode.js"></script>
+<script src="commerce-dashboard.js"></script>
+<script src="tiktok-shop-inventory-gate.js"></script>
+<script src="tiktok-content-mode-resolver.js"></script>
+<script src="tiktok-inventory-predictor.js"></script>
+<script src="tiktok-orchestration-dashboard.js"></script>
 <script src="niche-comment-signals.js"></script>
 
 <style>
@@ -909,6 +923,8 @@ input[type=range]::-webkit-slider-thumb{
   border-color:rgba(0,255,136,.4);
   color:var(--green);
 }
+.rbac-restricted{opacity:.45;pointer-events:none;position:relative}
+.rbac-restricted::after{content:"RESTRICTED";position:absolute;top:8px;right:8px;font-size:9px;color:var(--muted);letter-spacing:.5px}
 .tab-content{display:none}
 .tab-content.active{display:block}
 
@@ -1312,6 +1328,11 @@ input[type=range]::-webkit-slider-thumb{
           <option value="revenue">Increase Revenue</option>
         </select>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <label style="margin:0;font-size:11px;flex:1">TikTok Shop / Affiliate</label>
+        <input type="checkbox" id="settingsCommerceToggle" onchange="CommerceMode.setCommerceMode(this.checked)" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer">
+        <span id="settingsCommerceLabel" style="font-size:10px;color:var(--muted);min-width:90px">Commerce mode OFF</span>
+      </div>
     </div>
 
     <div id="streakBar" class="streak-bar" style="display:none"></div>
@@ -1345,17 +1366,24 @@ input[type=range]::-webkit-slider-thumb{
 
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="plan" onclick="switchTab('plan')">Plan</button>
-      <button class="tab-btn" data-tab="trends" onclick="switchTab('trends')">Trends</button>
+      <button class="tab-btn" data-tab="trends" data-module="trends" onclick="switchTab('trends')">Trends</button>
+      <button class="tab-btn" data-tab="tiktok" data-module="tiktok" onclick="switchTab('tiktok')">TikTok Intelligence</button>
       <button class="tab-btn" data-tab="discovery" onclick="switchTab('discovery')">Discover</button>
-      <button class="tab-btn" data-tab="mystats" onclick="switchTab('mystats')">My Stats</button>
+      <button class="tab-btn" data-tab="mystats" data-module="analytics" onclick="switchTab('mystats')">My Stats</button>
       <button class="tab-btn" data-tab="platforms" onclick="switchTab('platforms')">Tools</button>
       <button class="tab-btn" data-tab="aichat" onclick="switchTab('aichat')">Ask AI</button>
       <button class="tab-btn" data-tab="audit" onclick="switchTab('audit')">Audit</button>
       <button class="tab-btn" data-tab="notifications" onclick="switchTab('notifications')">Updates</button>
+      <button class="tab-btn" data-tab="products" data-commerce-tab onclick="switchTab('products')" style="display:none">Products</button>
+      <button class="tab-btn" data-tab="shop" data-commerce-tab onclick="switchTab('shop')" style="display:none">Shop</button>
+      <button class="tab-btn" data-tab="inventory" data-commerce-tab onclick="switchTab('inventory')" style="display:none">Inventory</button>
+      <button class="tab-btn" data-tab="revenue" data-commerce-tab onclick="switchTab('revenue')" style="display:none">Revenue</button>
       <button class="tab-btn" data-tab="admin" onclick="switchTab('admin')" id="adminTabBtn" style="display:none">Admin</button>
     </div>
 
     <div id="tab-plan" class="tab-content active">
+      <div id="tiktokInventoryPredictor"></div>
+      <div id="tiktokShopInventoryGate"></div>
       <div id="dailyPlan"></div>
       <div id="coursePromoPlanner"></div>
       <div id="contentFunnel"></div>
@@ -1369,7 +1397,17 @@ input[type=range]::-webkit-slider-thumb{
       <div id="aiTrendInsights"></div>
       <div id="themeAnalysis"></div>
       <div id="intelligenceFeed"></div>
+    </div>
+
+    <div id="tab-tiktok" class="tab-content">
+      <div id="tiktokInventoryPredictor"></div>
+      <div id="tiktokShopInventoryGate" data-commerce-panel style="display:none"></div>
       <div id="tiktokTrendIntelligence"></div>
+      <div id="nicheCommentIntelligence"></div>
+      <div id="tiktokInsightsHardening"></div>
+      <div id="nicheCommentViralityPrediction"></div>
+      <div id="viralityIntelligenceExtension"></div>
+      <div id="tiktokOrchestrationDashboard"></div>
       <div id="nicheCommentSignals"></div>
     </div>
 
@@ -1390,6 +1428,30 @@ input[type=range]::-webkit-slider-thumb{
     <div id="tab-platforms" class="tab-content">
       <div id="platformOptimizer"></div>
       <div id="videoAnalyzer"></div>
+    </div>
+
+    <div id="tab-products" class="tab-content" data-commerce-panel style="display:none">
+      <div class="card"><div class="card-header"><h2>Matched Products</h2><div class="section-icon" style="color:var(--green)">&#128176;</div></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Affiliate products matched to your trending keywords.</p>
+      <div id="commerceProductsPanel"></div></div>
+    </div>
+
+    <div id="tab-shop" class="tab-content" data-commerce-panel style="display:none">
+      <div class="card"><div class="card-header"><h2>TikTok Shop</h2><div class="section-icon" style="color:var(--purple)">&#128722;</div></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Your TikTok Shop catalog and Showcase items.</p>
+      <div id="commerceShopPanel"></div></div>
+    </div>
+
+    <div id="tab-inventory" class="tab-content" data-commerce-panel style="display:none">
+      <div class="card"><div class="card-header"><h2>Inventory Gaps</h2><div class="section-icon" style="color:var(--amber)">&#9888;</div></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Products detected in trends but missing from your Showcase.</p>
+      <div id="commerceInventoryPanel"></div></div>
+    </div>
+
+    <div id="tab-revenue" class="tab-content" data-commerce-panel style="display:none">
+      <div class="card"><div class="card-header"><h2>Revenue Suggestions</h2><div class="section-icon" style="color:var(--green)">&#128200;</div></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Monetisation actions based on detected product opportunities.</p>
+      <div id="commerceRevenuePanel"></div></div>
     </div>
 
     <div id="tab-admin" class="tab-content">
@@ -1765,6 +1827,7 @@ var TIKTOK_FEED_EMPTY_MSG = "No trends available yet. Run TikTok scan.";
 var TIKTOK_FEED_DEBUG = true;
 var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 var tiktokTrendFeedCache = [];
+var tiktokFeedFetchStatus = { state: "idle", rowCount: 0, message: "", error: null };
 
 function tiktokFeedDebug(label, payload) {
   if (TIKTOK_FEED_DEBUG) console.log("[TikTokFeed] " + label, payload);
@@ -1797,6 +1860,17 @@ function extractTiktokKeywords(row) {
   return row.summary || "";
 }
 
+function renderTiktokFeedStatusBanner() {
+  var st = tiktokFeedFetchStatus || {};
+  if (st.state === "idle" || st.state === "loading") return "";
+  var color = st.state === "ok" ? "var(--green)" : (st.state === "empty" ? "var(--amber)" : "var(--red)");
+  var label = st.message || "";
+  if (st.state === "ok" && st.rowCount) {
+    label = "Fetched " + st.rowCount + " TikTok signal rows from Supabase";
+  }
+  return '<p style="font-size:11px;color:' + color + ';margin-bottom:10px;padding:8px 10px;background:rgba(0,0,0,.2);border-radius:8px;border:1px solid var(--border)">' + label + '</p>';
+}
+
 function renderTiktokTrendIntelligenceFeed(rows) {
   var el = document.getElementById("tiktokTrendIntelligence");
   if (!el) return;
@@ -1806,28 +1880,31 @@ function renderTiktokTrendIntelligenceFeed(rows) {
   if (safe.length) tiktokFeedDebug("render first row", safe[0]);
 
   if (!safe.length) {
-    el.innerHTML = '<div class="card"><div class="card-header"><h2 style="color:var(--amber)">TikTok Trend Intelligence</h2><div class="section-icon" style="background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.3);color:var(--amber)">&#9835;</div></div><p style="font-size:12px;color:var(--muted);padding:8px 0">' + TIKTOK_FEED_EMPTY_MSG + '</p></div>';
+    el.innerHTML = '<div class="card"><div class="card-header"><h2 style="color:var(--amber)">TikTok Trend Intelligence</h2><div class="section-icon" style="background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.3);color:var(--amber)">&#9835;</div></div>'
+      + renderTiktokFeedStatusBanner()
+      + '<p style="font-size:12px;color:var(--muted);padding:8px 0">' + TIKTOK_FEED_EMPTY_MSG + '</p></div>';
     return;
   }
 
   var h = '<div class="card card-glow" style="border-color:rgba(255,0,80,.35)">';
   h += '<div class="card-header"><h2 style="color:#ff0050">TikTok Trend Intelligence</h2><div class="section-icon" style="background:rgba(255,0,80,.1);border-color:rgba(255,0,80,.3);color:#ff0050">&#9835;</div></div>';
+  h += renderTiktokFeedStatusBanner();
   h += '<p style="font-size:11px;color:var(--muted);margin-bottom:12px">Live signals from <code style="color:var(--green)">trend_intelligence_feed</code> — ' + safe.length + ' rows</p>';
 
   for (var i = 0; i < Math.min(safe.length, 50); i++) {
     var row = safe[i];
     var virality = getTiktokViralityScore(row);
     var keywords = extractTiktokKeywords(row);
-    var ts = row.timestamp ? formatTimestamp(row.timestamp) : "Unknown time";
+    var ts = row.created_at || row.timestamp;
+    ts = ts ? formatTimestamp(ts) : "Unknown time";
     var strength = Number(row.signal_strength || 0);
 
     h += '<div class="feed-item">';
     h += '<div class="feed-header">';
-    h += '<span class="feed-keyword">' + (row.type || "signal").replace(/_/g, " ") + '</span>';
+    h += '<span class="feed-keyword">' + (keywords || row.type || "signal").replace(/_/g, " ") + '</span>';
     h += tiktokTrendStateBadge(row.trend_state);
     h += '</div>';
-    if (keywords) h += '<div style="font-size:12px;color:var(--white);margin:6px 0;line-height:1.4">' + keywords + '</div>';
-    if (row.summary && row.summary !== keywords) h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + row.summary + '</div>';
+    if (keywords && row.summary && row.summary !== keywords) h += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + row.summary + '</div>';
     h += '<div class="feed-metrics">';
     h += '<div class="feed-metric"><div class="fm-label">Strength</div><div class="fm-value rise-positive">' + strength + '</div></div>';
     h += '<div class="feed-metric"><div class="fm-label">Virality</div><div class="fm-value" style="color:var(--amber)">' + (virality != null ? virality : "—") + '</div></div>';
@@ -1847,7 +1924,7 @@ function describeTiktokFeedError(error) {
   var msg = error.message || String(error);
   tiktokFeedDebug("fetch error", { code: code, message: msg, details: error.details });
   if (code === "PGRST205" || msg.indexOf("Could not find the table") !== -1) {
-    return "Supabase table trend_intelligence_feed not found. Run sql/trend_intelligence_feed.sql in Supabase, then run the TikTok scan.";
+    return "Supabase table trend_intelligence_feed not found. Run sql/trend_intelligence_feed_setup.sql in Supabase, then run the TikTok scan.";
   }
   if (code === "42501" || /permission|policy|JWT/i.test(msg)) {
     return "Cannot read trend_intelligence_feed — please log in or check Supabase RLS read policy.";
@@ -1859,44 +1936,58 @@ async function refreshTiktokTrendIntelligenceFeed() {
   var el = document.getElementById("tiktokTrendIntelligence");
   if (!el) return;
 
-  tiktokFeedDebug("fetch start", { table: TIKTOK_FEED_TABLE, url: SUPABASE_URL });
+  var niche = USER_NICHE || "general";
+  tiktokFeedDebug("fetch start", { source: "/api/tiktok-live-state", niche: niche });
 
-  el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Loading TikTok trends from Supabase...</p></div>';
+  el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Loading TikTok trends from live state...</p></div>';
 
   try {
     var session = await supabaseClient.auth.getSession();
     if (!session.data || !session.data.session) {
       tiktokFeedDebug("fetch skipped", "not authenticated");
+      tiktokFeedFetchStatus = { state: "auth_required", rowCount: 0, message: "Login required to load TikTok trend intelligence.", error: null };
       el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Login required to load TikTok trend intelligence.</p></div>';
       return;
     }
 
-    var resp = await supabaseClient
-      .from(TIKTOK_FEED_TABLE)
-      .select("*")
-      .eq("source", "tiktok")
-      .order("timestamp", { ascending: false })
-      .limit(200);
+    var liveState = window.TikTokLiveState
+      ? await window.TikTokLiveState.fetch(niche)
+      : { trend_intelligence_feed: [] };
+    var feed = (liveState && liveState.trend_intelligence_feed) || [];
 
-    tiktokFeedDebug("Supabase response length", resp.data ? resp.data.length : 0);
-    if (resp.data && resp.data.length) tiktokFeedDebug("Supabase first row", resp.data[0]);
+    tiktokFeedDebug("live state feed length", feed.length);
+    if (feed.length) tiktokFeedDebug("live state first row", feed[0]);
 
-    if (resp.error) {
-      el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + describeTiktokFeedError(resp.error) + '</p></div>';
+    if (liveState && liveState.errors && liveState.errors.length && !feed.length) {
+      el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">Trend feed error: ' + (liveState.errors[0] || "No data") + '</p></div>';
       return;
     }
 
-    tiktokTrendFeedCache = resp.data || [];
+    tiktokTrendFeedCache = feed;
     if (!tiktokTrendFeedCache.length) {
       tiktokFeedDebug("fetch result", "zero rows returned");
+      tiktokFeedFetchStatus = {
+        state: "empty",
+        rowCount: 0,
+        message: "Supabase query returned 0 rows for source=tiktok. Run GitHub Actions workflow TikTok Trend Intelligence Scan.",
+        error: null,
+      };
       renderTiktokTrendIntelligenceFeed([]);
       return;
     }
 
+    tiktokFeedFetchStatus = {
+      state: "ok",
+      rowCount: tiktokTrendFeedCache.length,
+      message: "Fetched " + tiktokTrendFeedCache.length + " TikTok signal rows",
+      error: null,
+    };
     renderTiktokTrendIntelligenceFeed(tiktokTrendFeedCache);
   } catch (err) {
     tiktokFeedDebug("fetch exception", err);
-    el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + describeTiktokFeedError(err) + '</p></div>';
+    var catchMsg = describeTiktokFeedError(err);
+    tiktokFeedFetchStatus = { state: "error", rowCount: 0, message: catchMsg, error: err };
+    el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + catchMsg + '</p></div>';
   }
 }
 
@@ -2121,8 +2212,11 @@ function adaptUIForMode() {
       + '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Audience DNA insights and growth tracking</div>'
       + '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Multi-source discovery (Google, Reddit, News)</div>'
       + '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Video analyzer with content scoring</div>'
-      + '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Product matching for affiliate revenue</div>';
+      + (typeof CommerceMode !== "undefined" && CommerceMode.isCommerceMode()
+        ? '<div class="paywall-feature"><span class="paywall-feature-icon">&#10003;</span> Product matching for affiliate revenue</div>'
+        : '');
   }
+  if (typeof CommerceMode !== "undefined") CommerceMode.applyCommerceUI();
 }
 
 var PATRIOTIC_TERMS = ["patriot","british","england","english","uk politics","union jack","britain","military","veteran","armed forces","royal","monarchy","churchill","remembrance","st george"];
@@ -3774,7 +3868,7 @@ function renderDailyPlan(results, emerging) {
   var slots = [
     { time: "8-10 AM", label: "MORNING", desc: "Best reach - post your strongest topic", color: "var(--green)" },
     { time: "4-5 PM", label: "AFTERNOON", desc: "Engagement slot - drives comments", color: "var(--amber)" },
-    { time: "7-8 PM", label: "EVENING", desc: "Pin a product to this one", color: "var(--blue)" }
+    { time: "7-8 PM", label: "EVENING", desc: (typeof CommerceMode !== "undefined" && CommerceMode.shouldShowProductCTA()) ? "Pin a product to this one" : "Evening engagement slot", color: "var(--blue)" }
   ];
 
   var KEYWORD_EMOTIONS = {
@@ -4119,7 +4213,7 @@ function renderDailyPlan(results, emerging) {
       h += '</div>';
     }
 
-    h += '<p style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px">All 3 slots use your niche trends | Slot 1 = top trend | Slot 2 = engagement | Slot 3 = product</p>';
+    h += '<p style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px">All 3 slots use your niche trends | Slot 1 = top trend | Slot 2 = engagement' + ((typeof CommerceMode !== "undefined" && CommerceMode.shouldShowProductCTA()) ? ' | Slot 3 = product' : '') + '</p>';
   } else {
     var freshSlots = [
       { slot: slots[1], pick: freshPick2, idx: 1 },
@@ -4885,7 +4979,7 @@ function recommendContent(item) {
   if (gk === "history") return "Historical Post";
   if (rp > 30 && vs > 40) return "Debate Question";
   if (gk === "remembrance") return "Tribute Post";
-  if (item.category === "product" || (item.product && item.product.toLowerCase().indexOf("product") === -1)) return "Product Post";
+  if (item.category === "product" || (typeof CommerceMode !== "undefined" && CommerceMode.shouldRecommendProductPost(item))) return "Product Post";
   if (rp > 15) return "News Post";
   if (gk === "culture" || gk === "heritage") return "Educational Post";
   return "Engagement Post";
@@ -5184,7 +5278,7 @@ function renderOpportunities(items) {
     h += '<span>24hr: <b>' + Number(item.latest_score || 0) + '</b></span>';
     h += '<span>Vitality: <b class="rise-positive">' + vit + '</b></span>';
     h += '</div>';
-    if (item.product) h += '<div class="opp-product">' + item.product + '</div>';
+    if (typeof CommerceMode !== "undefined" && CommerceMode.shouldShowProductInOpportunity(item)) h += '<div class="opp-product">' + item.product + '</div>';
     var oppCS = Number(item.content_score || 0);
     var oppGrade, oppGCls;
     if (oppCS >= 80) { oppGrade = "S"; oppGCls = "cs-grade-s"; }
@@ -9008,6 +9102,7 @@ function scrollToSection(id) {
 }
 
 function switchTab(tab) {
+  if (typeof CommerceMode !== "undefined") tab = CommerceMode.guardTabSwitch(tab);
   var tabs = document.querySelectorAll('.tab-content');
   for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
   var btns = document.querySelectorAll('.tab-btn');
@@ -9018,7 +9113,15 @@ function switchTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   localStorage.setItem('patriot_active_tab', tab);
   trackEvent("tab_switch", {tab: tab});
-  if (tab === "trends") { aiTrendInsights(); refreshTiktokTrendIntelligenceFeed(); }
+  if (tab === "trends") { aiTrendInsights(); }
+  if (tab === "tiktok") {
+    refreshTiktokTrendIntelligenceFeed();
+    if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+    if (typeof refreshTiktokOrchestrationDashboard === "function") refreshTiktokOrchestrationDashboard();
+  }
+  if ((tab === "trends" || tab === "tiktok") && typeof CommerceMode !== "undefined" && CommerceMode.isCommerceMode() && typeof TiktokLiveState !== "undefined") {
+    TiktokLiveState.refresh();
+  }
   if (tab === "audit") renderAuditTab();
   if (tab === "aichat" && !document.getElementById("aiChatMessages").innerHTML) {
     var welcomeHtml = '<div class="ai-chat-msg ai-chat-ai">';
@@ -9099,6 +9202,9 @@ function buildCrossModuleContext() {
 
 function getGoalInstructions() {
   var goal = USER_SUCCESS_GOAL || "clients";
+  if (goal === "revenue" && typeof CommerceMode !== "undefined" && !CommerceMode.isCommerceMode()) {
+    goal = "clients";
+  }
   var goalMap = {
     clients: "Your PRIMARY metric is CLIENT ACQUISITION. Every recommendation should tie back to getting more walk-ins, bookings, enquiries, or leads. When suggesting content, always explain how it converts viewers into paying customers. Measure success by: new client enquiries, bookings made, DMs received asking about services.",
     followers: "Your PRIMARY metric is FOLLOWER GROWTH. Every recommendation should tie back to gaining new followers. Focus on shareability, discoverability, hashtag reach, and content that makes people hit follow. Measure success by: new followers per post, follow-back rate, profile visits.",
@@ -9292,6 +9398,10 @@ function toggleVoiceInput() {
 
 function loadActiveTab() {
   var saved = localStorage.getItem('patriot_active_tab');
+  if (saved && typeof TiktokAccessControl !== "undefined") {
+    var moduleId = TiktokAccessControl.TAB_MODULE_MAP[saved];
+    if (moduleId && !TiktokAccessControl.isModuleVisible(moduleId)) saved = null;
+  }
   if (saved && document.getElementById('tab-' + saved)) {
     switchTab(saved);
   }
@@ -10533,6 +10643,18 @@ function renderWeeklyScorecard() {
 
 function renderAllSections(results, emerging, productTrends, creatorInsights) {
   results.sort(function(a, b) { return Number(b.viral_score || 0) - Number(a.viral_score || 0); });
+
+  var commerceResult = { products: [], productTrends: [], inventory_gaps: [], revenue_suggestions: [] };
+  if (typeof CommerceMode !== "undefined" && CommerceMode.isCommerceMode()) {
+    try {
+      commerceResult = CommerceMode.runCommercePipeline(results);
+      results = CommerceMode.enrichResultsWithProducts(results, commerceResult);
+    } catch (e) {}
+    if (typeof CommerceDashboard !== "undefined") {
+      CommerceDashboard.update(commerceResult);
+    }
+  }
+
   cachedResults = results;
 
   document.getElementById("keywordsAnalyzed").textContent = results.length;
@@ -10546,6 +10668,11 @@ function renderAllSections(results, emerging, productTrends, creatorInsights) {
   saveTrendSnapshot(results);
 
   if (results.length > 0) {
+    if (window.TikTokInventoryPredictor && typeof window.TikTokInventoryPredictor.processTrendResults === "function") {
+      window.TikTokInventoryPredictor.processTrendResults(results, emerging, productTrends);
+    } else if (window.TikTokShopInventoryGate && typeof window.TikTokShopInventoryGate.processTrendResults === "function") {
+      window.TikTokShopInventoryGate.processTrendResults(results);
+    }
     document.getElementById("dailyPlan").innerHTML = renderDailyPlan(results, emerging);
     document.getElementById("coursePromoPlanner").innerHTML = renderCoursePromoPlanner();
     document.getElementById("contentFunnel").innerHTML = renderContentFunnel();
@@ -10562,6 +10689,9 @@ function renderAllSections(results, emerging, productTrends, creatorInsights) {
     document.getElementById("platformOptimizer").innerHTML = renderPlatformOptimizer(results);
     renderNotifications();
     renderDailyRecs(results);
+    if (window.TikTokShopInventoryGate && typeof TikTokShopInventoryGate.processTrendResults === "function") {
+      TikTokShopInventoryGate.processTrendResults(results);
+    }
     renderPersonalIntelligence(results);
     renderWeeklyScorecard();
     aiContentAngles(results);
@@ -10579,53 +10709,27 @@ async function loadLiveStats() {
   var viralEl = document.getElementById("viralCount");
   var updEl = document.getElementById("lastUpdated");
 
-  var cacheKey = "cr_scan_cache_" + niche.toLowerCase();
-  var cached = null;
-  try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch(e) {}
-  if (cached && cached.results && cached.results.length > 0) {
-    var cacheAge = Date.now() - (cached.ts || 0);
-    var emerging = [];
-    if (cached.results.length > 5) {
-      for (var ci = 5; ci < Math.min(10, cached.results.length); ci++) {
-        emerging.push({ keyword: cached.results[ci].keyword, source: "Google Suggest", description: "Trending in " + titleCase(niche) });
-      }
-    }
-    renderAllSections(cached.results, emerging, [], []);
-    if (cacheAge < 300000) {
-      updEl.textContent = "Last Updated: " + formatTimestamp(new Date(cached.ts).toISOString());
-      return;
-    }
-  }
-
   kwEl.innerHTML = '<span style="animation:pulse 1.5s infinite;display:inline-block">...</span>';
   oppEl.innerHTML = '<span style="animation:pulse 1.5s infinite;display:inline-block">...</span>';
   viralEl.innerHTML = '<span style="animation:pulse 1.5s infinite;display:inline-block">...</span>';
-  updEl.textContent = "Scanning " + titleCase(niche) + " trends...";
-
-  var scanDone = false;
-  setTimeout(function() {
-    if (!scanDone && kwEl.textContent === "...") {
-      var nl = niche.toLowerCase().trim();
-      var resolved = NICHE_ALIASES[nl] || nl;
-      var fallbackSeeds = NICHE_SEEDS[resolved] || [niche + " trending", niche + " content ideas", niche + " tips", niche + " viral"];
-      var emergencyResults = [];
-      for (var ei = 0; ei < Math.min(8, fallbackSeeds.length); ei++) {
-        var es = fallbackSeeds[ei];
-        emergencyResults.push({keyword: es.charAt(0).toUpperCase() + es.slice(1), viral_score: Math.max(25, 75 - ei * 6), rise_percent: Math.max(5, 35 - ei * 3), search_volume: Math.max(15, 70 - ei * 5), source: "Seed Analysis", content_score: Math.max(30, 65 - ei * 4), fresh: 50, emotion: 40, debate: 30, product: ""});
-      }
-      scanDone = true;
-      renderAllSections(emergencyResults, [], [], []);
-      updEl.textContent = "Loaded from seed data | Pull down to refresh";
-    }
-  }, 12000);
+  updEl.textContent = "Loading " + titleCase(niche) + " live state...";
 
   fetchBreakingNews().then(function(news) {
     var newsContainer = document.getElementById("breakingNewsContainer");
     if (newsContainer) newsContainer.innerHTML = renderBreakingNews(news);
   });
-  scanNicheTrends(niche, function(results) {
-    scanDone = true;
-    if (results.length === 0) {
+
+  try {
+    var liveState = window.TikTokLiveState
+      ? await window.TikTokLiveState.fetch(niche)
+      : { niche_keywords: { results: [], emerging: [], product_trends: [], creator_insights: [] } };
+    var kw = (liveState && liveState.niche_keywords) || {};
+    var results = kw.results || [];
+    var emerging = kw.emerging || [];
+    var productTrends = kw.product_trends || [];
+    var creatorInsights = kw.creator_insights || [];
+
+    if (!results.length) {
       var nl = niche.toLowerCase().trim();
       var resolved = NICHE_ALIASES[nl] || nl;
       var fallbackSeeds = NICHE_SEEDS[resolved] || [niche + " trending", niche + " content ideas", niche + " tips", niche + " viral", niche + " latest", niche + " news today", niche + " 2026", "best " + niche + " content"];
@@ -10646,16 +10750,23 @@ async function loadLiveStats() {
         });
       }
     }
-    var emerging = [];
-    if (results.length > 5) {
+
+    if (!emerging.length && results.length > 5) {
       for (var i = 5; i < Math.min(10, results.length); i++) {
-        emerging.push({ keyword: results[i].keyword, source: "Google Suggest", description: "Trending in " + titleCase(niche) });
+        emerging.push({ keyword: results[i].keyword, source: "TikTok Live State", description: "Trending in " + titleCase(niche) });
       }
     }
-    try { localStorage.setItem(cacheKey, JSON.stringify({results: results, ts: Date.now()})); } catch(e) {}
-    renderAllSections(results, emerging, [], []);
+
+    renderAllSections(results, emerging, productTrends, creatorInsights);
     aiValidateKeywords(results, emerging);
-  });
+    if (updEl) {
+      var updatedAt = (liveState && liveState.updated_at) ? liveState.updated_at : new Date().toISOString();
+      updEl.textContent = "Last Updated: " + formatTimestamp(updatedAt);
+    }
+  } catch (e) {
+    updEl.textContent = "Live state unavailable";
+    renderAllSections([], [], [], []);
+  }
 }
 
 async function checkSession() {
@@ -10783,6 +10894,11 @@ var TUTORIAL_STEPS = [
 
 var tutorialStep = 0;
 
+function getActiveTutorialSteps() {
+  if (typeof CommerceMode !== "undefined") return CommerceMode.getTutorialSteps(TUTORIAL_STEPS);
+  return TUTORIAL_STEPS;
+}
+
 function startTutorial() {
   trackEvent("feature_use", {feature: "tutorial"});
   tutorialStep = 0;
@@ -10791,8 +10907,9 @@ function startTutorial() {
 }
 
 function renderTutorialStep() {
-  var s = TUTORIAL_STEPS[tutorialStep];
-  var total = TUTORIAL_STEPS.length;
+  var steps = getActiveTutorialSteps();
+  var s = steps[tutorialStep];
+  var total = steps.length;
   var h = '';
   h += '<div style="text-align:center;margin-bottom:16px">';
   h += '<span style="font-size:36px">' + s.icon + '</span>';
@@ -10830,7 +10947,8 @@ function renderTutorialStep() {
 }
 
 function nextTutorialStep() {
-  if (tutorialStep < TUTORIAL_STEPS.length - 1) { tutorialStep++; renderTutorialStep(); }
+  var steps = getActiveTutorialSteps();
+  if (tutorialStep < steps.length - 1) { tutorialStep++; renderTutorialStep(); }
 }
 
 function prevTutorialStep() {
@@ -11505,8 +11623,11 @@ async function showDashboard(sessionUser) {
       if (currentUser.user_metadata.business_type) USER_BUSINESS_TYPE = currentUser.user_metadata.business_type;
       if (currentUser.user_metadata.business_location) USER_BUSINESS_LOCATION = currentUser.user_metadata.business_location;
       if (currentUser.user_metadata.success_goal) USER_SUCCESS_GOAL = currentUser.user_metadata.success_goal;
+      if (typeof CommerceMode !== "undefined") CommerceMode.loadFromUser(currentUser);
     }
   } catch(e) {}
+
+  if (currentUser) window.currentUser = currentUser;
 
   var daysLeft = await getTrialDaysLeft(currentUser);
 
@@ -11520,6 +11641,7 @@ async function showDashboard(sessionUser) {
   if (daysLeft > 0) { showTrialBanner(daysLeft); }
 
   adaptUIForMode();
+  if (typeof CommerceMode !== "undefined") CommerceMode.applyCommerceUI();
   if (isBusinessMode()) {
     var creatorBtn = document.getElementById("settingsModeCreator");
     var businessBtn = document.getElementById("settingsModeBusiness");
@@ -11533,7 +11655,27 @@ async function showDashboard(sessionUser) {
   trackUserActivity();
   if (FINANCIAL_NICHES.indexOf((USER_NICHE || "").toLowerCase()) !== -1) showFinancialDisclaimer();
 
-  checkAdminStatus();
+  if (typeof TiktokAccessControl !== "undefined") {
+    TiktokAccessControl.initFromSession(supabaseClient, currentUser ? currentUser.id : "").then(function(liveState) {
+      if (liveState && liveState.access && liveState.access.admin_override) {
+        isAdminUser = true;
+        var btn = document.getElementById("adminTabBtn");
+        if (btn) btn.style.display = "";
+        loadAdminPanel();
+      } else {
+        checkAdminStatus();
+      }
+      if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+      loadActiveTab();
+    }).catch(function() {
+      checkAdminStatus();
+      if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+      loadActiveTab();
+    });
+  } else {
+    checkAdminStatus();
+    if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+  }
   initNicheSwitcher();
   initVoiceInput();
   initGoalSelector();
@@ -11541,6 +11683,7 @@ async function showDashboard(sessionUser) {
   loadPerfFromSupabase();
   loadLiveStats();
   refreshTiktokTrendIntelligenceFeed();
+  if (typeof initTiktokOrchestrationDashboard === "function") initTiktokOrchestrationDashboard();
   loadReferralCard();
   if (!localStorage.getItem("cr_tutorial_done")) {
     setTimeout(function() { startTutorial(); }, 800);
@@ -11621,7 +11764,7 @@ async function betaSignup() {
     var goalEl2 = document.getElementById("signupCreatorGoal");
     if (goalEl2) successGoal = goalEl2.value || "followers";
   }
-  var signupData = {beta_consent: true, tos_agreed: true, tos_date: new Date().toISOString(), signup_date: new Date().toISOString(), niche: niche || "general", referred_by: DASH_REF_CODE || null, account_mode: SIGNUP_MODE, success_goal: successGoal};
+  var signupData = {beta_consent: true, tos_agreed: true, tos_date: new Date().toISOString(), signup_date: new Date().toISOString(), niche: niche || "general", referred_by: DASH_REF_CODE || null, account_mode: SIGNUP_MODE, success_goal: successGoal, commerce_mode: false};
   if (SIGNUP_MODE === "business") {
     signupData.business_name = bizName;
     signupData.business_type = bizType;

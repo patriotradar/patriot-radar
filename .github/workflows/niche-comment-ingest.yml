@@ -1,0 +1,85 @@
+name: Niche Comment Intelligence Ingest
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "45 */6 * * *"
+
+jobs:
+  niche-comment-ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run raw comment ingest (Apify → niche_comment_raw)
+        env:
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -e
+          python scripts/run_niche_comment_ingest.py --output niche_comment_ingest_result.json 2>&1 | tee niche_comment_ingest.log
+          echo "--- Ingest summary ---"
+          python3 -c "import json; r=json.load(open('niche_comment_ingest_result.json')); print(json.dumps({k:r.get(k) for k in ['success','data_source','video_count','comment_count'] if k in r}, indent=2)); print('store:', r.get('store_result')); print('apify:', {k:r.get('apify_fetch',{}).get(k) for k in ['success','item_count','token_present','apify_run_id','error']})"
+
+      - name: Validate ingest result
+        if: always()
+        run: |
+          if [ ! -f niche_comment_ingest_result.json ]; then
+            echo "::error::Ingest produced no niche_comment_ingest_result.json — check niche_comment_ingest.log"
+            exit 1
+          fi
+          python3 << 'PYEOF'
+          import json, sys
+          result = json.load(open("niche_comment_ingest_result.json"))
+          apify = result.get("apify_fetch") or {}
+          store = result.get("store_result") or {}
+          summary = {
+              "success": result.get("success"),
+              "data_source": result.get("data_source"),
+              "apify_fetch_succeeded": apify.get("success"),
+              "apify_videos_returned": apify.get("item_count", 0),
+              "apify_raw_error": apify.get("error"),
+              "apify_token_present": apify.get("token_present"),
+              "video_count": result.get("video_count"),
+              "comment_count": result.get("comment_count"),
+              "supabase_rows_stored": store.get("stored", 0),
+              "supabase_error": store.get("error"),
+          }
+          print("Validation summary:", json.dumps(summary, indent=2))
+          errors = []
+          if not summary.get("success"):
+              errors.append("ingest returned success=false")
+          if summary.get("apify_token_present") and summary.get("data_source") == "apify" and not summary.get("apify_fetch_succeeded"):
+              errors.append(f"Apify fetch failed: {summary.get('apify_raw_error')}")
+          if summary.get("comment_count", 0) == 0:
+              errors.append("zero comments ingested")
+          if summary.get("supabase_rows_stored", 0) == 0 and summary.get("comment_count", 0) > 0:
+              errors.append(f"zero Supabase rows stored: {summary.get('supabase_error')}")
+          if errors:
+              for e in errors:
+                  print(f"::error::{e}")
+              sys.exit(1)
+          print("Niche comment ingest validation passed.")
+          PYEOF
+
+      - name: Diagnose missing secrets
+        if: failure()
+        run: |
+          if [ -z "${{ secrets.APIFY_API_TOKEN }}" ]; then
+            echo "::error::APIFY_API_TOKEN secret is missing."
+          fi
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
+            echo "::error::SUPABASE_URL secret is missing."
+          fi
+          if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY secret is missing."
+          fi
