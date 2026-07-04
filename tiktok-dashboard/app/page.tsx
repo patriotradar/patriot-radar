@@ -196,29 +196,21 @@ export default function Home() {
   const [progressSteps, setProgressSteps] = useState<ProgressEvent[]>([]);
   const [history, setHistory] = useState<RecentScan[] | null>(null);
 
-  async function loadHistory() {
+  async function fetchHistory(): Promise<RecentScan[]> {
     try {
       const res = await fetch("/api/scan-history");
-      if (res.ok) {
-        const data = (await res.json()) as { scans: RecentScan[] };
-        setHistory(data.scans ?? []);
-      }
+      if (!res.ok) return [];
+      const data = (await res.json()) as { scans: RecentScan[] };
+      return data.scans ?? [];
     } catch {
-      // history is non-critical; show empty rather than an error
-      setHistory([]);
+      return [];
     }
   }
 
-  // Load history on mount
+  // Load history on mount — setState must be in a .then() callback to satisfy
+  // the react-hooks/set-state-in-effect rule (no synchronous setState in effect body).
   useEffect(() => {
-    fetch("/api/scan-history")
-      .then((res) => (res.ok ? (res.json() as Promise<{ scans: RecentScan[] }>) : null))
-      .then((data) => {
-        setHistory(data?.scans ?? []);
-      })
-      .catch(() => {
-        setHistory([]);
-      });
+    void fetchHistory().then(setHistory);
   }, []);
 
   async function handleRunScan() {
@@ -296,7 +288,7 @@ export default function Home() {
     } finally {
       setLoading(false);
       // Refresh history after scan completes
-      void loadHistory();
+      void fetchHistory().then(setHistory);
     }
   }
 
