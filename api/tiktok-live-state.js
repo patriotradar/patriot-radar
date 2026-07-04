@@ -1,12 +1,15 @@
 /**
  * Unified TikTok live state API — single source of truth for dashboard data.
- * GET /api/tiktok-live-state?niche=patriotic
+ * GET /api/tiktok-live-state?niche=patriotic — dashboard module data (feed, keywords, comments)
+ * GET /api/tiktok-live-state?account_id=... — RBAC orchestration contract via assembler
  * Optional header: Authorization: Bearer <supabase_jwt>
  */
 
 const fs = require("fs");
 const path = require("path");
 const { runPipeline, emptyResponse } = require("./tiktok-insights");
+const { assembleLiveState, emptyContract } = require("./tiktok-live-state-assembler");
+const { resolveUserFromAuthHeader } = require("./tiktok-access-control");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 
@@ -369,7 +372,26 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ ...emptyLiveState(), errors: ["method_not_allowed"], success: false });
   }
 
-  const niche = String(req.query?.niche || "").trim() || "general";
+  const hasAccountId =
+    (req.query && req.query.account_id != null && String(req.query.account_id).trim() !== "") ||
+    (req.body && req.body.account_id != null && String(req.body.account_id).trim() !== "");
+  const hasNiche = req.query && req.query.niche != null && String(req.query.niche).trim() !== "";
+
+  if (hasAccountId || !hasNiche) {
+    const accountId =
+      (req.query && req.query.account_id) || (req.body && req.body.account_id) || "";
+
+    try {
+      const userRecord = await resolveUserFromAuthHeader(req);
+      const resolvedAccountId = String(accountId || (userRecord && userRecord.id) || "");
+      const state = await assembleLiveState(resolvedAccountId, userRecord);
+      return res.status(200).json(state);
+    } catch {
+      return res.status(200).json(emptyContract());
+    }
+  }
+
+  const niche = String(req.query.niche).trim() || "general";
   const authHeader = req.headers.authorization || "";
   const authToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
 

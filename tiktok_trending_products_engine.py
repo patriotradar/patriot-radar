@@ -72,10 +72,17 @@ def _extract_phrases(text: str) -> list[str]:
     return phrases
 
 
-def _niche_tokens(niche: str) -> set[str]:
-    if not niche:
+def _niche_string(niche: Any) -> str:
+    if isinstance(niche, dict):
+        return str(niche.get("niche") or "unknown").strip().lower()
+    return str(niche or "unknown").strip().lower()
+
+
+def _niche_tokens(niche: Any) -> set[str]:
+    niche_clean = _niche_string(niche)
+    if not niche_clean or niche_clean == "unknown":
         return set()
-    return set(_WORD_RE.findall(niche.lower()))
+    return set(_WORD_RE.findall(niche_clean))
 
 
 def _engagement_score(video: dict[str, Any]) -> float:
@@ -108,7 +115,7 @@ def _engagement_score(video: dict[str, Any]) -> float:
 def generateTrendingProducts(
     videos: list[dict[str, Any]] | None,
     comments: list[dict[str, Any]] | None,
-    niche: str = "",
+    niche: Any = "",
     trend_scores: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """
@@ -230,8 +237,9 @@ def generateTrendingProducts(
                 evidence.append(f"Mentioned across {video_count} videos")
             if trend_velocity_norm > 0.7:
                 evidence.append("Associated with high-velocity trending videos")
-            if niche_relevance > 0.5 and niche:
-                evidence.append(f"Aligned with niche: {niche}")
+            niche_label = _niche_string(niche)
+            if niche_relevance > 0.5 and niche_label != "unknown":
+                evidence.append(f"Aligned with niche: {niche_label}")
 
             results.append({
                 "name": phrase.title(),

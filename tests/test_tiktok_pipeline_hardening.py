@@ -142,17 +142,30 @@ class TestRecommendations(unittest.TestCase):
 class TestSafeResponse(unittest.TestCase):
     def test_empty_response_has_no_nulls(self):
         resp = empty_pipeline_response()
-        for key in ("videos", "insights", "recommended_posts", "trend_scores", "trending_products", "errors"):
+        for key in (
+            "videos", "insights", "recommended_posts", "trend_scores", "errors",
+            "niche", "emerging_products", "trending_products", "content_pack",
+        ):
             self.assertIn(key, resp)
             self.assertIsNotNone(resp[key])
+
+    def test_empty_response_niche_structure(self):
+        resp = empty_pipeline_response()
+        self.assertEqual(resp["niche"]["niche"], "unknown")
+        self.assertEqual(resp["niche"]["confidence"], 0.0)
+        self.assertEqual(resp["niche"]["keywords"], [])
 
     def test_build_safe_pipeline_response(self):
         resp = build_safe_pipeline_response(
             videos=[{"id": 1}],
             insights=[{"insight": "test", "evidence_count": 3, "confidence": "medium", "based_on_examples": []}],
+            niche={"niche": "fitness", "confidence": 0.8, "keywords": ["gym"]},
         )
         self.assertEqual(len(resp["videos"]), 1)
         self.assertEqual(len(resp["insights"]), 1)
+        self.assertEqual(resp["niche"]["niche"], "fitness")
+        self.assertEqual(resp["emerging_products"], [])
+        self.assertEqual(resp["content_pack"]["captions"], [])
 
 
 if __name__ == "__main__":

@@ -240,12 +240,12 @@
   }
 
   function isTrendsTabVisible() {
-    var tab = document.getElementById("tab-trends");
+    var tab = document.getElementById("tab-tiktok");
     return tab && tab.classList.contains("active");
   }
 
   function hookTabObserver() {
-    var tab = document.getElementById("tab-trends");
+    var tab = document.getElementById("tab-tiktok");
     if (!tab || typeof MutationObserver === "undefined") return;
     var observer = new MutationObserver(function () {
       if (isTrendsTabVisible()) refreshViralityIntelligence();

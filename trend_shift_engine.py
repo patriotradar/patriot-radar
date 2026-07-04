@@ -257,11 +257,13 @@ def run_tiktok_trend_scan(
 
         if persist and extracted_count:
             store_result = engine.store_external_tiktok_signals(signals)
+            probe = store_result.get("table_probe") or {}
             logger.info(
-                "Supabase upsert complete: stored=%d skipped=%d error=%s",
+                "Supabase upsert complete: stored=%d skipped=%d error=%s feed_row_count=%s",
                 store_result.get("stored", 0),
                 store_result.get("skipped", 0),
                 store_result.get("error"),
+                probe.get("row_count"),
             )
             if store_result.get("stored", 0) == 0 and not store_result.get("error"):
                 store_result["error"] = "zero_rows_stored"

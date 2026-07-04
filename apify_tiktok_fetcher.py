@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,10 @@ DEFAULT_SEARCH_QUERIES = [
     "patriotism UK debate",
     "British veterans respect",
 ]
+
+# Retry configuration for missing dataset
+MAX_DATASET_RETRY_ATTEMPTS = 3
+DATASET_RETRY_DELAY_SECONDS = 5
 
 
 def _load_apify_config() -> dict[str, Any]:
@@ -70,6 +75,30 @@ def _load_apify_config() -> dict[str, Any]:
             logger.warning("Invalid TIKTOK_APIFY_RESULTS_PER_PAGE: %s", env_limit)
 
     return config
+
+
+def _resolve_apify_run(run: Any) -> tuple[str | None, str | None, str | None]:
+    """
+    Extract run id, default dataset id, and status from Apify client response.
+
+    apify-client v3 returns a Pydantic Run model (snake_case fields); v2 returned dicts
+    with camelCase keys. Without this helper, v3 runs look like apify_run_missing_dataset.
+    """
+    if run is None:
+        return None, None, None
+
+    if isinstance(run, dict):
+        run_id = run.get("id")
+        dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
+        status = run.get("status")
+        return run_id, dataset_id, status
+
+    run_id = getattr(run, "id", None)
+    dataset_id = getattr(run, "default_dataset_id", None) or getattr(run, "defaultDatasetId", None)
+    status = getattr(run, "status", None)
+    if status is not None and not isinstance(status, str):
+        status = getattr(status, "value", str(status))
+    return run_id, dataset_id, status
 
 
 def _apify_item_to_extractor_input(item: dict[str, Any]) -> dict[str, Any]:
@@ -111,6 +140,44 @@ def _apify_item_to_extractor_input(item: dict[str, Any]) -> dict[str, Any]:
         "source": "apify",
         "engagement": engagement,
     }
+
+
+def _get_dataset_with_retry(client, run_id: str, dataset_id: str, max_attempts: int = MAX_DATASET_RETRY_ATTEMPTS) -> list[dict[str, Any]]:
+    """
+    Fetch dataset items with retry logic for transient failures.
+    
+    Handles cases where dataset exists but takes time to populate,
+    or where initial fetch fails due to network issues.
+    """
+    last_error = None
+    
+    for attempt in range(max_attempts):
+        try:
+            logger.info(
+                "Fetching dataset items (attempt %d/%d): run_id=%s dataset_id=%s",
+                attempt + 1, max_attempts, run_id, dataset_id
+            )
+            
+            raw_items: list[dict[str, Any]] = []
+            for item in client.dataset(dataset_id).iterate_items():
+                if isinstance(item, dict):
+                    raw_items.append(item)
+            
+            logger.info("Successfully fetched %d items from dataset %s", len(raw_items), dataset_id)
+            return raw_items
+            
+        except Exception as exc:
+            last_error = exc
+            logger.warning(
+                "Dataset fetch failed (attempt %d/%d): %s. Retrying in %d seconds...",
+                attempt + 1, max_attempts, exc, DATASET_RETRY_DELAY_SECONDS
+            )
+            if attempt < max_attempts - 1:
+                time.sleep(DATASET_RETRY_DELAY_SECONDS)
+    
+    # All retries exhausted
+    logger.error("Failed to fetch dataset after %d attempts: %s", max_attempts, last_error)
+    raise last_error
 
 
 def fetch_tiktok_via_apify(historical_keywords: set[str] | None = None) -> dict[str, Any]:
@@ -178,19 +245,49 @@ def fetch_tiktok_via_apify(historical_keywords: set[str] | None = None) -> dict[
         from apify_client import ApifyClient
 
         client = ApifyClient(token)
+        
+        # Call actor and wait for completion
+        logger.info("Calling Apify actor %s...", actor_id)
         run = client.actor(actor_id).call(run_input=run_input)
-        run_id = run.get("id") if isinstance(run, dict) else None
-        dataset_id = run.get("defaultDatasetId") if isinstance(run, dict) else None
+        run_id, dataset_id, run_status = _resolve_apify_run(run)
 
-        if not dataset_id:
-            result["error"] = "apify_run_missing_dataset"
-            logger.error("Apify run completed but no defaultDatasetId returned.")
+        if run is None:
+            result["error"] = "apify_run_failed"
+            logger.error("Apify actor call returned no run object.")
             return result
 
-        raw_items: list[dict[str, Any]] = []
-        for item in client.dataset(dataset_id).iterate_items():
-            if isinstance(item, dict):
-                raw_items.append(item)
+        logger.info(
+            "Apify run completed: run_id=%s dataset_id=%s status=%s",
+            run_id, dataset_id, run_status,
+        )
+
+        # Validate that run completed
+        if run_status not in ("SUCCEEDED", "RUNNING"):
+            result["error"] = f"apify_run_status_{run_status or 'unknown'}"
+            logger.error(
+                "Apify run did not succeed: run_id=%s status=%s",
+                run_id, run_status,
+            )
+            return result
+
+        if not dataset_id:
+            logger.warning(
+                "Apify run %s did not return defaultDatasetId. Status was %s. "
+                "This may occur if actor output configuration is missing.",
+                run_id, run_status,
+            )
+            result["error"] = "apify_run_missing_dataset"
+            result["apify_run_id"] = run_id
+            return result
+
+        # Fetch dataset items with retry logic
+        try:
+            raw_items = _get_dataset_with_retry(client, run_id, dataset_id)
+        except Exception as exc:
+            result["error"] = f"apify_dataset_fetch_failed: {str(exc)}"
+            result["apify_run_id"] = run_id
+            logger.error("Failed to fetch Apify dataset: %s", exc)
+            return result
 
         mapped = [_apify_item_to_extractor_input(item) for item in raw_items]
         # Keep items that have caption text or a URL for downstream extraction.

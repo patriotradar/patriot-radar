@@ -10,6 +10,10 @@
 (function () {
   "use strict";
 
+  function commerceEnabled() {
+    return window.CommerceMode && window.CommerceMode.isCommerceMode();
+  }
+
   var MOUNT_ID = "tiktokShopInventoryGate";
   var CATALOG_KEY = "tiktok_shop_catalog";
   var PAUSED_KEY = "tiktok_shop_paused_attachments";
@@ -393,6 +397,10 @@
   function render(gaps, blockedList) {
     var el = document.getElementById(MOUNT_ID);
     if (!el) return;
+    if (!commerceEnabled()) {
+      el.innerHTML = "";
+      return;
+    }
 
     gaps = gaps || [];
     blockedList = blockedList || getBlockedAttachments();
@@ -460,9 +468,13 @@
   }
 
   function processTrendResults(results, predictiveIntelligence) {
+    if (!commerceEnabled()) {
+      render([], []);
+      return { gaps: [], blocked: [], attachments: [], inventory_gaps: [] };
+    }
     if (!results || !results.length) {
       render([], []);
-      return { gaps: [], blocked: [], attachments: [] };
+      return { gaps: [], blocked: [], attachments: [], inventory_gaps: [] };
     }
 
     var catalog = getCatalog();
@@ -517,7 +529,7 @@
     }
 
     render(gaps, blocked);
-    return { gaps: gaps, blocked: blocked, attachments: attachments };
+    return { gaps: gaps, blocked: blocked, attachments: attachments, inventory_gaps: gaps };
   }
 
   function seedDefaultCatalog() {
@@ -606,6 +618,10 @@
     seedCatalogFromLiveState();
     var el = document.getElementById(MOUNT_ID);
     if (!el) return;
+    if (!commerceEnabled()) {
+      el.innerHTML = "";
+      return;
+    }
     var paused = getPausedAttachments().filter(function (p) {
       return p.status === "waiting_user_action";
     });
