@@ -12,6 +12,8 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
 
+from tiktok_pipeline_hardening import clean_comments
+
 _WORD_RE = re.compile(r"[a-z0-9']+")
 _STOPWORDS = frozenset({
     "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
@@ -310,7 +312,7 @@ def compute_niche_comment_signals(
     all_phrases: Counter[str] = Counter()
 
     for video in videos:
-        comments = video.get("comments") or []
+        comments = clean_comments(video.get("comments") or [])
         caption = video.get("caption") or ""
         comment_count = int(video.get("comment_count") or len(comments))
 

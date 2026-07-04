@@ -81,6 +81,7 @@ def main() -> int:
         "supabase_rows_stored": store_result.get("stored", 0),
         "supabase_rows_skipped": store_result.get("skipped", 0),
         "supabase_error": store_result.get("error"),
+        "supabase_feed_row_count": (store_result.get("table_probe") or {}).get("row_count"),
         "insight_summary": (result.get("insight_summary") or "")[:200],
     }
     print(json.dumps(summary, indent=2))
