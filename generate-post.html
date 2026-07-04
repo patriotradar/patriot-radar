@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate My TikTok Post - Creator Radar</title>
+  <style>
+    :root{
+      --bg:#030504;--panel:#0a110e;--panel2:#0d1712;--border:#1f3a2d;
+      --green:#00ff88;--green2:#00b86b;--purple:#a78bfa;--amber:#fbbf24;
+      --muted:#8aa99a;--white:#f5fff9;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--white);font-family:'Segoe UI',Inter,Arial,sans-serif;padding:16px;min-height:100vh}
+    .app{max-width:540px;margin:0 auto}
+    h1{font-size:24px;color:var(--green);margin-bottom:8px;letter-spacing:1px}
+    p.intro{color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5}
+    label{display:block;color:var(--muted);font-size:10px;margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+    input,textarea{width:100%;padding:13px 14px;margin-bottom:12px;border-radius:12px;border:1px solid var(--border);font-size:15px;background:#07100c;color:white;outline:none}
+    input:focus,textarea:focus{border-color:var(--green)}
+    textarea{min-height:70px;resize:vertical}
+    button{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--green),var(--green2));color:#031109;font-size:14px;font-weight:900;margin-top:8px;text-transform:uppercase;letter-spacing:1px;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .ghost{background:transparent;border:1px solid var(--border);color:var(--muted)} 
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:18px}
+    .result-card{display:none}
+    .result-card.open{display:block}
+    .field{margin-bottom:14px}
+    .field-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+    .field-value{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;line-height:1.5}
+    .copy-btn{display:inline-flex;align-items:center;gap:4px;width:auto;padding:6px 14px;font-size:10px;margin-top:8px;background:rgba(0,255,136,.08);color:var(--green);border:1px solid rgba(0,255,136,.25);border-radius:8px;cursor:pointer;font-weight:700;text-transform:uppercase}
+    .hashtag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    .tag{padding:5px 10px;border-radius:999px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:var(--purple);font-size:11px;font-weight:700}
+    .loading{text-align:center;padding:40px;color:var(--green)}
+    .error{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.3);border-radius:12px;padding:14px;color:#ff6b7a;margin-top:12px;font-size:13px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+    .back{font-size:12px;color:var(--muted);text-decoration:none}
+    .back:hover{color:var(--green)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <a class="back" href="index.html">← Back to dashboard</a>
+    </div>
+
+    <h1>Generate My TikTok Post</h1>
+    <p class="intro">Enter your product and a topic/angle. Gemini will write everything including the image prompt and animation prompt you paste back into Gemini.</p>
+
+    <div class="card">
+      <label>Product</label>
+      <input type="text" id="productInput" placeholder="e.g. Proud British veterans mug">
+
+      <label>Topic / Angle</label>
+      <input type="text" id="topicInput" placeholder="e.g. Remembrance Day, respect for veterans">
+
+      <button id="generateBtn">Generate Post</button>
+    </div>
+
+    <div id="loading" class="loading" style="display:none">Generating your post...</div>
+    <div id="error"></div>
+
+    <div id="result" class="result-card card">
+      <div class="field">
+        <div class="field-title">Hook (first 3 seconds)</div>
+        <div class="field-value" id="hook"></div>
+        <button class="copy-btn" onclick="copy('hook')">Copy</button>
+      </div>
+
+      <div class="field">
+        <div class="field-title">Caption</div>
+        <div class="field-value" id="caption"></div>
+        <button class="copy-btn" onclick="copy('caption')">Copy</button>
+      </div>
+
+      <div class="field">
+        <div class="field-title">Hashtags</div>
+        <div class="hashtag-list" id="hashtags"></div>
+        <button class="copy-btn" onclick="copyText(hashtagString)">Copy all</button>
+      </div>
+
+      <div class="field">
+        <div class="field-title">Voiceover</div>
+        <div class="field-value" id="voiceover"></div>
+        <button class="copy-btn" onclick="copy('voiceover')">Copy</button>
+      </div>
+
+      <div class="field">
+        <div class="field-title">Step 1: Image prompt (paste into Gemini)</div>
+        <div class="field-value" id="imagePrompt"></div>
+        <button class="copy-btn" onclick="copy('imagePrompt')">Copy</button>
+      </div>
+
+      <div class="field">
+        <div class="field-title">Step 2: Animation prompt (after image is made)</div>
+        <div class="field-value" id="animationPrompt"></div>
+        <button class="copy-btn" onclick="copy('animationPrompt')">Copy</button>
+      </div>
+
+      <div class="field">
+        <div class="field-title">Stock photo search terms</div>
+        <div class="field-value" id="stockTerms"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-title">Posting time</div>
+        <div class="field-value" id="postingTime"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-title">Why this should work</div>
+        <div class="field-value" id="whyItWorks"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let hashtagString = "";
+
+    async function generate() {
+      const product = document.getElementById("productInput").value.trim();
+      const topic = document.getElementById("topicInput").value.trim();
+      const btn = document.getElementById("generateBtn");
+      const loading = document.getElementById("loading");
+      const error = document.getElementById("error");
+      const result = document.getElementById("result");
+
+      if (!product || !topic) {
+        error.innerHTML = "Please enter both a product and a topic.";
+        return;
+      }
+
+      btn.disabled = true;
+      loading.style.display = "block";
+      error.innerHTML = "";
+      result.classList.remove("open");
+
+      try {
+        const res = await fetch("/api/generate-post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ product, topic })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Unknown error");
+        render(data);
+      } catch (err) {
+        error.innerHTML = `<div class="error">${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        loading.style.display = "none";
+      }
+    }
+
+    function render(data) {
+      document.getElementById("hook").textContent = data.hook || "";
+      document.getElementById("caption").textContent = data.caption || "";
+      document.getElementById("voiceover").textContent = data.voiceover || "";
+      document.getElementById("imagePrompt").textContent = data.imagePrompt || "";
+      document.getElementById("animationPrompt").textContent = data.animationPrompt || "";
+      document.getElementById("postingTime").textContent = data.postingTime || "";
+      document.getElementById("whyItWorks").textContent = data.whyItWorks || "";
+
+      const tags = data.hashtags || [];
+      hashtagString = tags.map(t => t.startsWith("#") ? t : "#" + t).join(" ");
+      document.getElementById("hashtags").innerHTML = tags.map(t => `<span class="tag">${t.startsWith("#") ? t : "#" + t}</span>`).join("");
+
+      const stock = data.stockSearchTerms || [];
+      document.getElementById("stockTerms").textContent = stock.join(", ");
+
+      document.getElementById("result").classList.add("open");
+    }
+
+    function copy(id) {
+      const text = document.getElementById(id).textContent;
+      copyText(text);
+    }
+
+    function copyText(text) {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copied!");
+      }).catch(() => {
+        prompt("Copy this:", text);
+      });
+    }
+
+    document.getElementById("generateBtn").addEventListener("click", generate);
+  </script>
+</body>
+</html>
