@@ -796,33 +796,22 @@
     var el = document.getElementById(MOUNT_ID);
     if (!el) return;
 
-    var client = getClient();
-    if (!client) {
-      renderShell("Waiting for Supabase client...");
+    if (!window.TikTokLiveState) {
+      renderShell("Waiting for live state client...");
       return;
     }
 
     renderShell("Loading comment data for virality analysis...");
 
     try {
-      var session = await client.auth.getSession();
-      if (!session.data || !session.data.session) {
-        renderShell("Login required to load virality predictions.");
-        return;
+      var client = getClient();
+      if (client) {
+        var session = await client.auth.getSession();
+        if (!session.data || !session.data.session) {
+          renderShell("Login required to load virality predictions.");
+          return;
+        }
       }
-
-      var resp = await client
-        .from(TABLE)
-        .select("*")
-        .order("ingested_at", { ascending: false })
-        .limit(RAW_LIMIT);
-
-      if (resp.error) {
-        renderShell(describeError(resp.error), true);
-        return;
-      }
-
-      rawCache = resp.data || [];
 
       var savedNiche = "";
       if (typeof localStorage !== "undefined") {
@@ -833,6 +822,9 @@
         savedNiche = USER_NICHE;
       }
       currentNiche = savedNiche;
+
+      var liveState = await window.TikTokLiveState.fetch(currentNiche || "general");
+      rawCache = (liveState && liveState.niche_comment_raw) || [];
 
       if (currentNiche) {
         renderResults(computeViralityPredictions(rawCache, currentNiche));

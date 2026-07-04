@@ -11,6 +11,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/api/public-config.js"></script>
+<script src="tiktok-live-state-client.js"></script>
 <script src="tiktok-access-control.js"></script>
 <script src="tiktok-live-state.js"></script>
 <script src="tiktok-live-state-integration.js"></script>
@@ -1933,10 +1934,10 @@ async function refreshTiktokTrendIntelligenceFeed() {
   var el = document.getElementById("tiktokTrendIntelligence");
   if (!el) return;
 
-  tiktokFeedDebug("fetch start", { table: TIKTOK_FEED_TABLE, url: SUPABASE_URL });
-  tiktokFeedFetchStatus = { state: "loading", rowCount: 0, message: "Loading TikTok trends from Supabase...", error: null };
+  var niche = USER_NICHE || "general";
+  tiktokFeedDebug("fetch start", { source: "/api/tiktok-live-state", niche: niche });
 
-  el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Loading TikTok trends from Supabase...</p></div>';
+  el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Loading TikTok trends from live state...</p></div>';
 
   try {
     var session = await supabaseClient.auth.getSession();
@@ -1947,25 +1948,20 @@ async function refreshTiktokTrendIntelligenceFeed() {
       return;
     }
 
-    var resp = await supabaseClient
-      .from(TIKTOK_FEED_TABLE)
-      .select("*")
-      .eq("source", "tiktok")
-      .order("created_at", { ascending: false })
-      .limit(200);
+    var liveState = window.TikTokLiveState
+      ? await window.TikTokLiveState.fetch(niche)
+      : { trend_intelligence_feed: [] };
+    var feed = (liveState && liveState.trend_intelligence_feed) || [];
 
-    tiktokFeedDebug("Supabase response status", resp.status + " " + (resp.statusText || ""));
-    tiktokFeedDebug("Supabase response length", resp.data ? resp.data.length : 0);
-    if (resp.data && resp.data.length) tiktokFeedDebug("Supabase first row", resp.data[0]);
+    tiktokFeedDebug("live state feed length", feed.length);
+    if (feed.length) tiktokFeedDebug("live state first row", feed[0]);
 
-    if (resp.error) {
-      var errMsg = describeTiktokFeedError(resp.error);
-      tiktokFeedFetchStatus = { state: "error", rowCount: 0, message: errMsg, error: resp.error };
-      el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">' + errMsg + '</p></div>';
+    if (liveState && liveState.errors && liveState.errors.length && !feed.length) {
+      el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red);padding:12px 0">Trend feed error: ' + (liveState.errors[0] || "No data") + '</p></div>';
       return;
     }
 
-    tiktokTrendFeedCache = resp.data || [];
+    tiktokTrendFeedCache = feed;
     if (!tiktokTrendFeedCache.length) {
       tiktokFeedDebug("fetch result", "zero rows returned");
       tiktokFeedFetchStatus = {
@@ -10711,53 +10707,27 @@ async function loadLiveStats() {
   var viralEl = document.getElementById("viralCount");
   var updEl = document.getElementById("lastUpdated");
 
-  var cacheKey = "cr_scan_cache_" + niche.toLowerCase();
-  var cached = null;
-  try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch(e) {}
-  if (cached && cached.results && cached.results.length > 0) {
-    var cacheAge = Date.now() - (cached.ts || 0);
-    var emerging = [];
-    if (cached.results.length > 5) {
-      for (var ci = 5; ci < Math.min(10, cached.results.length); ci++) {
-        emerging.push({ keyword: cached.results[ci].keyword, source: "Google Suggest", description: "Trending in " + titleCase(niche) });
-      }
-    }
-    renderAllSections(cached.results, emerging, [], []);
-    if (cacheAge < 300000) {
-      updEl.textContent = "Last Updated: " + formatTimestamp(new Date(cached.ts).toISOString());
-      return;
-    }
-  }
-
   kwEl.innerHTML = '<span style="animation:pulse 1.5s infinite;display:inline-block">...</span>';
   oppEl.innerHTML = '<span style="animation:pulse 1.5s infinite;display:inline-block">...</span>';
   viralEl.innerHTML = '<span style="animation:pulse 1.5s infinite;display:inline-block">...</span>';
-  updEl.textContent = "Scanning " + titleCase(niche) + " trends...";
-
-  var scanDone = false;
-  setTimeout(function() {
-    if (!scanDone && kwEl.textContent === "...") {
-      var nl = niche.toLowerCase().trim();
-      var resolved = NICHE_ALIASES[nl] || nl;
-      var fallbackSeeds = NICHE_SEEDS[resolved] || [niche + " trending", niche + " content ideas", niche + " tips", niche + " viral"];
-      var emergencyResults = [];
-      for (var ei = 0; ei < Math.min(8, fallbackSeeds.length); ei++) {
-        var es = fallbackSeeds[ei];
-        emergencyResults.push({keyword: es.charAt(0).toUpperCase() + es.slice(1), viral_score: Math.max(25, 75 - ei * 6), rise_percent: Math.max(5, 35 - ei * 3), search_volume: Math.max(15, 70 - ei * 5), source: "Seed Analysis", content_score: Math.max(30, 65 - ei * 4), fresh: 50, emotion: 40, debate: 30, product: ""});
-      }
-      scanDone = true;
-      renderAllSections(emergencyResults, [], [], []);
-      updEl.textContent = "Loaded from seed data | Pull down to refresh";
-    }
-  }, 12000);
+  updEl.textContent = "Loading " + titleCase(niche) + " live state...";
 
   fetchBreakingNews().then(function(news) {
     var newsContainer = document.getElementById("breakingNewsContainer");
     if (newsContainer) newsContainer.innerHTML = renderBreakingNews(news);
   });
-  scanNicheTrends(niche, function(results) {
-    scanDone = true;
-    if (results.length === 0) {
+
+  try {
+    var liveState = window.TikTokLiveState
+      ? await window.TikTokLiveState.fetch(niche)
+      : { niche_keywords: { results: [], emerging: [], product_trends: [], creator_insights: [] } };
+    var kw = (liveState && liveState.niche_keywords) || {};
+    var results = kw.results || [];
+    var emerging = kw.emerging || [];
+    var productTrends = kw.product_trends || [];
+    var creatorInsights = kw.creator_insights || [];
+
+    if (!results.length) {
       var nl = niche.toLowerCase().trim();
       var resolved = NICHE_ALIASES[nl] || nl;
       var fallbackSeeds = NICHE_SEEDS[resolved] || [niche + " trending", niche + " content ideas", niche + " tips", niche + " viral", niche + " latest", niche + " news today", niche + " 2026", "best " + niche + " content"];
@@ -10778,16 +10748,23 @@ async function loadLiveStats() {
         });
       }
     }
-    var emerging = [];
-    if (results.length > 5) {
+
+    if (!emerging.length && results.length > 5) {
       for (var i = 5; i < Math.min(10, results.length); i++) {
-        emerging.push({ keyword: results[i].keyword, source: "Google Suggest", description: "Trending in " + titleCase(niche) });
+        emerging.push({ keyword: results[i].keyword, source: "TikTok Live State", description: "Trending in " + titleCase(niche) });
       }
     }
-    try { localStorage.setItem(cacheKey, JSON.stringify({results: results, ts: Date.now()})); } catch(e) {}
-    renderAllSections(results, emerging, [], []);
+
+    renderAllSections(results, emerging, productTrends, creatorInsights);
     aiValidateKeywords(results, emerging);
-  });
+    if (updEl) {
+      var updatedAt = (liveState && liveState.updated_at) ? liveState.updated_at : new Date().toISOString();
+      updEl.textContent = "Last Updated: " + formatTimestamp(updatedAt);
+    }
+  } catch (e) {
+    updEl.textContent = "Live state unavailable";
+    renderAllSections([], [], [], []);
+  }
 }
 
 async function checkSession() {

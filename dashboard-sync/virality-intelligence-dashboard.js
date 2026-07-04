@@ -202,39 +202,38 @@
     var el = document.getElementById(MOUNT_ID);
     if (!el) return;
 
-    var client = getClient();
-    if (!client) {
-      renderShell("Waiting for Supabase client...");
+    if (!window.TikTokLiveState) {
+      renderShell("Waiting for live state client...");
       return;
     }
 
     renderShell("Loading virality intelligence data...");
 
     try {
-      var session = await client.auth.getSession();
-      if (!session.data || !session.data.session) {
-        renderShell("Login required for virality intelligence analytics.");
-        return;
+      var client = getClient();
+      if (client) {
+        var session = await client.auth.getSession();
+        if (!session.data || !session.data.session) {
+          renderShell("Login required for virality intelligence analytics.");
+          return;
+        }
       }
 
-      var calResp = await client
-        .from(TABLES.calibration)
-        .select("*")
-        .order("calibrated_at", { ascending: false })
-        .limit(30);
+      var niche = (typeof USER_NICHE !== "undefined" && USER_NICHE) ? USER_NICHE : "general";
+      var liveState = await window.TikTokLiveState.fetch(niche);
+      var virality = (liveState && liveState.virality) || {};
+      var calibration = virality.calibration || [];
+      var explanations = virality.explanations || [];
 
-      var explResp = await client
-        .from(TABLES.explanations)
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (calResp.error && calResp.error.code === "PGRST205") {
-        renderShell("Virality intelligence tables not found. Run sql/virality_intelligence_tables.sql in Supabase.");
-        return;
+      if (liveState && liveState.errors && liveState.errors.length && !calibration.length && !explanations.length) {
+        var errMsg = liveState.errors[0] || "";
+        if (errMsg.indexOf("PGRST205") !== -1 || errMsg.indexOf("not found") !== -1) {
+          renderShell("Virality intelligence tables not found. Run sql/virality_intelligence_tables.sql in Supabase.");
+          return;
+        }
       }
 
-      renderDashboard(calResp.data || [], explResp.data || []);
+      renderDashboard(calibration, explanations);
     } catch (err) {
       renderShell("Virality intelligence error: " + (err.message || String(err)), true);
     }
