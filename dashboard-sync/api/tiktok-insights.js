@@ -12,7 +12,7 @@ function safeInt(v, d = 0) {
 }
 
 function emptyResponse() {
-  return { videos: [], insights: [], recommended_posts: [], trend_scores: [], errors: [] };
+  return { videos: [], insights: [], recommended_posts: [], trend_scores: [], trending_products: [], errors: [] };
 }
 
 function videoViews(video) {
@@ -227,6 +227,155 @@ function generatePostRecommendations(insights) {
   return { recommended_posts };
 }
 
+const STOP_WORDS = new Set([
+  "the", "and", "for", "are", "but", "not", "you", "all", "can", "had", "her", "was",
+  "one", "our", "out", "day", "get", "has", "him", "his", "how", "its", "may", "new",
+  "now", "old", "see", "two", "way", "who", "that", "this", "with", "have", "from",
+  "they", "been", "said", "each", "which", "their", "will", "other", "about", "many",
+  "then", "them", "these", "some", "would", "make", "like", "into", "time", "very",
+  "when", "come", "here", "just", "what", "know", "take", "people", "year", "good",
+  "could", "than", "first", "down", "did", "more", "being", "only", "those", "going",
+  "really", "still", "even", "your", "there", "where", "why", "back", "much", "before",
+  "right", "too", "any", "same", "also", "after", "over", "such", "give", "most",
+  "tell", "does", "work", "well", "video", "videos", "comment", "comments", "tiktok",
+  "lol", "omg", "yes", "yeah", "dont", "doesnt", "isnt", "wasnt", "cant", "im", "ive",
+]);
+
+const PRODUCT_HINT_WORDS = new Set([
+  "serum", "cream", "lotion", "moisturizer", "cleanser", "shampoo", "conditioner",
+  "supplement", "protein", "powder", "brand", "product", "bought", "buy", "using",
+  "tried", "recommend", "recommended", "link", "amazon", "store", "affordable",
+  "expensive", "worth", "works", "working", "obsessed", "love", "favorite", "favourite",
+  "dupe", "dupes", "routine", "ingredient", "spf", "retinol", "collagen", "whey",
+  "preworkout", "equipment", "mat", "dumbbell", "resistance", "bands", "vitamin",
+  "oil", "mask", "scrub", "toner", "gel", "spray", "pill", "capsule", "shake",
+]);
+
+function clamp(v, lo = 0, hi = 1) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function engagementScore(video) {
+  const views = Math.max(videoViews(video), 1);
+  const likes = Math.max(videoLikes(video), 0);
+  const comments = Math.max(videoCommentsCount(video), 0);
+  return (likes + comments) / views;
+}
+
+function extractPhrases(text) {
+  const tokens = (String(text || "").toLowerCase().match(/[a-z0-9']+/g) || [])
+    .filter((t) => t.length >= 2 && !STOP_WORDS.has(t));
+  const phrases = [];
+  for (let n = 2; n <= 3; n++) {
+    for (let i = 0; i <= tokens.length - n; i++) {
+      const phrase = tokens.slice(i, i + n).join(" ");
+      if (phrase.length >= 5) phrases.push(phrase);
+    }
+  }
+  return phrases;
+}
+
+function generateTrendingProducts(videos, comments, niche, trendScores) {
+  try {
+    const videosList = (videos || []).filter((v) => v && typeof v === "object");
+    const commentsList = (comments || []).filter((c) => c && typeof c === "object");
+    const scoresList = (trendScores || []).filter((s) => s && typeof s === "object");
+    if (!commentsList.length && !videosList.length) return [];
+
+    const trendByVideo = {};
+    for (const ts of scoresList) {
+      const vid = String(ts.video_id || "").trim();
+      if (vid) trendByVideo[vid] = ts;
+    }
+
+    const videoById = {};
+    for (const v of videosList) {
+      const vid = videoIdentifier(v);
+      if (vid) videoById[vid] = v;
+    }
+    const totalVideos = Math.max(Object.keys(videoById).length, 1);
+
+    const phraseData = {};
+    for (const comment of commentsList) {
+      const text = String(comment.comment_text || comment.text || "").trim().toLowerCase();
+      if (!text) continue;
+      const vid = String(comment.video_id || "").trim();
+      for (const phrase of extractPhrases(text)) {
+        if (!phraseData[phrase]) phraseData[phrase] = { mention_count: 0, video_ids: new Set(), examples: [] };
+        phraseData[phrase].mention_count++;
+        if (vid) phraseData[phrase].video_ids.add(vid);
+        if (phraseData[phrase].examples.length < 5) phraseData[phrase].examples.push(text.slice(0, 160));
+      }
+    }
+
+    const phraseKeys = Object.keys(phraseData);
+    if (!phraseKeys.length) return [];
+
+    const maxMentions = Math.max(...phraseKeys.map((k) => phraseData[k].mention_count), 1);
+    const maxVelocity = Math.max(...scoresList.map((t) => Number(t.velocity_score) || 0), 0) || 1;
+    const maxEngagement = Math.max(...Object.keys(videoById).map((vid) => engagementScore(videoById[vid])), 0) || 1;
+    const nicheTokens = niche ? new Set(String(niche).toLowerCase().match(/[a-z0-9']+/g) || []) : new Set();
+
+    const results = [];
+    for (const phrase of phraseKeys) {
+      const data = phraseData[phrase];
+      const mentionCount = data.mention_count;
+      const videoIds = Array.from(data.video_ids);
+      const videoCount = videoIds.length;
+      const mentionFreq = mentionCount / maxMentions;
+      const videoSpread = videoCount / totalVideos;
+
+      const velocities = videoIds.map((vid) => Number((trendByVideo[vid] || {}).velocity_score) || 0);
+      const avgVelocity = velocities.reduce((a, b) => a + b, 0) / Math.max(velocities.length, 1);
+      const trendVelocityNorm = maxVelocity > 0 ? avgVelocity / maxVelocity : 0;
+
+      const engagements = videoIds.filter((vid) => videoById[vid]).map((vid) => engagementScore(videoById[vid]));
+      const avgEngagement = engagements.reduce((a, b) => a + b, 0) / Math.max(engagements.length, 1);
+      const engagementNorm = maxEngagement > 0 ? avgEngagement / maxEngagement : 0;
+
+      const phraseTokens = new Set(phrase.split(" "));
+      let nicheRelevance;
+      if (nicheTokens.size) {
+        let overlap = 0;
+        for (const t of phraseTokens) if (nicheTokens.has(t)) overlap++;
+        const hintBonus = [...phraseTokens].some((t) => PRODUCT_HINT_WORDS.has(t)) ? 0.3 : 0;
+        nicheRelevance = clamp(overlap / Math.max(nicheTokens.size, 1) + hintBonus);
+      } else {
+        nicheRelevance = [...phraseTokens].some((t) => PRODUCT_HINT_WORDS.has(t)) ? 0.5 : 0.2;
+      }
+
+      const score = clamp(
+        0.4 * mentionFreq + 0.2 * videoSpread + 0.2 * trendVelocityNorm + 0.1 * engagementNorm + 0.1 * nicheRelevance
+      );
+      if (!(mentionCount >= 2 || videoCount >= 2 || score >= 0.6)) continue;
+
+      const confidence = clamp(
+        0.3 * mentionFreq + 0.3 * videoSpread + 0.2 * trendVelocityNorm + 0.2 * engagementNorm
+      );
+      const evidence = data.examples.slice(0, 3);
+      if (videoCount >= 2) evidence.push(`Mentioned across ${videoCount} videos`);
+      if (trendVelocityNorm > 0.7) evidence.push("Associated with high-velocity trending videos");
+      if (nicheRelevance > 0.5 && niche) evidence.push(`Aligned with niche: ${niche}`);
+
+      results.push({
+        name: phrase.replace(/\b\w/g, (c) => c.toUpperCase()),
+        mention_count: mentionCount,
+        video_count: videoCount,
+        trend_velocity: Math.round(trendVelocityNorm * 10000) / 10000,
+        niche_relevance: Math.round(nicheRelevance * 10000) / 10000,
+        confidence: Math.round(confidence * 10000) / 10000,
+        evidence,
+        score: Math.round(score * 10000) / 10000,
+      });
+    }
+
+    results.sort((a, b) => b.score - a.score);
+    return results.slice(0, 20);
+  } catch {
+    return [];
+  }
+}
+
 function runPipeline(videos, niche) {
   const gate = validateVideos(videos);
   const accepted = gate.accepted || [];
@@ -236,12 +385,15 @@ function runPipeline(videos, niche) {
   );
   const rawInsights = generateInsights(cleanedVideos, flatComments, niche);
   const validated = validateInsights(rawInsights, flatComments);
+  const trendScores = accepted.map(computeTrendScore);
+  const trendingProducts = generateTrendingProducts(cleanedVideos, flatComments, niche, trendScores);
   const recs = generatePostRecommendations(validated);
   return {
     videos: cleanedVideos,
     insights: validated,
     recommended_posts: recs.recommended_posts || [],
-    trend_scores: accepted.map(computeTrendScore),
+    trend_scores: trendScores,
+    trending_products: trendingProducts.length ? trendingProducts : [],
     errors: [],
     success: true,
   };

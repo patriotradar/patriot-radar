@@ -664,6 +664,7 @@ def empty_pipeline_response() -> dict[str, Any]:
         "insights": [],
         "recommended_posts": [],
         "trend_scores": [],
+        "trending_products": [],
         "errors": [],
     }
 
@@ -674,6 +675,7 @@ def build_safe_pipeline_response(
     insights: list[dict[str, Any]] | None = None,
     recommended_posts: list[dict[str, Any]] | None = None,
     trend_scores: list[dict[str, Any]] | None = None,
+    trending_products: list[dict[str, Any]] | None = None,
     errors: list[str] | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -683,6 +685,7 @@ def build_safe_pipeline_response(
         "insights": list(insights or []),
         "recommended_posts": list(recommended_posts or []),
         "trend_scores": list(trend_scores or []),
+        "trending_products": list(trending_products or []),
         "errors": list(errors or []),
     }
     if extra:

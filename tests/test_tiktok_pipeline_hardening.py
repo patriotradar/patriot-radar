@@ -142,7 +142,7 @@ class TestRecommendations(unittest.TestCase):
 class TestSafeResponse(unittest.TestCase):
     def test_empty_response_has_no_nulls(self):
         resp = empty_pipeline_response()
-        for key in ("videos", "insights", "recommended_posts", "trend_scores", "errors"):
+        for key in ("videos", "insights", "recommended_posts", "trend_scores", "trending_products", "errors"):
             self.assertIn(key, resp)
             self.assertIsNotNone(resp[key])
 

@@ -29,6 +29,7 @@ from tiktok_pipeline_hardening import (
     validate_videos,
 )
 from tiktok_trend_extractor import extract_tiktok_trend_signals
+from tiktok_trending_products_engine import generateTrendingProducts
 from trend_intelligence_store import store_external_tiktok_signals
 
 logger = logging.getLogger(__name__)
@@ -135,6 +136,13 @@ def run_hardened_tiktok_pipeline(
         raw_insights = generate_insights(cleaned_videos, flat_comments, niche=niche)
         validated_insights = validate_insights(raw_insights, flat_comments, cleaned_videos)
 
+        trending_products = generateTrendingProducts(
+            videos=cleaned_videos,
+            comments=flat_comments,
+            niche=niche,
+            trend_scores=trend_scores,
+        )
+
         rec_result = generate_post_recommendations(validated_insights, cleaned_videos)
         recommended_posts = rec_result.get("recommended_posts") or []
 
@@ -173,6 +181,7 @@ def run_hardened_tiktok_pipeline(
             insights=validated_insights,
             recommended_posts=recommended_posts,
             trend_scores=trend_scores,
+            trending_products=trending_products if trending_products else [],
             errors=errors,
             extra={
                 "success": True,
@@ -214,15 +223,25 @@ def run_hardened_pipeline_from_raw_rows(
             cleaned_videos.append({**video, "comments": cleaned})
 
         flat_comments = _flatten_cleaned_comments(cleaned_videos)
+        trend_scores = compute_trend_scores(accepted)
         raw_insights = generate_insights(cleaned_videos, flat_comments, niche=niche)
         validated = validate_insights(raw_insights, flat_comments, cleaned_videos)
+
+        trending_products = generateTrendingProducts(
+            videos=cleaned_videos,
+            comments=flat_comments,
+            niche=niche,
+            trend_scores=trend_scores,
+        )
+
         recs = generate_post_recommendations(validated, cleaned_videos)
 
         return build_safe_pipeline_response(
             videos=cleaned_videos,
             insights=validated,
             recommended_posts=recs.get("recommended_posts") or [],
-            trend_scores=compute_trend_scores(accepted),
+            trend_scores=trend_scores,
+            trending_products=trending_products if trending_products else [],
             errors=errors,
             extra={
                 "success": True,
