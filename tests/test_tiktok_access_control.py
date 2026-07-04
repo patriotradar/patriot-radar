@@ -85,6 +85,19 @@ class TestVisibleModules(unittest.TestCase):
         }
         modules = rbac.resolveVisibleModules("creator", flags, commerce_mode=False)
         self.assertIn("tiktok", modules)
+        self.assertNotIn("trends", modules)
+
+    def test_legacy_trends_module_alias_maps_to_tiktok(self):
+        normalized = rbac.normalizeVisibleModules(["trends", "analytics"])
+        self.assertIn("tiktok", normalized)
+        self.assertNotIn("trends", normalized)
+
+    def test_filter_accepts_legacy_trends_visible_module(self):
+        state = {"trends": [{"summary": "t1"}]}
+        access = {"admin_override": False, "visible_modules": ["trends"]}
+        filtered = rbac.filterLiveStateForAccess(state, access)
+        self.assertEqual(len(filtered["trends"]), 1)
+        self.assertIn("tiktok", filtered["access"]["visible_modules"])
 
     def test_commerce_mode_unlocks_products_for_creator(self):
         flags = {

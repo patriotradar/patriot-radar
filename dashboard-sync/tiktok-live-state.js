@@ -137,8 +137,12 @@
     if (!access) return false;
     if (access.admin_override) return true;
     var visible = access.visible_modules || [];
-    if (module === "tiktok" && visible.indexOf("trends") !== -1) return true;
-    return visible.indexOf(module) !== -1;
+    var target = module === "trends" ? "tiktok" : module;
+    for (var i = 0; i < visible.length; i++) {
+      var item = visible[i] === "trends" ? "tiktok" : visible[i];
+      if (item === target) return true;
+    }
+    return false;
   }
 
   function renderSection(title, bodyHtml, restricted) {

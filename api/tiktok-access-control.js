@@ -23,6 +23,8 @@ const ALL_MODULES = [
 const COMMERCE_GATED_MODULES = new Set(["products", "inventory_system"]);
 
 const MODULE_FLAG_ALIASES = { tiktok: ["tiktok", "trends"] };
+const MODULE_ID_ALIASES = { trends: "tiktok" };
+const DEFAULT_VISIBLE_MODULES = ["tiktok", "prediction_engine", "analytics"];
 
 function loadFeatureFlags() {
   try {
@@ -76,12 +78,39 @@ function getAdminOverride(userRole) {
   return userRole === "admin";
 }
 
+function normalizeModuleId(module) {
+  return MODULE_ID_ALIASES[module] || module;
+}
+
+function normalizeVisibleModuleList(modules, adminOverride) {
+  const seen = new Set();
+  const out = [];
+  for (const raw of modules || []) {
+    const mod = normalizeModuleId(String(raw));
+    if (mod && !seen.has(mod)) {
+      seen.add(mod);
+      out.push(mod);
+    }
+  }
+  if (adminOverride) {
+    for (const mod of ALL_MODULES) {
+      if (!seen.has(mod)) out.push(mod);
+    }
+  }
+  return out.length ? out : DEFAULT_VISIBLE_MODULES.slice();
+}
+
+function moduleIsVisible(visibleModules, module) {
+  const visible = new Set((visibleModules || []).map((item) => normalizeModuleId(String(item))));
+  return visible.has(normalizeModuleId(module));
+}
+
 function resolveVisibleModules(userRole, featureFlags, commerceMode) {
   const flags = { ...loadFeatureFlags(), ...(featureFlags || {}) };
   let commerceEnabled = Boolean(flags.commerce_mode);
   if (commerceMode != null) commerceEnabled = Boolean(commerceMode);
 
-  if (getAdminOverride(userRole)) return [...ALL_MODULES];
+  if (getAdminOverride(userRole)) return normalizeVisibleModuleList(ALL_MODULES, true);
 
   const visible = [];
   for (const module of ALL_MODULES) {
@@ -90,7 +119,7 @@ function resolveVisibleModules(userRole, featureFlags, commerceMode) {
     if (COMMERCE_GATED_MODULES.has(module) && !commerceEnabled) continue;
     visible.push(module);
   }
-  return visible;
+  return normalizeVisibleModuleList(visible);
 }
 
 function buildAccessContext(accountId, userRecord, featureFlags, commerceMode) {
@@ -98,7 +127,10 @@ function buildAccessContext(accountId, userRecord, featureFlags, commerceMode) {
   const adminOverride = getAdminOverride(userRole);
   const flags = { ...loadFeatureFlags(), ...(featureFlags || {}) };
   const commerceEnabled = commerceMode != null ? Boolean(commerceMode) : Boolean(flags.commerce_mode);
-  const visibleModules = resolveVisibleModules(userRole, featureFlags, commerceEnabled);
+  const visibleModules = normalizeVisibleModuleList(
+    resolveVisibleModules(userRole, featureFlags, commerceEnabled),
+    adminOverride
+  );
   return {
     role: userRole,
     admin_override: adminOverride,
@@ -134,7 +166,7 @@ function emptyLiveStateContract() {
     access: {
       role: DEFAULT_ROLE,
       admin_override: false,
-      visible_modules: ["tiktok", "prediction_engine", "analytics"],
+      visible_modules: DEFAULT_VISIBLE_MODULES.slice(),
       commerce_access: false,
     },
   };
@@ -182,27 +214,36 @@ function normalizeLiveStateShape(state, access) {
 
 function filterLiveStateForAccess(state, access) {
   const accessCtx = asDict(access);
+  accessCtx.visible_modules = normalizeVisibleModuleList(
+    accessCtx.visible_modules,
+    Boolean(accessCtx.admin_override)
+  );
   const normalized = normalizeLiveStateShape(state, accessCtx);
+  normalized.access = {
+    ...normalized.access,
+    ...accessCtx,
+    visible_modules: accessCtx.visible_modules,
+  };
 
   if (accessCtx.admin_override) return normalized;
 
-  const visible = new Set(accessCtx.visible_modules || []);
+  const visible = accessCtx.visible_modules;
 
-  if (!visible.has("tiktok") && !visible.has("trends")) normalized.trends = [];
-  if (!visible.has("products")) normalized.products = [];
-  if (!visible.has("inventory_system")) {
+  if (!moduleIsVisible(visible, "tiktok")) normalized.trends = [];
+  if (!moduleIsVisible(visible, "products")) normalized.products = [];
+  if (!moduleIsVisible(visible, "inventory_system")) {
     normalized.inventory_gaps = [];
     normalized.inventory_prevention = [];
   }
-  if (!visible.has("prediction_engine")) normalized.prediction = {};
-  if (!visible.has("analytics")) {
+  if (!moduleIsVisible(visible, "prediction_engine")) normalized.prediction = {};
+  if (!moduleIsVisible(visible, "analytics")) {
     normalized.performance = {};
     normalized.content_queue = [];
     normalized.approvals = [];
   }
-  if (!visible.has("system_health")) normalized.system_health = "restricted";
-  if (!visible.has("raw_logs")) normalized.raw_logs = [];
-  if (!visible.has("hidden_alerts")) {
+  if (!moduleIsVisible(visible, "system_health")) normalized.system_health = "restricted";
+  if (!moduleIsVisible(visible, "raw_logs")) normalized.raw_logs = [];
+  if (!moduleIsVisible(visible, "hidden_alerts")) {
     normalized.hidden_alerts = [];
     normalized.alerts = normalized.alerts.filter((a) => a && a.level !== "hidden");
   }
@@ -253,6 +294,8 @@ module.exports = {
   getUserRole,
   getAdminOverride,
   resolveVisibleModules,
+  normalizeVisibleModuleList,
+  moduleIsVisible,
   buildAccessContext,
   emptyLiveStateContract,
   normalizeLiveStateShape,

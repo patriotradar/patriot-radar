@@ -1355,9 +1355,9 @@ input[type=range]::-webkit-slider-thumb{
 
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="plan" onclick="switchTab('plan')">Plan</button>
-      <button class="tab-btn" data-tab="trends" onclick="switchTab('trends')">Trends</button>
+      <button class="tab-btn" data-tab="trends" data-module="tiktok" onclick="switchTab('trends')">Trends</button>
       <button class="tab-btn" data-tab="discovery" onclick="switchTab('discovery')">Discover</button>
-      <button class="tab-btn" data-tab="mystats" onclick="switchTab('mystats')">My Stats</button>
+      <button class="tab-btn" data-tab="mystats" data-module="analytics" onclick="switchTab('mystats')">My Stats</button>
       <button class="tab-btn" data-tab="platforms" onclick="switchTab('platforms')">Tools</button>
       <button class="tab-btn" data-tab="aichat" onclick="switchTab('aichat')">Ask AI</button>
       <button class="tab-btn" data-tab="audit" onclick="switchTab('audit')">Audit</button>
@@ -9307,6 +9307,10 @@ function toggleVoiceInput() {
 
 function loadActiveTab() {
   var saved = localStorage.getItem('patriot_active_tab');
+  if (saved && typeof TiktokAccessControl !== "undefined") {
+    var moduleId = TiktokAccessControl.TAB_MODULE_MAP[saved];
+    if (moduleId && !TiktokAccessControl.isModuleVisible(moduleId)) saved = null;
+  }
   if (saved && document.getElementById('tab-' + saved)) {
     switchTab(saved);
   }
@@ -11566,9 +11570,11 @@ async function showDashboard(sessionUser) {
         checkAdminStatus();
       }
       if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+      loadActiveTab();
     }).catch(function() {
       checkAdminStatus();
       if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
+      loadActiveTab();
     });
   } else {
     checkAdminStatus();
