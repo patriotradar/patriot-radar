@@ -11,6 +11,7 @@ import importlib
 import logging
 from typing import Any, Callable
 
+from action_orchestrator import generatePrimaryActions
 from tiktok_access_control import (
     buildAccessContext,
     empty_live_state_contract,
@@ -152,94 +153,66 @@ def _build_alerts(
             "code": "module_partial_failure",
             "message": f"Module unavailable: {module_name}",
         })
+        alerts.append({
+            "level": "info",
+            "code": "module_fallback",
+            "message": f"Using defaults for {module_name}",
+        })
 
     return alerts, hidden
 
 
-def _derive_flow_and_action(
-    trends: list,
-    products: list,
-    content_queue: list,
-    approvals: list,
+def _derive_today_flow(
+    primary_action: dict[str, str],
+    *,
     inventory_gaps: list,
+    approvals: list,
+    content_queue: list,
+    products: list,
+    trends: list,
     system_health: str,
-) -> tuple[dict[str, str], dict[str, str]]:
+) -> dict[str, str]:
+    """Map orchestrated primary action to today_flow status for the UI."""
     today_flow = {
         "step": "trend → product → content → queue",
-        "next_action": "unknown",
+        "next_action": _as_string(primary_action.get("label")),
         "status": "unknown",
     }
-    primary_action = {
-        "label": "unknown",
-        "action": "unknown",
-        "context_id": "unknown",
-    }
+    action = _as_string(primary_action.get("action"))
 
-    if approvals:
-        today_flow["next_action"] = "Review pending content approvals"
-        today_flow["status"] = "approval_pending"
-        item = approvals[0] if isinstance(approvals[0], dict) else {}
-        primary_action = {
-            "label": "Review approval",
-            "action": "review_approval",
-            "context_id": _as_string(item.get("content_id") or item.get("id")),
-        }
-        return today_flow, primary_action
+    if inventory_gaps and action in ("prevent_inventory_stockout", "resolve_inventory_gap", "fix_inventory"):
+        today_flow["status"] = "blocked"
+        return today_flow
 
-    if inventory_gaps:
-        today_flow["next_action"] = "Address inventory gaps before posting"
-        today_flow["status"] = "inventory_gap"
-        gap = inventory_gaps[0] if isinstance(inventory_gaps[0], dict) else {}
-        primary_action = {
-            "label": "Fix inventory gap",
-            "action": "fix_inventory",
-            "context_id": _as_string(gap.get("product_name")),
-        }
-        return today_flow, primary_action
+    if approvals and action in ("approve_queued_content", "approve_content", "review_approval"):
+        today_flow["status"] = "awaiting_approval"
+        return today_flow
 
-    if products and trends:
-        today_flow["next_action"] = "Create content for top product-trend match"
-        today_flow["status"] = "ready_to_create"
-        product = products[0] if isinstance(products[0], dict) else {}
-        primary_action = {
-            "label": "Create content",
-            "action": "create_content",
-            "context_id": _as_string(product.get("name")),
-        }
-        return today_flow, primary_action
+    if action in ("generate_content_from_products", "create_product_content", "create_trend_content", "create_content"):
+        today_flow["status"] = "ready_for_content"
+        return today_flow
 
-    if not products and trends:
-        today_flow["next_action"] = "Match products to active trends"
+    if action in ("match_products_to_trends", "monetise_trending_topic", "match_products"):
         today_flow["status"] = "trend_detected"
-        trend = trends[0] if isinstance(trends[0], dict) else {}
-        primary_action = {
-            "label": "Match products",
-            "action": "match_products",
-            "context_id": _as_string(trend.get("id") or trend.get("summary")),
-        }
-        return today_flow, primary_action
+        return today_flow
 
-    if content_queue:
-        today_flow["next_action"] = "Monitor queued content pipeline"
+    if content_queue and action in (
+        "optimise_content_schedule",
+        "resolve_queue_block",
+        "view_queue",
+    ):
         today_flow["status"] = "in_queue"
-        item = content_queue[0] if isinstance(content_queue[0], dict) else {}
-        primary_action = {
-            "label": "View queue",
-            "action": "view_queue",
-            "context_id": _as_string(item.get("id")),
-        }
-        return today_flow, primary_action
+        return today_flow
 
     if system_health in ("healthy", "degraded", "failing"):
         today_flow["status"] = system_health
-        today_flow["next_action"] = "Run trend scan to refresh signals"
-        primary_action = {
-            "label": "Refresh trends",
-            "action": "run_trend_scan",
-            "context_id": "unknown",
-        }
+        return today_flow
 
-    return today_flow, primary_action
+    if trends or products:
+        today_flow["status"] = "active"
+        return today_flow
+
+    return today_flow
 
 
 def assembleLiveState(
@@ -281,12 +254,34 @@ def assembleLiveState(
     )
     raw_logs = _as_list(collected.get("system_health_monitor", {}).get("raw_logs"))
 
-    today_flow, primary_action = _derive_flow_and_action(
-        trends=trends,
-        products=products,
-        content_queue=content_queue,
-        approvals=approvals,
+    flags = _load_feature_flags()
+    commerce_mode = bool(flags.get("commerce_mode", False))
+    access = buildAccessContext(account_id, user_record, flags, commerce_mode)
+    user_role = _as_string(access.get("role"), "creator")
+    admin_override = bool(access.get("admin_override"))
+
+    orchestration_input = {
+        "trends": trends,
+        "products": products,
+        "inventory_prevention": inventory_prevention,
+        "content_queue": content_queue,
+        "performance": performance,
+        "commerce_mode": commerce_mode,
+        "user_role": user_role,
+        "admin_override": admin_override,
+        "system_health": system_health,
+    }
+    actions = generatePrimaryActions(orchestration_input)
+    primary_action = actions["primary_action"]
+    secondary_actions = actions["secondary_actions"]
+
+    today_flow = _derive_today_flow(
+        primary_action,
         inventory_gaps=inventory_gaps,
+        approvals=approvals,
+        content_queue=content_queue,
+        products=products,
+        trends=trends,
         system_health=system_health,
     )
 
@@ -296,10 +291,6 @@ def assembleLiveState(
         system_health=system_health,
         partial_failures=partial_failures,
     )
-
-    flags = _load_feature_flags()
-    commerce_mode = bool(flags.get("commerce_mode", False))
-    access = buildAccessContext(account_id, user_record, flags, commerce_mode)
 
     state["today_flow"] = today_flow
     state["trends"] = trends
@@ -314,6 +305,10 @@ def assembleLiveState(
     state["hidden_alerts"] = hidden_alerts
     state["raw_logs"] = raw_logs
     state["primary_action"] = primary_action
+    state["secondary_actions"] = secondary_actions
+    state["commerce_mode"] = commerce_mode
+    state["user_role"] = user_role
+    state["admin_override"] = admin_override
     state["system_health"] = system_health
     state["access"] = access
 

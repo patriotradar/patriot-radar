@@ -203,8 +203,14 @@ def empty_live_state_contract() -> dict[str, Any]:
         "primary_action": {
             "label": "unknown",
             "action": "unknown",
+            "priority": "low",
             "context_id": "unknown",
+            "reason": "unknown",
         },
+        "secondary_actions": [],
+        "commerce_mode": False,
+        "user_role": DEFAULT_ROLE,
+        "admin_override": False,
         "system_health": "unknown",
         "access": {
             "role": DEFAULT_ROLE,
@@ -243,6 +249,14 @@ def normalize_live_state_shape(
     normalized = empty_live_state_contract()
     normalized["today_flow"] = {**base["today_flow"], **_as_dict(state.get("today_flow"))}
     normalized["primary_action"] = {**base["primary_action"], **_as_dict(state.get("primary_action"))}
+    normalized["secondary_actions"] = _as_list(state.get("secondary_actions"))
+    normalized["commerce_mode"] = bool(state.get("commerce_mode", base["commerce_mode"]))
+    normalized["user_role"] = (
+        str(state.get("user_role")).strip()
+        if state.get("user_role") is not None and str(state.get("user_role")).strip()
+        else base["user_role"]
+    )
+    normalized["admin_override"] = bool(state.get("admin_override", base["admin_override"]))
     normalized["access"] = {**base["access"], **_as_dict(state.get("access"))}
     if access:
         normalized["access"] = {**normalized["access"], **_as_dict(access)}
