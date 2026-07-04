@@ -1,0 +1,62 @@
+[
+  {
+    "id": "nostalgia_slideshow",
+    "name": "Nostalgic Slideshow",
+    "description": "Slow slideshow of British scenes from the past with emotional caption and text-to-speech voiceover.",
+    "best_for": ["apparel", "home decor", "books"],
+    "format": "slideshow",
+    "duration_seconds": 21,
+    "hook_template": "Nobody talks about {topic} anymore...",
+    "caption_template": "Share if you remember {topic}. 🇬🇧 {cta}",
+    "hashtag_style": ["britishnostalgia", "proudbrit", "ukhistory", "veteransuk"],
+    "elements": ["vintage photos", "soft music", "text overlay", "TTS voiceover"]
+  },
+  {
+    "id": "honest_review",
+    "name": "Honest Product Review",
+    "description": "Creator shows product, gives simple honest opinion, asks audience if they would buy.",
+    "best_for": ["drinkware", "apparel", "stickers and patches"],
+    "format": "talking_product",
+    "duration_seconds": 34,
+    "hook_template": "I’ve had this {product} for a week and I need to be honest...",
+    "caption_template": "Would you buy this {product}? Let me know below. {cta}",
+    "hashtag_style": ["britishmade", "uksmallbusiness", "proudbrit", "shoplocal"],
+    "elements": ["close-up shot", " honest tone", "question to audience", "link in bio"]
+  },
+  {
+    "id": "fact_bomb",
+    "name": "Hidden Fact Bomb",
+    "description": "Short video revealing a surprising British fact that most people don’t know.",
+    "best_for": ["books and history guides", "apparel"],
+    "format": "text_on_video",
+    "duration_seconds": 18,
+    "hook_template": "They never taught us this in school...",
+    "caption_template": "Did you know this? {cta}",
+    "hashtag_style": ["britishhistory", "historytok", "proudbrit", "ukfacts"],
+    "elements": ["bold text", "dramatic music", "reveal at end", "comment prompt"]
+  },
+  {
+    "id": "unboxing_patriotic",
+    "name": "Patriotic Unboxing",
+    "description": "Unboxing a British-themed product with pride and emotional reaction.",
+    "best_for": ["flags and banners", "apparel", "drinkware"],
+    "format": "unboxing",
+    "duration_seconds": 28,
+    "hook_template": "This just arrived and I had to share it with you...",
+    "caption_template": "This {product} is exactly what I needed. {cta}",
+    "hashtag_style": ["unboxing", "britishpride", "proudbrit", "madeinuk"],
+    "elements": ["packaging reveal", "emotional reaction", "product close-up", "CTA"]
+  },
+  {
+    "id": "community_voice",
+    "name": "Community Voice",
+    "description": "Quotes or comments from the audience remixed into a video with a call to action.",
+    "best_for": ["apparel", "digital products", "home decor"],
+    "format": "screenshot_slideshow",
+    "duration_seconds": 24,
+    "hook_template": "Your comments keep proving we’re not alone...",
+    "caption_template": "Tag someone who needs to see this. {cta}",
+    "hashtag_style": ["proudbrit", "community", "uk", "britishvalues"],
+    "elements": [" screenshots", " community quotes", "uplifting music", "tag prompt"]
+  }
+]

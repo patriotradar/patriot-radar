@@ -1,0 +1,44 @@
+{
+  "name": "Patriotic British Adults 55+",
+  "description": "Audience that engages with British pride, nostalgia, veterans, history, and culture-war content. Predominantly female (59%), majority 55+, active late night on weekends.",
+  "demographics": {
+    "male_pct": 41,
+    "female_pct": 59,
+    "age_18_24": 5.9,
+    "age_25_34": 13.8,
+    "age_35_44": 11.4,
+    "age_45_54": 16.1,
+    "age_55_plus": 52.8,
+    "location": "United Kingdom"
+  },
+  "active_times": {
+    "best_day": "Saturday",
+    "best_hours": "12am-1am",
+    "secondary_hours": "8pm-11pm"
+  },
+  "content_triggers": [
+    "nostalgia for old Britain",
+    "veteran respect",
+    "national pride",
+    "underdog stories",
+    "hidden history",
+    "community and local identity",
+    "defending British values",
+    "humour and memes"
+  ],
+  "product_categories": [
+    "apparel",
+    "drinkware",
+    "flags and banners",
+    "books and history guides",
+    "stickers and patches",
+    "home decor",
+    "digital products"
+  ],
+  "avoid_themes": [
+    "overt party politics",
+    "division between UK nations",
+    "aggressive messaging",
+    "young Gen Z trends"
+  ]
+}
