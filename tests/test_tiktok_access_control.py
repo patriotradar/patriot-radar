@@ -54,6 +54,7 @@ class TestVisibleModules(unittest.TestCase):
 
     def test_creator_follows_feature_flags(self):
         flags = {
+            "tiktok": True,
             "trends": True,
             "products": True,
             "inventory_system": True,
@@ -65,13 +66,29 @@ class TestVisibleModules(unittest.TestCase):
             "commerce_mode": False,
         }
         modules = rbac.resolveVisibleModules("creator", flags, commerce_mode=False)
-        self.assertIn("trends", modules)
+        self.assertIn("tiktok", modules)
         self.assertNotIn("products", modules)
         self.assertNotIn("inventory_system", modules)
         self.assertNotIn("system_health", modules)
 
+    def test_tiktok_flag_aliases_legacy_trends_flag(self):
+        flags = {
+            "trends": True,
+            "products": False,
+            "inventory_system": False,
+            "prediction_engine": False,
+            "analytics": False,
+            "system_health": False,
+            "raw_logs": False,
+            "hidden_alerts": False,
+            "commerce_mode": False,
+        }
+        modules = rbac.resolveVisibleModules("creator", flags, commerce_mode=False)
+        self.assertIn("tiktok", modules)
+
     def test_commerce_mode_unlocks_products_for_creator(self):
         flags = {
+            "tiktok": True,
             "trends": True,
             "products": True,
             "inventory_system": True,
@@ -111,7 +128,7 @@ class TestFilterLiveState(unittest.TestCase):
             "performance": {"total_views": 100},
             "prediction": {"score": 0.9},
         }
-        access = {"admin_override": False, "visible_modules": ["trends"]}
+        access = {"admin_override": False, "visible_modules": ["tiktok"]}
         filtered = rbac.filterLiveStateForAccess(state, access)
 
         self.assertEqual(set(filtered.keys()), rbac.LIVE_STATE_SCHEMA_KEYS)
@@ -166,7 +183,7 @@ class TestFilterLiveState(unittest.TestCase):
         )
         creator = rbac.filterLiveStateForAccess(
             full_state,
-            {"admin_override": False, "visible_modules": ["trends"], "role": "creator"},
+            {"admin_override": False, "visible_modules": ["tiktok"], "role": "creator"},
         )
         self.assertEqual(set(admin.keys()), set(creator.keys()))
         self.assertEqual(set(admin.keys()), rbac.LIVE_STATE_SCHEMA_KEYS)
@@ -195,6 +212,7 @@ class TestLiveStateAssembler(unittest.TestCase):
         self.assertEqual(state["access"]["role"], "creator")
         self.assertFalse(state["access"]["admin_override"])
         self.assertIsInstance(state["access"]["visible_modules"], list)
+        self.assertIn("tiktok", state["access"]["visible_modules"])
         self.assertIn("trends", state)
         self.assertIn("products", state)
         self.assertIn("inventory_gaps", state)

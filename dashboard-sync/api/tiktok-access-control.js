@@ -10,7 +10,7 @@ const VALID_ROLES = new Set(["admin", "creator", "viewer", "test"]);
 const DEFAULT_ROLE = "creator";
 
 const ALL_MODULES = [
-  "trends",
+  "tiktok",
   "products",
   "inventory_system",
   "prediction_engine",
@@ -21,6 +21,8 @@ const ALL_MODULES = [
 ];
 
 const COMMERCE_GATED_MODULES = new Set(["products", "inventory_system"]);
+
+const MODULE_FLAG_ALIASES = { tiktok: ["tiktok", "trends"] };
 
 function loadFeatureFlags() {
   try {
@@ -83,7 +85,8 @@ function resolveVisibleModules(userRole, featureFlags, commerceMode) {
 
   const visible = [];
   for (const module of ALL_MODULES) {
-    if (!flags[module]) continue;
+    const flagKeys = MODULE_FLAG_ALIASES[module] || [module];
+    if (!flagKeys.some((key) => flags[key])) continue;
     if (COMMERCE_GATED_MODULES.has(module) && !commerceEnabled) continue;
     visible.push(module);
   }
@@ -131,7 +134,7 @@ function emptyLiveStateContract() {
     access: {
       role: DEFAULT_ROLE,
       admin_override: false,
-      visible_modules: [],
+      visible_modules: ["tiktok", "prediction_engine", "analytics"],
       commerce_access: false,
     },
   };
@@ -185,7 +188,7 @@ function filterLiveStateForAccess(state, access) {
 
   const visible = new Set(accessCtx.visible_modules || []);
 
-  if (!visible.has("trends")) normalized.trends = [];
+  if (!visible.has("tiktok") && !visible.has("trends")) normalized.trends = [];
   if (!visible.has("products")) normalized.products = [];
   if (!visible.has("inventory_system")) {
     normalized.inventory_gaps = [];

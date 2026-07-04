@@ -1,4 +1,5 @@
 {
+  "tiktok": true,
   "trends": true,
   "products": true,
   "inventory_system": false,

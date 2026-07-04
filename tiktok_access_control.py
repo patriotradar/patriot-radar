@@ -19,7 +19,7 @@ VALID_ROLES = frozenset({"admin", "creator", "viewer", "test"})
 DEFAULT_ROLE = "creator"
 
 ALL_MODULES = (
-    "trends",
+    "tiktok",
     "products",
     "inventory_system",
     "prediction_engine",
@@ -30,6 +30,9 @@ ALL_MODULES = (
 )
 
 COMMERCE_GATED_MODULES = frozenset({"products", "inventory_system"})
+
+# Legacy feature-flag alias: "trends" gates the same module as "tiktok".
+_MODULE_FLAG_ALIASES = {"tiktok": ("tiktok", "trends")}
 
 _SENSITIVE_MODULES = frozenset({"system_health", "raw_logs", "hidden_alerts"})
 
@@ -116,7 +119,8 @@ def resolveVisibleModules(
 
     visible: list[str] = []
     for module in ALL_MODULES:
-        if not flags.get(module, False):
+        flag_keys = _MODULE_FLAG_ALIASES.get(module, (module,))
+        if not any(flags.get(key, False) for key in flag_keys):
             continue
         if module in COMMERCE_GATED_MODULES and not commerce_enabled:
             continue
@@ -177,7 +181,7 @@ def empty_live_state_contract() -> dict[str, Any]:
         "access": {
             "role": DEFAULT_ROLE,
             "admin_override": False,
-            "visible_modules": [],
+            "visible_modules": ["tiktok", "prediction_engine", "analytics"],
             "commerce_access": False,
         },
     }
@@ -258,7 +262,7 @@ def filterLiveStateForAccess(state: dict[str, Any], access: dict[str, Any]) -> d
 
     visible = set(access_ctx.get("visible_modules") or [])
 
-    if "trends" not in visible:
+    if "tiktok" not in visible and "trends" not in visible:
         normalized["trends"] = _redact_list_content(normalized["trends"])
     if "products" not in visible:
         normalized["products"] = _redact_list_content(normalized["products"])
