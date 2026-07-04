@@ -1,19 +1,17 @@
 {
+  "rewrites": [
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/terms/", "destination": "/terms.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/privacy/", "destination": "/privacy.html" }
+  ],
   "functions": {
-    "api/chat/completions.js": {
-      "maxDuration": 60
-    },
-    "api/tiktok-live-state.js": {
-      "maxDuration": 30
-    },
-    "api/tiktok-insights.js": {
-      "maxDuration": 30
-    },
-    "api/tiktok-content-approval.js": {
-      "maxDuration": 15
-    },
-    "api/public-config.js": {
-      "maxDuration": 10
-    }
+    "api/chat/completions.js": { "maxDuration": 60 },
+    "api/tiktok-live-state.js": { "maxDuration": 30 },
+    "api/tiktok-insights.js": { "maxDuration": 30 },
+    "api/tiktok-content-approval.js": { "maxDuration": 15 },
+    "api/public-config.js": { "maxDuration": 10 },
+    "api/tiktok-auth.js": { "maxDuration": 10 },
+    "api/tiktok-callback.js": { "maxDuration": 30 }
   }
 }
