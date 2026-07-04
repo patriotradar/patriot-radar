@@ -2,6 +2,8 @@
 Live state assembly layer for TikTok SaaS frontend consumption.
 
 Consolidates backend module outputs into one deterministic UI-ready object.
+Core pipeline: trend → content → plan → insights.
+Commerce add-on gated by commerce_mode / features.commerce_mode.
 RBAC access block is appended read-only; does not alter core assembly logic.
 """
 
@@ -59,6 +61,20 @@ def _as_number(value: Any, default: float = 0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _resolve_commerce_mode(
+    commerce_mode: bool | None,
+    user_record: dict[str, Any] | None,
+    flags: dict[str, bool],
+) -> bool:
+    if commerce_mode is not None:
+        return bool(commerce_mode)
+    if user_record:
+        meta = user_record.get("user_metadata") or {}
+        if "commerce_mode" in meta:
+            return bool(meta["commerce_mode"])
+    return bool(flags.get("commerce_mode", False))
 
 
 def _safe_invoke(module_name: str, fn_name: str, account_id: str) -> dict[str, Any]:
@@ -171,10 +187,13 @@ def _derive_today_flow(
     products: list,
     trends: list,
     system_health: str,
+    commerce_mode: bool,
 ) -> dict[str, str]:
     """Map orchestrated primary action to today_flow status for the UI."""
+    core_step = "trend → content → plan → insights"
+    commerce_step = "trend → product → content → queue"
     today_flow = {
-        "step": "trend → product → content → queue",
+        "step": commerce_step if commerce_mode else core_step,
         "next_action": _as_string(primary_action.get("label")),
         "status": "unknown",
     }
@@ -215,9 +234,27 @@ def _derive_today_flow(
     return today_flow
 
 
+def _apply_commerce_layer(
+    account_id: str,
+    trends: list,
+    commerce_mode: bool,
+) -> dict[str, Any]:
+    if not commerce_mode:
+        return {"revenue_suggestions": []}
+    try:
+        from commerce import run_commerce_pipeline
+
+        return run_commerce_pipeline(account_id, trends)
+    except Exception as exc:
+        logger.warning("Commerce layer failed for %s (core unaffected): %s", account_id, exc)
+        return {"revenue_suggestions": []}
+
+
 def assembleLiveState(
     account_id: str,
     user_record: dict[str, Any] | None = None,
+    *,
+    commerce_mode: bool | None = None,
 ) -> dict[str, Any]:
     """
     Assemble the strict UI contract from all optional backend modules.
@@ -255,14 +292,14 @@ def assembleLiveState(
     raw_logs = _as_list(collected.get("system_health_monitor", {}).get("raw_logs"))
 
     flags = _load_feature_flags()
-    commerce_mode = bool(flags.get("commerce_mode", False))
+    commerce_mode = _resolve_commerce_mode(commerce_mode, user_record, flags)
     access = buildAccessContext(account_id, user_record, flags, commerce_mode)
     user_role = _as_string(access.get("role"), "creator")
     admin_override = bool(access.get("admin_override"))
 
     orchestration_input = {
         "trends": trends,
-        "products": products,
+        "products": products if commerce_mode else [],
         "inventory_prevention": inventory_prevention,
         "content_queue": content_queue,
         "performance": performance,
@@ -275,14 +312,18 @@ def assembleLiveState(
     primary_action = actions["primary_action"]
     secondary_actions = actions["secondary_actions"]
 
+    if not commerce_mode:
+        inventory_gaps = []
+
     today_flow = _derive_today_flow(
         primary_action,
         inventory_gaps=inventory_gaps,
         approvals=approvals,
         content_queue=content_queue,
-        products=products,
+        products=products if commerce_mode else [],
         trends=trends,
         system_health=system_health,
+        commerce_mode=commerce_mode,
     )
 
     alerts, hidden_alerts = _build_alerts(
@@ -294,7 +335,7 @@ def assembleLiveState(
 
     state["today_flow"] = today_flow
     state["trends"] = trends
-    state["products"] = products
+    state["products"] = products if commerce_mode else []
     state["inventory_gaps"] = inventory_gaps
     state["inventory_prevention"] = inventory_prevention
     state["content_queue"] = content_queue
@@ -312,4 +353,29 @@ def assembleLiveState(
     state["system_health"] = system_health
     state["access"] = access
 
-    return filterLiveStateForAccess(state, access)
+    commerce_result = _apply_commerce_layer(account_id, trends, commerce_mode)
+    if commerce_mode:
+        state["revenue_suggestions"] = _as_list(commerce_result.get("revenue_suggestions"))
+
+    result = filterLiveStateForAccess(state, access)
+    result["features"] = {"commerce_mode": commerce_mode}
+
+    if not commerce_mode:
+        result["today_flow"] = {
+            "step": "trend → content → plan → insights",
+            "next_action": "View content plan",
+            "status": result["today_flow"].get("status", "ready"),
+        }
+        result["products"] = []
+        result["inventory_gaps"] = []
+        result["primary_action"] = {
+            "label": "View content plan",
+            "action": "view_plan",
+            "context_id": "plan",
+            "priority": "medium",
+            "reason": "Commerce mode off — focus on core content workflow.",
+        }
+    elif "revenue_suggestions" in state:
+        result["revenue_suggestions"] = state["revenue_suggestions"]
+
+    return result

@@ -11,9 +11,25 @@
   var _cache = null;
   var _cacheTs = 0;
 
+  function resolveCommerceMode(state) {
+    if (state && state.features && typeof state.features.commerce_mode === "boolean") {
+      return state.features.commerce_mode;
+    }
+    if (state && typeof state.commerce_mode === "boolean") {
+      return state.commerce_mode;
+    }
+    return !!(global.CommerceMode && global.CommerceMode.isCommerceMode());
+  }
+
   function emptyContract() {
+    var commerceMode = !!(global.CommerceMode && global.CommerceMode.isCommerceMode());
     return {
-      today_flow: { step: "trend → product → content → queue", next_action: "unknown", status: "unknown" },
+      features: { commerce_mode: commerceMode },
+      today_flow: {
+        step: commerceMode ? "trend → product → content → queue" : "trend → content → plan → insights",
+        next_action: "unknown",
+        status: "unknown",
+      },
       trends: [],
       products: [],
       inventory_gaps: [],
@@ -67,6 +83,9 @@
       state.system_health != null && String(state.system_health).trim()
         ? String(state.system_health).trim()
         : base.system_health;
+    normalized.features = {
+      commerce_mode: resolveCommerceMode(state),
+    };
 
     return normalized;
   }
@@ -271,6 +290,14 @@
       global.TiktokAccessControl.applyModuleVisibility(state);
     }
 
+    if (resolveCommerceMode(state) && global.CommerceDashboard && typeof global.CommerceDashboard.update === "function") {
+      global.CommerceDashboard.update({
+        products: state.products || [],
+        inventory_gaps: state.inventory_gaps || [],
+        revenue_suggestions: state.revenue_suggestions || [],
+      });
+    }
+
     return state;
   }
 
@@ -299,4 +326,5 @@
       return _cache ? normalizeLiveStateShape(_cache) : emptyContract();
     },
   };
+  global.TiktokLiveStateClient = global.TiktokLiveState;
 })(typeof window !== "undefined" ? window : global);
