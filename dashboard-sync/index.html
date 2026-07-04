@@ -14,6 +14,7 @@
 <script src="niche-comment-intelligence.js"></script>
 <script src="niche-comment-virality-prediction.js"></script>
 <script src="virality-intelligence-dashboard.js"></script>
+<script src="tiktok-shop-inventory-gate.js"></script>
 
 <style>
 :root{
@@ -1358,6 +1359,7 @@ input[type=range]::-webkit-slider-thumb{
     </div>
 
     <div id="tab-plan" class="tab-content active">
+      <div id="tiktokShopInventoryGate"></div>
       <div id="dailyPlan"></div>
       <div id="coursePromoPlanner"></div>
       <div id="contentFunnel"></div>
@@ -10566,6 +10568,9 @@ function renderAllSections(results, emerging, productTrends, creatorInsights) {
     document.getElementById("platformOptimizer").innerHTML = renderPlatformOptimizer(results);
     renderNotifications();
     renderDailyRecs(results);
+    if (window.TikTokShopInventoryGate && typeof TikTokShopInventoryGate.processTrendResults === "function") {
+      TikTokShopInventoryGate.processTrendResults(results);
+    }
     renderPersonalIntelligence(results);
     renderWeeklyScorecard();
     aiContentAngles(results);
