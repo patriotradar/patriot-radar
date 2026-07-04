@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     if (!niche) {
       return NextResponse.json(
-        { success: false, error: "niche is required" },
+        { success: false, step: "invalid_input", error: "niche is required" },
         { status: 400 },
       );
     }
@@ -26,6 +26,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[run-scan]", message);
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, step: "search_failed", error: message },
+      { status: 500 },
+    );
   }
 }
