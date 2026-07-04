@@ -1,0 +1,11 @@
+{
+  "trends": true,
+  "products": true,
+  "inventory_system": false,
+  "prediction_engine": true,
+  "analytics": true,
+  "system_health": false,
+  "raw_logs": false,
+  "hidden_alerts": false,
+  "commerce_mode": false
+}
