@@ -55,20 +55,37 @@ jobs:
               "supabase_error": store.get("error"),
           }
           print("Validation summary:", json.dumps(summary, indent=2))
+          QUOTA_PHRASES = ("monthly usage hard limit", "hard limit exceeded", "usage limit exceeded")
+          def is_quota_error(msg):
+              return any(p in (msg or "").lower() for p in QUOTA_PHRASES)
+
+          apify_error = summary.get("apify_raw_error") or ""
           errors = []
+          warnings = []
           if not summary.get("success"):
-              errors.append("ingest returned success=false")
+              if is_quota_error(apify_error):
+                  warnings.append(f"Apify monthly usage limit reached — ingest skipped: {apify_error}")
+              else:
+                  errors.append("ingest returned success=false")
           if summary.get("apify_token_present") and summary.get("data_source") == "apify" and not summary.get("apify_fetch_succeeded"):
-              errors.append(f"Apify fetch failed: {summary.get('apify_raw_error')}")
-          if summary.get("comment_count", 0) == 0:
+              if is_quota_error(apify_error):
+                  warnings.append(f"Apify quota exceeded: {apify_error}")
+              else:
+                  errors.append(f"Apify fetch failed: {apify_error}")
+          if summary.get("comment_count", 0) == 0 and not is_quota_error(apify_error):
               errors.append("zero comments ingested")
           if summary.get("supabase_rows_stored", 0) == 0 and summary.get("comment_count", 0) > 0:
               errors.append(f"zero Supabase rows stored: {summary.get('supabase_error')}")
+          for w in warnings:
+              print(f"::warning::{w}")
           if errors:
               for e in errors:
                   print(f"::error::{e}")
               sys.exit(1)
-          print("Niche comment ingest validation passed.")
+          if warnings:
+              print("Ingest skipped due to Apify quota limit — no action needed.")
+          else:
+              print("Niche comment ingest validation passed.")
           PYEOF
 
       - name: Diagnose missing secrets
