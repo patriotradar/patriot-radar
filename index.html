@@ -7,6 +7,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/api/public-config.js" onerror="console.warn('[TrendFeed] /api/public-config.js unavailable — using inline Supabase config')"></script>
+<script src="dashboard-sync/tiktok-live-state-client.js"></script>
 
 <style>
 body{background:#07111f;color:white;font-family:Arial,sans-serif;padding:20px;margin:0}
@@ -462,7 +463,7 @@ function describeFeedError(error) {
 }
 
 async function refreshTrendIntelligenceFeed() {
-  feedDebug("fetch start", { table: FEED_TABLE, url: SUPABASE_URL, loggedIn: !!currentUser });
+  feedDebug("fetch start", { source: "/api/tiktok-live-state", loggedIn: !!currentUser });
 
   if (!currentUser) {
     lastFeedFetchStatus = { state: "auth_required", message: "Login required to load trends", rowCount: 0, error: null };
@@ -471,29 +472,26 @@ async function refreshTrendIntelligenceFeed() {
     return;
   }
 
-  document.getElementById("feedLastUpdated").innerText = "Loading trend feed from Supabase...";
+  document.getElementById("feedLastUpdated").innerText = "Loading trend feed from live state...";
 
   try {
-    const { data, error, status, statusText } = await supabaseClient
-      .from(FEED_TABLE)
-      .select("*")
-      .eq("source", "tiktok")
-      .order("timestamp", { ascending: false })
-      .limit(200);
+    const liveState = window.TikTokLiveState
+      ? await window.TikTokLiveState.fetch("general")
+      : { trend_intelligence_feed: [] };
+    const feed = (liveState && liveState.trend_intelligence_feed) || [];
 
-    feedDebug("Supabase response status", status + " " + statusText);
-    feedDebug("Supabase response length", data ? data.length : 0);
-    if (data && data.length) feedDebug("Supabase first row", data[0]);
+    feedDebug("live state feed length", feed.length);
+    if (feed.length) feedDebug("live state first row", feed[0]);
 
-    if (error) {
-      const userMessage = describeFeedError(error);
-      lastFeedFetchStatus = { state: "error", message: userMessage, rowCount: 0, error: error };
+    if (liveState && liveState.errors && liveState.errors.length && !feed.length) {
+      const userMessage = describeFeedError({ message: liveState.errors[0] || "No data" });
+      lastFeedFetchStatus = { state: "error", message: userMessage, rowCount: 0, error: liveState.errors[0] };
       trendFeedCache = [];
       renderEmptyFeedSections(userMessage);
       return;
     }
 
-    trendFeedCache = data || [];
+    trendFeedCache = feed;
     lastFeedFetchStatus = {
       state: trendFeedCache.length ? "ok" : "empty",
       message: trendFeedCache.length ? "ok" : NO_TRENDS_MSG,

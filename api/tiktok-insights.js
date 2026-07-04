@@ -429,3 +429,6 @@ module.exports = function handler(req, res) {
     return res.status(200).json({ ...emptyResponse(), errors: [String(err?.message || err)], success: false });
   }
 };
+
+module.exports.runPipeline = runPipeline;
+module.exports.emptyResponse = emptyResponse;

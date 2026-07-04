@@ -632,6 +632,20 @@
     return data;
   }
 
+  function renderFromLiveState(liveState) {
+    var data = {
+      videos: (liveState && liveState.videos) || [],
+      insights: (liveState && liveState.insights) || [],
+      recommended_posts: (liveState && liveState.recommended_posts) || [],
+      trend_scores: (liveState && liveState.trend_scores) || [],
+      trending_products: (liveState && liveState.trending_products) || [],
+      errors: (liveState && liveState.errors) || [],
+      success: liveState ? liveState.success !== false : true,
+    };
+    renderResults(data);
+    return data;
+  }
+
   window.TikTokInsightsHardening = {
     validateVideos: validateVideos,
     cleanComments: cleanComments,
@@ -642,7 +656,8 @@
     generateTrendingProducts: generateTrendingProducts,
     runHardenedPipeline: runHardenedPipeline,
     emptyPipelineResponse: emptyPipelineResponse,
-    refresh: refreshTiktokInsightsHardening
+    refresh: refreshTiktokInsightsHardening,
+    renderFromLiveState: renderFromLiveState
   };
 
   function hookNicheRefresh() {

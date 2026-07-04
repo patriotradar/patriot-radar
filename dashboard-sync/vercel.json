@@ -8,6 +8,9 @@
     },
     "api/tiktok-insights.js": {
       "maxDuration": 30
+    },
+    "api/tiktok-live-state.js": {
+      "maxDuration": 30
     }
   }
 }

@@ -522,13 +522,39 @@
 
   function seedDefaultCatalog() {
     if (getCatalog().length > 0) return;
-    saveCatalog([
-      { product_id: "tts_10001", name: "British Army history books", category: "military" },
-      { product_id: "tts_10002", name: "Union Jack flags and patriotic decor", category: "flags" },
-      { product_id: "tts_10003", name: "Royal family collectibles", category: "royal" },
-      { product_id: "tts_10004", name: "British history books", category: "history" },
-      { product_id: "tts_10005", name: "Proudly British merchandise", category: "general" }
-    ]);
+    var catalog = [];
+    if (window.TikTokLiveState && window.TikTokLiveState.getCache) {
+      var cached = window.TikTokLiveState.getCache();
+      if (cached && cached.shop_catalog && cached.shop_catalog.length) {
+        catalog = cached.shop_catalog;
+      }
+    }
+    if (!catalog.length) {
+      catalog = [
+        { product_id: "tts_10001", name: "British Army history books", category: "military" },
+        { product_id: "tts_10002", name: "Union Jack flags and patriotic decor", category: "flags" },
+        { product_id: "tts_10003", name: "Royal family collectibles", category: "royal" },
+        { product_id: "tts_10004", name: "British history books", category: "history" },
+        { product_id: "tts_10005", name: "Proudly British merchandise", category: "general" }
+      ];
+    }
+    saveCatalog(catalog);
+  }
+
+  async function seedCatalogFromLiveState() {
+    if (getCatalog().length > 0) return;
+    if (!window.TikTokLiveState) return;
+    try {
+      var niche = (typeof USER_NICHE !== "undefined" && USER_NICHE) ? USER_NICHE : "general";
+      var liveState = await window.TikTokLiveState.fetch(niche);
+      if (liveState && liveState.shop_catalog && liveState.shop_catalog.length) {
+        saveCatalog(liveState.shop_catalog);
+      } else {
+        seedDefaultCatalog();
+      }
+    } catch (e) {
+      seedDefaultCatalog();
+    }
   }
 
   function handleAddToShowcase(contentId) {
@@ -577,7 +603,7 @@
   }
 
   function init() {
-    seedDefaultCatalog();
+    seedCatalogFromLiveState();
     var el = document.getElementById(MOUNT_ID);
     if (!el) return;
     var paused = getPausedAttachments().filter(function (p) {
