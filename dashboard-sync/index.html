@@ -15,6 +15,9 @@
 <script src="tiktok-insights-hardening.js"></script>
 <script src="niche-comment-virality-prediction.js"></script>
 <script src="virality-intelligence-dashboard.js"></script>
+<script src="tiktok-shop-inventory-gate.js"></script>
+<script src="tiktok-content-mode-resolver.js"></script>
+<script src="tiktok-inventory-predictor.js"></script>
 
 <style>
 :root{
@@ -1359,6 +1362,8 @@ input[type=range]::-webkit-slider-thumb{
     </div>
 
     <div id="tab-plan" class="tab-content active">
+      <div id="tiktokInventoryPredictor"></div>
+      <div id="tiktokShopInventoryGate"></div>
       <div id="dailyPlan"></div>
       <div id="coursePromoPlanner"></div>
       <div id="contentFunnel"></div>
@@ -10552,6 +10557,11 @@ function renderAllSections(results, emerging, productTrends, creatorInsights) {
   saveTrendSnapshot(results);
 
   if (results.length > 0) {
+    if (window.TikTokInventoryPredictor && typeof window.TikTokInventoryPredictor.processTrendResults === "function") {
+      window.TikTokInventoryPredictor.processTrendResults(results, emerging, productTrends);
+    } else if (window.TikTokShopInventoryGate && typeof window.TikTokShopInventoryGate.processTrendResults === "function") {
+      window.TikTokShopInventoryGate.processTrendResults(results);
+    }
     document.getElementById("dailyPlan").innerHTML = renderDailyPlan(results, emerging);
     document.getElementById("coursePromoPlanner").innerHTML = renderCoursePromoPlanner();
     document.getElementById("contentFunnel").innerHTML = renderContentFunnel();
