@@ -243,7 +243,7 @@ class TestLiveStateAssembler(unittest.TestCase):
         from tiktok_live_state_assembler import assembleLiveState
 
         state = assembleLiveState("test-acct", {"user_metadata": {"role": "creator"}})
-        self.assertEqual(set(state.keys()), rbac.LIVE_STATE_SCHEMA_KEYS)
+        self.assertEqual(set(state.keys()), rbac.LIVE_STATE_SCHEMA_KEYS | {"features"})
         self.assertIn("access", state)
         self.assertEqual(state["access"]["role"], "creator")
         self.assertFalse(state["access"]["admin_override"])
