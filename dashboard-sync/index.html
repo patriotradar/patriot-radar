@@ -14,6 +14,7 @@
 <script src="niche-comment-intelligence.js"></script>
 <script src="niche-comment-virality-prediction.js"></script>
 <script src="virality-intelligence-dashboard.js"></script>
+<script src="tiktok-orchestration-dashboard.js"></script>
 
 <style>
 :root{
@@ -1375,6 +1376,7 @@ input[type=range]::-webkit-slider-thumb{
       <div id="nicheCommentIntelligence"></div>
       <div id="nicheCommentViralityPrediction"></div>
       <div id="viralityIntelligenceExtension"></div>
+      <div id="tiktokOrchestrationDashboard"></div>
     </div>
 
     <div id="tab-discovery" class="tab-content">
@@ -9022,7 +9024,7 @@ function switchTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   localStorage.setItem('patriot_active_tab', tab);
   trackEvent("tab_switch", {tab: tab});
-  if (tab === "trends") { aiTrendInsights(); refreshTiktokTrendIntelligenceFeed(); }
+  if (tab === "trends") { aiTrendInsights(); refreshTiktokTrendIntelligenceFeed(); if (typeof refreshTiktokOrchestrationDashboard === "function") refreshTiktokOrchestrationDashboard(); }
   if (tab === "audit") renderAuditTab();
   if (tab === "aichat" && !document.getElementById("aiChatMessages").innerHTML) {
     var welcomeHtml = '<div class="ai-chat-msg ai-chat-ai">';
@@ -11545,6 +11547,7 @@ async function showDashboard(sessionUser) {
   loadPerfFromSupabase();
   loadLiveStats();
   refreshTiktokTrendIntelligenceFeed();
+  if (typeof initTiktokOrchestrationDashboard === "function") initTiktokOrchestrationDashboard();
   loadReferralCard();
   if (!localStorage.getItem("cr_tutorial_done")) {
     setTimeout(function() { startTutorial(); }, 800);
