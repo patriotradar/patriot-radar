@@ -5,17 +5,29 @@
 (function (global) {
   "use strict";
 
+  var DEFAULT_VISIBLE_MODULES = ["trends", "tiktok", "prediction_engine", "analytics"];
+
+  // Sidebar tab id -> RBAC module id (Google Trends and TikTok are separate)
+  var TAB_MODULE_MAP = {
+    trends: "trends",
+    tiktok: "tiktok",
+    mystats: "analytics",
+  };
+
   var MODULE_DOM_MAP = {
-    tiktok: [
-      '[data-tab="trends"]',
-      "#tab-trends",
-      "#intelligenceFeed",
-      "#tiktokTrendIntelligence",
-      "#liveFeed",
+    trends: [
+      "#scoringGuide",
       "#topOpportunities",
       "#aiTrendInsights",
       "#themeAnalysis",
-      "#scoringGuide",
+      "#intelligenceFeed",
+    ],
+    tiktok: [
+      "#tiktokLiveStateDashboard",
+      "#tiktokTrendIntelligence",
+      "#tiktokInsightsHardening",
+      "#tiktokInventoryPredictor",
+      "#tiktokShopInventoryGate",
     ],
     products: ["#primaryTarget", "#contentFunnel"],
     inventory_system: ["#inventorySystemPanel"],
@@ -24,7 +36,7 @@
       "#viralityIntelligenceExtension",
       "#nicheCommentIntelligence",
     ],
-    analytics: ["#tab-mystats", '[data-tab="mystats"]'],
+    analytics: ["#personalIntelligence", "#weeklyScorecard", "#streakDetails", "#audienceInsights"],
     system_health: ["#rbacSystemHealthPanel"],
     raw_logs: ["#rbacRawLogsPanel"],
     hidden_alerts: ["#rbacHiddenAlertsPanel"],
@@ -33,22 +45,41 @@
   var _access = {
     role: "creator",
     admin_override: false,
-    visible_modules: ["tiktok", "prediction_engine", "analytics"],
+    visible_modules: DEFAULT_VISIBLE_MODULES.slice(),
     commerce_access: false,
   };
 
   function normalizeVisibleModules(modules, adminOverride) {
-    var out = Array.isArray(modules) ? modules.slice() : [];
-    if (out.indexOf("trends") !== -1 && out.indexOf("tiktok") === -1) out.push("tiktok");
-    if (adminOverride) {
-      for (var mod in MODULE_DOM_MAP) {
-        if (out.indexOf(mod) === -1) out.push(mod);
+    var out = [];
+    var seen = {};
+    var list = Array.isArray(modules) ? modules : [];
+    for (var i = 0; i < list.length; i++) {
+      var mod = String(list[i]).trim();
+      if (mod && !seen[mod]) {
+        seen[mod] = true;
+        out.push(mod);
       }
     }
-    if (!out.length) {
-      out = ["tiktok", "prediction_engine", "analytics"];
+    if (adminOverride) {
+      for (var key in MODULE_DOM_MAP) {
+        if (!seen[key]) {
+          seen[key] = true;
+          out.push(key);
+        }
+      }
     }
+    if (!out.length) out = DEFAULT_VISIBLE_MODULES.slice();
     return out;
+  }
+
+  function buildVisibleSet() {
+    var visibleSet = {};
+    var modules = _access.visible_modules || [];
+    for (var i = 0; i < modules.length; i++) visibleSet[modules[i]] = true;
+    if (_access.admin_override) {
+      for (var mod in MODULE_DOM_MAP) visibleSet[mod] = true;
+    }
+    return visibleSet;
   }
 
   function setAccess(access) {
@@ -77,8 +108,7 @@
 
   function isModuleVisible(module) {
     if (_access.admin_override) return true;
-    if (module === "tiktok" && _access.visible_modules.indexOf("trends") !== -1) return true;
-    return _access.visible_modules.indexOf(module) !== -1;
+    return (_access.visible_modules || []).indexOf(module) !== -1;
   }
 
   function canAccessCommerce() {
@@ -98,6 +128,8 @@
       nodes[i].classList.remove("rbac-hidden");
       nodes[i].classList.remove("rbac-restricted");
       nodes[i].removeAttribute("data-rbac-restricted");
+      nodes[i].removeAttribute("aria-hidden");
+      nodes[i].removeAttribute("hidden");
     }
   }
 
@@ -106,6 +138,8 @@
     for (var i = 0; i < nodes.length; i++) {
       nodes[i].style.display = "none";
       nodes[i].classList.add("rbac-hidden");
+      nodes[i].setAttribute("aria-hidden", "true");
+      nodes[i].setAttribute("hidden", "hidden");
     }
   }
 
@@ -116,12 +150,25 @@
       nodes[i].classList.remove("rbac-hidden");
       nodes[i].classList.add("rbac-restricted");
       nodes[i].setAttribute("data-rbac-restricted", "true");
+      nodes[i].removeAttribute("hidden");
+      nodes[i].removeAttribute("aria-hidden");
+    }
+  }
+
+  function applyTabNavigationVisibility(visibleSet) {
+    for (var tabId in TAB_MODULE_MAP) {
+      if (!Object.prototype.hasOwnProperty.call(TAB_MODULE_MAP, tabId)) continue;
+      var moduleId = TAB_MODULE_MAP[tabId];
+      var show = Boolean(visibleSet[moduleId]);
+      var selector = '[data-tab="' + tabId + '"]';
+      if (show) showElement(selector);
+      else hideElement(selector);
     }
   }
 
   function ensureAdminPanels() {
-    var trendsTab = document.getElementById("tab-trends");
-    if (!trendsTab) return;
+    var tiktokTab = document.getElementById("tab-tiktok");
+    if (!tiktokTab) return;
 
     if (!document.getElementById("rbacSystemHealthPanel")) {
       var health = document.createElement("div");
@@ -131,7 +178,7 @@
       health.innerHTML =
         '<h4 style="margin:0 0 8px;font-size:13px;color:var(--amber)">System Health (Admin)</h4>' +
         '<div id="rbacSystemHealthContent" style="font-size:11px;color:var(--muted)">Loading...</div>';
-      trendsTab.appendChild(health);
+      tiktokTab.appendChild(health);
     }
 
     if (!document.getElementById("rbacRawLogsPanel")) {
@@ -142,7 +189,7 @@
       logs.innerHTML =
         '<h4 style="margin:0 0 8px;font-size:13px;color:var(--amber)">Raw Logs (Admin)</h4>' +
         '<pre id="rbacRawLogsContent" style="font-size:10px;max-height:160px;overflow:auto;margin:0;color:var(--muted)"></pre>';
-      trendsTab.appendChild(logs);
+      tiktokTab.appendChild(logs);
     }
 
     if (!document.getElementById("rbacHiddenAlertsPanel")) {
@@ -153,7 +200,7 @@
       hidden.innerHTML =
         '<h4 style="margin:0 0 8px;font-size:13px;color:var(--red,#ff4444)">Hidden Alerts (Admin)</h4>' +
         '<div id="rbacHiddenAlertsContent" style="font-size:11px;color:var(--muted)"></div>';
-      trendsTab.appendChild(hidden);
+      tiktokTab.appendChild(hidden);
     }
 
     if (!document.getElementById("inventorySystemPanel")) {
@@ -164,7 +211,7 @@
       inv.innerHTML =
         '<h4 style="margin:0 0 8px;font-size:13px">Inventory System</h4>' +
         '<div id="inventorySystemContent" style="font-size:11px;color:var(--muted)">No inventory data</div>';
-      trendsTab.appendChild(inv);
+      tiktokTab.appendChild(inv);
     }
   }
 
@@ -212,30 +259,18 @@
 
   function applyModuleVisibility(liveState) {
     ensureAdminPanels();
-    var visibleSet = {};
-    var modules = _access.visible_modules || [];
-    for (var i = 0; i < modules.length; i++) visibleSet[modules[i]] = true;
-    // Legacy alias: server may still send "trends" for the TikTok dashboard module.
-    if (visibleSet.trends) visibleSet.tiktok = true;
+    var visibleSet = buildVisibleSet();
 
-    if (_access.admin_override) {
-      for (var mod in MODULE_DOM_MAP) visibleSet[mod] = true;
-    }
+    applyTabNavigationVisibility(visibleSet);
 
     for (var moduleName in MODULE_DOM_MAP) {
       var selectors = MODULE_DOM_MAP[moduleName];
       var show = Boolean(visibleSet[moduleName]);
       var adminOnly = Boolean(ADMIN_ONLY_MODULES[moduleName]);
       for (var j = 0; j < selectors.length; j++) {
-        if (show) {
-          showElement(selectors[j]);
-        } else if (isTabSelector(selectors[j])) {
-          hideElement(selectors[j]);
-        } else if (adminOnly) {
-          hideElement(selectors[j]);
-        } else {
-          restrictElement(selectors[j]);
-        }
+        if (show) showElement(selectors[j]);
+        else if (adminOnly) hideElement(selectors[j]);
+        else restrictElement(selectors[j]);
       }
     }
 
@@ -284,20 +319,36 @@
     setAccess({
       role: "creator",
       admin_override: false,
-      visible_modules: ["tiktok", "prediction_engine", "analytics"],
+      visible_modules: DEFAULT_VISIBLE_MODULES.slice(),
       commerce_access: false,
     });
     applyModuleVisibility(null);
     return null;
   }
 
+  function bootModuleVisibility() {
+    applyModuleVisibility(global.TIKTOK_LIVE_STATE || null);
+  }
+
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", bootModuleVisibility);
+    } else {
+      bootModuleVisibility();
+    }
+  }
+
   global.TiktokAccessControl = {
+    TAB_MODULE_MAP: TAB_MODULE_MAP,
+    MODULE_DOM_MAP: MODULE_DOM_MAP,
     setAccess: setAccess,
     getAccess: getAccess,
     isModuleVisible: isModuleVisible,
     canAccessCommerce: canAccessCommerce,
     applyModuleVisibility: applyModuleVisibility,
+    applyTabNavigationVisibility: applyTabNavigationVisibility,
     initFromSession: initFromSession,
     renderAdminDebugPanels: renderAdminDebugPanels,
+    normalizeVisibleModules: normalizeVisibleModules,
   };
 })(typeof window !== "undefined" ? window : global);

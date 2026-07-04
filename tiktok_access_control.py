@@ -19,6 +19,7 @@ VALID_ROLES = frozenset({"admin", "creator", "viewer", "test"})
 DEFAULT_ROLE = "creator"
 
 ALL_MODULES = (
+    "trends",
     "tiktok",
     "products",
     "inventory_system",
@@ -31,8 +32,7 @@ ALL_MODULES = (
 
 COMMERCE_GATED_MODULES = frozenset({"products", "inventory_system"})
 
-# Legacy feature-flag alias: "trends" gates the same module as "tiktok".
-_MODULE_FLAG_ALIASES = {"tiktok": ("tiktok", "trends")}
+_DEFAULT_VISIBLE_MODULES = ("trends", "tiktok", "prediction_engine", "analytics")
 
 _SENSITIVE_MODULES = frozenset({"system_health", "raw_logs", "hidden_alerts"})
 
@@ -95,6 +95,32 @@ def getAdminOverride(user_role: str) -> bool:
     return user_role == "admin"
 
 
+def normalizeVisibleModules(
+    modules: list[str] | None,
+    admin_override: bool = False,
+) -> list[str]:
+    """Deduplicate visible module IDs without merging distinct modules."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for raw in modules or []:
+        mod = str(raw).strip()
+        if mod and mod not in seen:
+            seen.add(mod)
+            out.append(mod)
+    if admin_override:
+        for mod in ALL_MODULES:
+            if mod not in seen:
+                out.append(mod)
+    if not out:
+        out = list(_DEFAULT_VISIBLE_MODULES)
+    return out
+
+
+def moduleIsVisible(visible_modules: list[str] | set[str] | None, module: str) -> bool:
+    visible = {str(item) for item in (visible_modules or [])}
+    return module in visible
+
+
 def resolveVisibleModules(
     user_role: str,
     feature_flags: dict[str, bool] | None = None,
@@ -115,17 +141,16 @@ def resolveVisibleModules(
         commerce_enabled = bool(commerce_mode)
 
     if getAdminOverride(user_role):
-        return list(ALL_MODULES)
+        return normalizeVisibleModules(list(ALL_MODULES), admin_override=True)
 
     visible: list[str] = []
     for module in ALL_MODULES:
-        flag_keys = _MODULE_FLAG_ALIASES.get(module, (module,))
-        if not any(flags.get(key, False) for key in flag_keys):
+        if not flags.get(module, False):
             continue
         if module in COMMERCE_GATED_MODULES and not commerce_enabled:
             continue
         visible.append(module)
-    return visible
+    return normalizeVisibleModules(visible)
 
 
 def buildAccessContext(
@@ -136,7 +161,10 @@ def buildAccessContext(
 ) -> dict[str, Any]:
     user_role = getUserRole(account_id, user_record)
     admin_override = getAdminOverride(user_role)
-    visible_modules = resolveVisibleModules(user_role, feature_flags, commerce_mode)
+    visible_modules = normalizeVisibleModules(
+        resolveVisibleModules(user_role, feature_flags, commerce_mode),
+        admin_override=admin_override,
+    )
     flags = dict(_load_feature_flags())
     if feature_flags:
         flags.update({str(k): bool(v) for k, v in feature_flags.items()})
@@ -181,7 +209,7 @@ def empty_live_state_contract() -> dict[str, Any]:
         "access": {
             "role": DEFAULT_ROLE,
             "admin_override": False,
-            "visible_modules": ["tiktok", "prediction_engine", "analytics"],
+            "visible_modules": list(_DEFAULT_VISIBLE_MODULES),
             "commerce_access": False,
         },
     }
@@ -255,31 +283,40 @@ def filterLiveStateForAccess(state: dict[str, Any], access: dict[str, Any]) -> d
     sentinel strings (restricted/hidden) instead of sensitive content.
     """
     access_ctx = _as_dict(access)
+    access_ctx["visible_modules"] = normalizeVisibleModules(
+        access_ctx.get("visible_modules"),
+        admin_override=bool(access_ctx.get("admin_override")),
+    )
     normalized = normalize_live_state_shape(state, access_ctx)
+    normalized["access"] = {
+        **normalized.get("access", {}),
+        **access_ctx,
+        "visible_modules": access_ctx["visible_modules"],
+    }
 
     if access_ctx.get("admin_override"):
         return normalized
 
-    visible = set(access_ctx.get("visible_modules") or [])
+    visible = access_ctx["visible_modules"]
 
-    if "tiktok" not in visible and "trends" not in visible:
+    if not moduleIsVisible(visible, "tiktok"):
         normalized["trends"] = _redact_list_content(normalized["trends"])
-    if "products" not in visible:
+    if not moduleIsVisible(visible, "products"):
         normalized["products"] = _redact_list_content(normalized["products"])
-    if "inventory_system" not in visible:
+    if not moduleIsVisible(visible, "inventory_system"):
         normalized["inventory_gaps"] = _redact_list_content(normalized["inventory_gaps"])
         normalized["inventory_prevention"] = _redact_list_content(normalized["inventory_prevention"])
-    if "prediction_engine" not in visible:
+    if not moduleIsVisible(visible, "prediction_engine"):
         normalized["prediction"] = _redact_dict_content(normalized["prediction"])
-    if "analytics" not in visible:
+    if not moduleIsVisible(visible, "analytics"):
         normalized["performance"] = _redact_dict_content(normalized["performance"])
         normalized["content_queue"] = _redact_list_content(normalized["content_queue"])
         normalized["approvals"] = _redact_list_content(normalized["approvals"])
-    if "system_health" not in visible:
+    if not moduleIsVisible(visible, "system_health"):
         normalized["system_health"] = "restricted"
-    if "raw_logs" not in visible:
+    if not moduleIsVisible(visible, "raw_logs"):
         normalized["raw_logs"] = _redact_list_content(normalized["raw_logs"])
-    if "hidden_alerts" not in visible:
+    if not moduleIsVisible(visible, "hidden_alerts"):
         normalized["hidden_alerts"] = _redact_list_content(normalized["hidden_alerts"])
         normalized["alerts"] = [
             a for a in normalized["alerts"]
