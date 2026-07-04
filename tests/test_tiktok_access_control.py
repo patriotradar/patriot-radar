@@ -96,7 +96,7 @@ class TestAccessContext(unittest.TestCase):
 
 
 class TestFilterLiveState(unittest.TestCase):
-    def test_non_admin_strips_sensitive_fields(self):
+    def test_non_admin_redacts_content_preserves_keys(self):
         state = {
             "system_health": "failing",
             "raw_logs": [{"line": "secret"}],
@@ -104,23 +104,85 @@ class TestFilterLiveState(unittest.TestCase):
             "alerts": [{"level": "hidden", "message": "x"}, {"level": "warning", "message": "y"}],
             "products": [{"name": "p1"}],
             "inventory_gaps": [{"product_name": "g1"}],
+            "inventory_prevention": [{"product_name": "p2"}],
+            "trends": [{"summary": "t1"}],
+            "content_queue": [{"caption": "c1"}],
+            "approvals": [{"caption": "a1"}],
             "performance": {"total_views": 100},
+            "prediction": {"score": 0.9},
         }
         access = {"admin_override": False, "visible_modules": ["trends"]}
         filtered = rbac.filterLiveStateForAccess(state, access)
+
+        self.assertEqual(set(filtered.keys()), rbac.LIVE_STATE_SCHEMA_KEYS)
         self.assertEqual(filtered["system_health"], "restricted")
         self.assertEqual(filtered["raw_logs"], [])
         self.assertEqual(filtered["hidden_alerts"], [])
         self.assertEqual(len(filtered["alerts"]), 1)
         self.assertEqual(filtered["products"], [])
+        self.assertEqual(filtered["inventory_gaps"], [])
+        self.assertEqual(filtered["inventory_prevention"], [])
         self.assertEqual(filtered["performance"], {})
+        self.assertEqual(filtered["prediction"], {})
+        self.assertEqual(filtered["content_queue"], [])
+        self.assertEqual(filtered["approvals"], [])
+        self.assertEqual(len(filtered["trends"]), 1)
 
     def test_admin_keeps_all_fields(self):
         state = {"system_health": "failing", "raw_logs": [{"line": "secret"}]}
         access = {"admin_override": True, "visible_modules": list(rbac.ALL_MODULES)}
         filtered = rbac.filterLiveStateForAccess(state, access)
+        self.assertEqual(set(filtered.keys()), rbac.LIVE_STATE_SCHEMA_KEYS)
         self.assertEqual(filtered["system_health"], "failing")
         self.assertEqual(len(filtered["raw_logs"]), 1)
+
+    def test_invalid_state_returns_full_schema(self):
+        access = {"role": "creator", "admin_override": False, "visible_modules": ["trends"]}
+        filtered = rbac.filterLiveStateForAccess(None, access)
+        self.assertEqual(set(filtered.keys()), rbac.LIVE_STATE_SCHEMA_KEYS)
+        self.assertEqual(filtered["trends"], [])
+        self.assertEqual(filtered["access"]["role"], "creator")
+
+    def test_same_schema_keys_for_all_roles(self):
+        full_state = {
+            "today_flow": {"step": "x", "next_action": "y", "status": "z"},
+            "trends": [{"summary": "t"}],
+            "products": [{"name": "p"}],
+            "inventory_gaps": [{}],
+            "inventory_prevention": [{}],
+            "content_queue": [{}],
+            "approvals": [{}],
+            "performance": {"views": 1},
+            "prediction": {"score": 1},
+            "alerts": [{"level": "warning", "message": "m"}],
+            "hidden_alerts": [{"level": "hidden", "message": "h"}],
+            "raw_logs": [{"line": "l"}],
+            "primary_action": {"label": "a", "action": "b", "context_id": "c"},
+            "system_health": "healthy",
+        }
+        admin = rbac.filterLiveStateForAccess(
+            full_state,
+            {"admin_override": True, "visible_modules": list(rbac.ALL_MODULES), "role": "admin"},
+        )
+        creator = rbac.filterLiveStateForAccess(
+            full_state,
+            {"admin_override": False, "visible_modules": ["trends"], "role": "creator"},
+        )
+        self.assertEqual(set(admin.keys()), set(creator.keys()))
+        self.assertEqual(set(admin.keys()), rbac.LIVE_STATE_SCHEMA_KEYS)
+        for key in ("trends", "products", "inventory_gaps", "system_health", "access"):
+            self.assertIn(key, creator)
+            self.assertIn(key, admin)
+
+
+class TestNormalizeLiveStateShape(unittest.TestCase):
+    def test_fills_missing_keys(self):
+        partial = {"trends": [{"summary": "x"}]}
+        normalized = rbac.normalize_live_state_shape(partial)
+        self.assertEqual(set(normalized.keys()), rbac.LIVE_STATE_SCHEMA_KEYS)
+        self.assertEqual(len(normalized["trends"]), 1)
+        self.assertEqual(normalized["products"], [])
+        self.assertIn("access", normalized)
 
 
 class TestLiveStateAssembler(unittest.TestCase):
@@ -128,10 +190,15 @@ class TestLiveStateAssembler(unittest.TestCase):
         from tiktok_live_state_assembler import assembleLiveState
 
         state = assembleLiveState("test-acct", {"user_metadata": {"role": "creator"}})
+        self.assertEqual(set(state.keys()), rbac.LIVE_STATE_SCHEMA_KEYS)
         self.assertIn("access", state)
         self.assertEqual(state["access"]["role"], "creator")
         self.assertFalse(state["access"]["admin_override"])
         self.assertIsInstance(state["access"]["visible_modules"], list)
+        self.assertIn("trends", state)
+        self.assertIn("products", state)
+        self.assertIn("inventory_gaps", state)
+        self.assertIn("system_health", state)
 
     def test_admin_assembler_sees_sensitive_fields(self):
         from tiktok_live_state_assembler import assembleLiveState

@@ -13,7 +13,7 @@ from typing import Any, Callable
 
 from tiktok_access_control import (
     buildAccessContext,
-    canAccessCommerceMode,
+    empty_live_state_contract,
     filterLiveStateForAccess,
     _load_feature_flags,
 )
@@ -35,35 +35,7 @@ _SOURCE_MODULES: tuple[tuple[str, str], ...] = (
 
 
 def _empty_contract() -> dict[str, Any]:
-    return {
-        "today_flow": {
-            "step": "trend → product → content → queue",
-            "next_action": "unknown",
-            "status": "unknown",
-        },
-        "trends": [],
-        "products": [],
-        "inventory_gaps": [],
-        "inventory_prevention": [],
-        "content_queue": [],
-        "approvals": [],
-        "performance": {},
-        "prediction": {},
-        "alerts": [],
-        "hidden_alerts": [],
-        "raw_logs": [],
-        "primary_action": {
-            "label": "unknown",
-            "action": "unknown",
-            "context_id": "unknown",
-        },
-        "system_health": "unknown",
-        "access": {
-            "role": "creator",
-            "admin_override": False,
-            "visible_modules": [],
-        },
-    }
+    return empty_live_state_contract()
 
 
 def _as_list(value: Any) -> list:
@@ -328,7 +300,6 @@ def assembleLiveState(
     flags = _load_feature_flags()
     commerce_mode = bool(flags.get("commerce_mode", False))
     access = buildAccessContext(account_id, user_record, flags, commerce_mode)
-    access["commerce_access"] = canAccessCommerceMode(access, commerce_mode)
 
     state["today_flow"] = today_flow
     state["trends"] = trends

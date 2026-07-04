@@ -67,11 +67,19 @@
     return _access.admin_override || _access.commerce_access;
   }
 
+  var ADMIN_ONLY_MODULES = {
+    system_health: true,
+    raw_logs: true,
+    hidden_alerts: true,
+  };
+
   function showElement(selector) {
     var nodes = document.querySelectorAll(selector);
     for (var i = 0; i < nodes.length; i++) {
       nodes[i].style.display = "";
       nodes[i].classList.remove("rbac-hidden");
+      nodes[i].classList.remove("rbac-restricted");
+      nodes[i].removeAttribute("data-rbac-restricted");
     }
   }
 
@@ -80,6 +88,16 @@
     for (var i = 0; i < nodes.length; i++) {
       nodes[i].style.display = "none";
       nodes[i].classList.add("rbac-hidden");
+    }
+  }
+
+  function restrictElement(selector) {
+    var nodes = document.querySelectorAll(selector);
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].style.display = "";
+      nodes[i].classList.remove("rbac-hidden");
+      nodes[i].classList.add("rbac-restricted");
+      nodes[i].setAttribute("data-rbac-restricted", "true");
     }
   }
 
@@ -183,9 +201,15 @@
     for (var moduleName in MODULE_DOM_MAP) {
       var selectors = MODULE_DOM_MAP[moduleName];
       var show = Boolean(visibleSet[moduleName]);
+      var adminOnly = Boolean(ADMIN_ONLY_MODULES[moduleName]);
       for (var j = 0; j < selectors.length; j++) {
-        if (show) showElement(selectors[j]);
-        else hideElement(selectors[j]);
+        if (show) {
+          showElement(selectors[j]);
+        } else if (adminOnly) {
+          hideElement(selectors[j]);
+        } else {
+          restrictElement(selectors[j]);
+        }
       }
     }
 

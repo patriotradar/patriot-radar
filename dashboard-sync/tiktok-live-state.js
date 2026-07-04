@@ -1,6 +1,7 @@
 /**
  * TikTok live state client — single API consumption for the dashboard.
  * Frontend MUST only use /api/tiktok-live-state (never individual subsystem APIs).
+ * All roles receive the same JSON schema; visibility is content-level only.
  */
 (function (global) {
   "use strict";
@@ -26,8 +27,48 @@
       raw_logs: [],
       primary_action: { label: "unknown", action: "unknown", context_id: "unknown" },
       system_health: "unknown",
-      access: { role: "creator", admin_override: false, visible_modules: [] },
+      access: { role: "creator", admin_override: false, visible_modules: [], commerce_access: false },
     };
+  }
+
+  function asList(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
+  function asDict(value) {
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  }
+
+  function normalizeLiveStateShape(state, access) {
+    var base = emptyContract();
+    if (!state || typeof state !== "object") {
+      if (access) base.access = Object.assign({}, base.access, asDict(access));
+      return base;
+    }
+
+    var normalized = emptyContract();
+    normalized.today_flow = Object.assign({}, base.today_flow, asDict(state.today_flow));
+    normalized.primary_action = Object.assign({}, base.primary_action, asDict(state.primary_action));
+    normalized.access = Object.assign({}, base.access, asDict(state.access));
+    if (access) normalized.access = Object.assign({}, normalized.access, asDict(access));
+
+    normalized.trends = asList(state.trends);
+    normalized.products = asList(state.products);
+    normalized.inventory_gaps = asList(state.inventory_gaps);
+    normalized.inventory_prevention = asList(state.inventory_prevention);
+    normalized.content_queue = asList(state.content_queue);
+    normalized.approvals = asList(state.approvals);
+    normalized.alerts = asList(state.alerts);
+    normalized.hidden_alerts = asList(state.hidden_alerts);
+    normalized.raw_logs = asList(state.raw_logs);
+    normalized.performance = asDict(state.performance);
+    normalized.prediction = asDict(state.prediction);
+    normalized.system_health =
+      state.system_health != null && String(state.system_health).trim()
+        ? String(state.system_health).trim()
+        : base.system_health;
+
+    return normalized;
   }
 
   function esc(s) {
@@ -42,6 +83,7 @@
   function healthColor(health) {
     if (health === "healthy") return "var(--green)";
     if (health === "failing") return "var(--red,#ff4444)";
+    if (health === "restricted" || health === "hidden") return "var(--muted)";
     return "var(--yellow,#ffaa00)";
   }
 
@@ -70,13 +112,16 @@
       var resp = await fetch(url, { method: "GET", credentials: "same-origin", headers: headers });
       if (!resp.ok) return emptyContract();
       var data = await resp.json();
-      return data && typeof data === "object" ? data : emptyContract();
+      return normalizeLiveStateShape(data && typeof data === "object" ? data : null);
     } catch (e) {
       return emptyContract();
     }
   }
 
-  function renderList(items, labelKey) {
+  function renderList(items, labelKey, restricted) {
+    if (restricted) {
+      return '<p style="font-size:11px;color:var(--muted)">Restricted</p>';
+    }
     var list = Array.isArray(items) ? items : [];
     if (!list.length) return '<p style="font-size:11px;color:var(--muted)">None</p>';
     return list
@@ -88,13 +133,38 @@
       .join("");
   }
 
-  function render(state) {
-    var s = state && typeof state === "object" ? state : emptyContract();
-    var access = s.access || {};
-    var isAdmin = Boolean(access.admin_override);
+  function isModuleVisible(access, module) {
+    if (!access) return false;
+    if (access.admin_override) return true;
     var visible = access.visible_modules || [];
+    return visible.indexOf(module) !== -1;
+  }
+
+  function renderSection(title, bodyHtml, restricted) {
+    var badge = restricted
+      ? ' <span style="font-size:9px;color:var(--muted);font-weight:400">(restricted)</span>'
+      : "";
+    return (
+      '<div class="card" style="margin-bottom:12px" data-rbac-section="' +
+      esc(title) +
+      '">' +
+      '<h4 style="margin:0 0 8px;font-size:13px">' +
+      esc(title) +
+      badge +
+      "</h4>" +
+      bodyHtml +
+      "</div>"
+    );
+  }
+
+  function render(state) {
+    var s = normalizeLiveStateShape(state);
+    var access = s.access || {};
     var flow = s.today_flow || {};
     var action = s.primary_action || {};
+
+    var healthRestricted = !isModuleVisible(access, "system_health");
+    var healthLabel = healthRestricted ? "restricted" : s.system_health;
 
     var html =
       '<div class="card" style="margin-bottom:12px">' +
@@ -102,20 +172,14 @@
       '<h3 style="margin:0;font-size:14px">Live State</h3>' +
       '<span style="font-size:10px;color:var(--muted)">' +
       esc(access.role || "creator") +
-      (isAdmin ? " · ADMIN" : "") +
+      (access.admin_override ? " · ADMIN" : "") +
       "</span>" +
-      "</div>";
-
-    if (isAdmin || visible.indexOf("system_health") !== -1) {
-      html +=
-        '<span style="font-size:11px;color:' +
-        healthColor(s.system_health) +
-        '">' +
-        esc(s.system_health) +
-        "</span>";
-    }
-
-    html +=
+      "</div>" +
+      '<span style="font-size:11px;color:' +
+      healthColor(healthLabel) +
+      '">System: ' +
+      esc(healthLabel) +
+      "</span>" +
       '<p style="font-size:11px;color:var(--muted);margin:8px 0">' +
       esc(flow.step) +
       "</p>" +
@@ -130,37 +194,56 @@
       "</button>" +
       "</div>";
 
-    if (isAdmin || visible.indexOf("trends") !== -1) {
-      html +=
-        '<div class="card" style="margin-bottom:12px"><h4 style="margin:0 0 8px;font-size:13px">Trends</h4>' +
-        renderList(s.trends, "summary") +
-        "</div>";
-    }
-
-    if (isAdmin || visible.indexOf("products") !== -1) {
-      html +=
-        '<div class="card" style="margin-bottom:12px"><h4 style="margin:0 0 8px;font-size:13px">Products</h4>' +
-        renderList(s.products, "name") +
-        "</div>";
-    }
-
-    if (isAdmin || visible.indexOf("analytics") !== -1) {
-      html +=
-        '<div class="card" style="margin-bottom:12px"><h4 style="margin:0 0 8px;font-size:13px">Content Queue</h4>' +
-        renderList(s.content_queue, "caption") +
-        "</div>";
-    }
+    html += renderSection(
+      "Trends",
+      renderList(s.trends, "summary", !isModuleVisible(access, "trends")),
+      !isModuleVisible(access, "trends")
+    );
+    html += renderSection(
+      "Products",
+      renderList(s.products, "name", !isModuleVisible(access, "products")),
+      !isModuleVisible(access, "products")
+    );
+    html += renderSection(
+      "Inventory Gaps",
+      renderList(s.inventory_gaps, "product_name", !isModuleVisible(access, "inventory_system")),
+      !isModuleVisible(access, "inventory_system")
+    );
+    html += renderSection(
+      "Content Queue",
+      renderList(s.content_queue, "caption", !isModuleVisible(access, "analytics")),
+      !isModuleVisible(access, "analytics")
+    );
+    html += renderSection(
+      "Approvals",
+      renderList(s.approvals, "caption", !isModuleVisible(access, "analytics")),
+      !isModuleVisible(access, "analytics")
+    );
 
     var alerts = Array.isArray(s.alerts) ? s.alerts : [];
-    if (alerts.length && (isAdmin || visible.indexOf("trends") !== -1)) {
-      html +=
-        '<div class="card"><h4 style="margin:0 0 8px;font-size:13px">Alerts</h4>' +
-        alerts
-          .map(function (a) {
-            return '<div style="font-size:11px;padding:4px 0;color:var(--amber)">⚠ ' + esc(a.message) + "</div>";
-          })
-          .join("") +
-        "</div>";
+    var alertsBody =
+      alerts.length > 0
+        ? alerts
+            .map(function (a) {
+              return '<div style="font-size:11px;padding:4px 0;color:var(--amber)">⚠ ' + esc(a.message) + "</div>";
+            })
+            .join("")
+        : '<p style="font-size:11px;color:var(--muted)">None</p>';
+    html += renderSection("Alerts", alertsBody, false);
+
+    if (access.admin_override) {
+      html += renderSection(
+        "Hidden Alerts",
+        renderList(s.hidden_alerts, "message", false),
+        false
+      );
+      html += renderSection(
+        "Raw Logs",
+        '<pre style="font-size:10px;max-height:120px;overflow:auto;margin:0;color:var(--muted)">' +
+          esc(JSON.stringify(s.raw_logs || [], null, 2)) +
+          "</pre>",
+        false
+      );
     }
 
     return html;
@@ -203,11 +286,12 @@
 
   global.TiktokLiveState = {
     emptyContract: emptyContract,
+    normalizeLiveStateShape: normalizeLiveStateShape,
     fetchLiveState: fetchLiveState,
     refresh: refresh,
     mount: mount,
     getCached: function () {
-      return _cache || emptyContract();
+      return _cache ? normalizeLiveStateShape(_cache) : emptyContract();
     },
   };
 })(typeof window !== "undefined" ? window : global);

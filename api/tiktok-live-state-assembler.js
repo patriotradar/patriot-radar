@@ -5,6 +5,7 @@
 
 const {
   buildAccessContext,
+  emptyLiveStateContract,
   filterLiveStateForAccess,
   loadFeatureFlags,
 } = require("./tiktok-access-control");
@@ -15,35 +16,7 @@ const DEFAULT_PERFORMANCE_TABLE = "content_performance";
 const DEFAULT_CACHE_TABLE = "tiktok_insights_cache";
 
 function emptyContract() {
-  return {
-    today_flow: {
-      step: "trend → product → content → queue",
-      next_action: "unknown",
-      status: "unknown",
-    },
-    trends: [],
-    products: [],
-    inventory_gaps: [],
-    inventory_prevention: [],
-    content_queue: [],
-    approvals: [],
-    performance: {},
-    prediction: {},
-    alerts: [],
-    hidden_alerts: [],
-    raw_logs: [],
-    primary_action: {
-      label: "unknown",
-      action: "unknown",
-      context_id: "unknown",
-    },
-    system_health: "unknown",
-    access: {
-      role: "creator",
-      admin_override: false,
-      visible_modules: [],
-    },
-  };
+  return emptyLiveStateContract();
 }
 
 function getSupabaseConfig() {

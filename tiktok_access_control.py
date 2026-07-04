@@ -133,48 +133,156 @@ def buildAccessContext(
     user_role = getUserRole(account_id, user_record)
     admin_override = getAdminOverride(user_role)
     visible_modules = resolveVisibleModules(user_role, feature_flags, commerce_mode)
+    flags = dict(_load_feature_flags())
+    if feature_flags:
+        flags.update({str(k): bool(v) for k, v in feature_flags.items()})
+    commerce_enabled = bool(flags.get("commerce_mode", False))
+    if commerce_mode is not None:
+        commerce_enabled = bool(commerce_mode)
     return {
         "role": user_role,
         "admin_override": admin_override,
         "visible_modules": visible_modules,
+        "commerce_access": canAccessCommerceMode(
+            {"admin_override": admin_override}, commerce_enabled
+        ),
     }
+
+
+def empty_live_state_contract() -> dict[str, Any]:
+    """Canonical live-state schema — every role must return this exact key set."""
+    return {
+        "today_flow": {
+            "step": "trend → product → content → queue",
+            "next_action": "unknown",
+            "status": "unknown",
+        },
+        "trends": [],
+        "products": [],
+        "inventory_gaps": [],
+        "inventory_prevention": [],
+        "content_queue": [],
+        "approvals": [],
+        "performance": {},
+        "prediction": {},
+        "alerts": [],
+        "hidden_alerts": [],
+        "raw_logs": [],
+        "primary_action": {
+            "label": "unknown",
+            "action": "unknown",
+            "context_id": "unknown",
+        },
+        "system_health": "unknown",
+        "access": {
+            "role": DEFAULT_ROLE,
+            "admin_override": False,
+            "visible_modules": [],
+            "commerce_access": False,
+        },
+    }
+
+
+LIVE_STATE_SCHEMA_KEYS = frozenset(empty_live_state_contract().keys())
+
+
+def _as_dict(value: Any) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _as_list(value: Any) -> list:
+    return value if isinstance(value, list) else []
+
+
+def normalize_live_state_shape(
+    state: dict[str, Any] | None,
+    access: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Guarantee the full live-state schema is always present.
+    Missing keys are filled with safe defaults; never omits fields.
+    """
+    base = empty_live_state_contract()
+    if not isinstance(state, dict):
+        if access:
+            base["access"] = {**base["access"], **_as_dict(access)}
+        return base
+
+    normalized = empty_live_state_contract()
+    normalized["today_flow"] = {**base["today_flow"], **_as_dict(state.get("today_flow"))}
+    normalized["primary_action"] = {**base["primary_action"], **_as_dict(state.get("primary_action"))}
+    normalized["access"] = {**base["access"], **_as_dict(state.get("access"))}
+    if access:
+        normalized["access"] = {**normalized["access"], **_as_dict(access)}
+
+    normalized["trends"] = _as_list(state.get("trends"))
+    normalized["products"] = _as_list(state.get("products"))
+    normalized["inventory_gaps"] = _as_list(state.get("inventory_gaps"))
+    normalized["inventory_prevention"] = _as_list(state.get("inventory_prevention"))
+    normalized["content_queue"] = _as_list(state.get("content_queue"))
+    normalized["approvals"] = _as_list(state.get("approvals"))
+    normalized["alerts"] = _as_list(state.get("alerts"))
+    normalized["hidden_alerts"] = _as_list(state.get("hidden_alerts"))
+    normalized["raw_logs"] = _as_list(state.get("raw_logs"))
+    normalized["performance"] = _as_dict(state.get("performance"))
+    normalized["prediction"] = _as_dict(state.get("prediction"))
+
+    health = state.get("system_health")
+    normalized["system_health"] = (
+        str(health).strip() if health is not None and str(health).strip() else base["system_health"]
+    )
+
+    return normalized
+
+
+def _redact_list_content(items: list) -> list:
+    return []
+
+
+def _redact_dict_content(value: dict) -> dict:
+    return {}
 
 
 def filterLiveStateForAccess(state: dict[str, Any], access: dict[str, Any]) -> dict[str, Any]:
     """
-    Strip sensitive observability fields for non-admin users.
-    Core business data for enabled modules is preserved; execution rules unchanged.
+    Apply RBAC content redaction while preserving the full live-state schema.
+
+    Never removes keys. Non-admins receive empty arrays, empty objects, or
+    sentinel strings (restricted/hidden) instead of sensitive content.
     """
-    if not isinstance(state, dict):
-        return {}
-    if access.get("admin_override"):
-        return dict(state)
+    access_ctx = _as_dict(access)
+    normalized = normalize_live_state_shape(state, access_ctx)
 
-    visible = set(access.get("visible_modules") or [])
-    filtered = dict(state)
+    if access_ctx.get("admin_override"):
+        return normalized
 
+    visible = set(access_ctx.get("visible_modules") or [])
+
+    if "trends" not in visible:
+        normalized["trends"] = _redact_list_content(normalized["trends"])
+    if "products" not in visible:
+        normalized["products"] = _redact_list_content(normalized["products"])
+    if "inventory_system" not in visible:
+        normalized["inventory_gaps"] = _redact_list_content(normalized["inventory_gaps"])
+        normalized["inventory_prevention"] = _redact_list_content(normalized["inventory_prevention"])
+    if "prediction_engine" not in visible:
+        normalized["prediction"] = _redact_dict_content(normalized["prediction"])
+    if "analytics" not in visible:
+        normalized["performance"] = _redact_dict_content(normalized["performance"])
+        normalized["content_queue"] = _redact_list_content(normalized["content_queue"])
+        normalized["approvals"] = _redact_list_content(normalized["approvals"])
     if "system_health" not in visible:
-        filtered["system_health"] = "restricted"
+        normalized["system_health"] = "restricted"
     if "raw_logs" not in visible:
-        filtered["raw_logs"] = []
+        normalized["raw_logs"] = _redact_list_content(normalized["raw_logs"])
     if "hidden_alerts" not in visible:
-        filtered["hidden_alerts"] = []
-        filtered["alerts"] = [
-            a for a in (filtered.get("alerts") or [])
+        normalized["hidden_alerts"] = _redact_list_content(normalized["hidden_alerts"])
+        normalized["alerts"] = [
+            a for a in normalized["alerts"]
             if isinstance(a, dict) and a.get("level") != "hidden"
         ]
 
-    if "products" not in visible:
-        filtered["products"] = []
-    if "inventory_system" not in visible:
-        filtered["inventory_gaps"] = []
-        filtered["inventory_prevention"] = []
-    if "prediction_engine" not in visible:
-        filtered["prediction"] = {}
-    if "analytics" not in visible:
-        filtered["performance"] = {}
-
-    return filtered
+    return normalized
 
 
 def canAccessCommerceMode(access: dict[str, Any], commerce_mode_enabled: bool) -> bool:
