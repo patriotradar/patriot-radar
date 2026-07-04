@@ -27,7 +27,7 @@
       raw_logs: [],
       primary_action: { label: "unknown", action: "unknown", context_id: "unknown" },
       system_health: "unknown",
-      access: { role: "creator", admin_override: false, visible_modules: [], commerce_access: false },
+      access: { role: "creator", admin_override: false, visible_modules: ["tiktok", "prediction_engine", "analytics"], commerce_access: false },
     };
   }
 
@@ -137,6 +137,7 @@
     if (!access) return false;
     if (access.admin_override) return true;
     var visible = access.visible_modules || [];
+    if (module === "tiktok" && visible.indexOf("trends") !== -1) return true;
     return visible.indexOf(module) !== -1;
   }
 
@@ -196,8 +197,8 @@
 
     html += renderSection(
       "Trends",
-      renderList(s.trends, "summary", !isModuleVisible(access, "trends")),
-      !isModuleVisible(access, "trends")
+      renderList(s.trends, "summary", !isModuleVisible(access, "tiktok")),
+      !isModuleVisible(access, "tiktok")
     );
     html += renderSection(
       "Products",

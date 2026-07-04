@@ -6,7 +6,9 @@
   "use strict";
 
   var MODULE_DOM_MAP = {
-    trends: [
+    tiktok: [
+      '[data-tab="trends"]',
+      "#tab-trends",
       "#intelligenceFeed",
       "#tiktokTrendIntelligence",
       "#liveFeed",
@@ -31,16 +33,31 @@
   var _access = {
     role: "creator",
     admin_override: false,
-    visible_modules: ["trends", "prediction_engine", "analytics"],
+    visible_modules: ["tiktok", "prediction_engine", "analytics"],
     commerce_access: false,
   };
 
+  function normalizeVisibleModules(modules, adminOverride) {
+    var out = Array.isArray(modules) ? modules.slice() : [];
+    if (out.indexOf("trends") !== -1 && out.indexOf("tiktok") === -1) out.push("tiktok");
+    if (adminOverride) {
+      for (var mod in MODULE_DOM_MAP) {
+        if (out.indexOf(mod) === -1) out.push(mod);
+      }
+    }
+    if (!out.length) {
+      out = ["tiktok", "prediction_engine", "analytics"];
+    }
+    return out;
+  }
+
   function setAccess(access) {
     if (!access || typeof access !== "object") return;
+    var adminOverride = Boolean(access.admin_override);
     _access = {
       role: access.role || "creator",
-      admin_override: Boolean(access.admin_override),
-      visible_modules: Array.isArray(access.visible_modules) ? access.visible_modules.slice() : [],
+      admin_override: adminOverride,
+      visible_modules: normalizeVisibleModules(access.visible_modules, adminOverride),
       commerce_access: Boolean(access.commerce_access),
     };
     global.TIKTOK_ACCESS = _access;
@@ -60,6 +77,7 @@
 
   function isModuleVisible(module) {
     if (_access.admin_override) return true;
+    if (module === "tiktok" && _access.visible_modules.indexOf("trends") !== -1) return true;
     return _access.visible_modules.indexOf(module) !== -1;
   }
 
@@ -188,11 +206,17 @@
     }
   }
 
+  function isTabSelector(selector) {
+    return typeof selector === "string" && selector.indexOf("[data-tab=") === 0;
+  }
+
   function applyModuleVisibility(liveState) {
     ensureAdminPanels();
     var visibleSet = {};
     var modules = _access.visible_modules || [];
     for (var i = 0; i < modules.length; i++) visibleSet[modules[i]] = true;
+    // Legacy alias: server may still send "trends" for the TikTok dashboard module.
+    if (visibleSet.trends) visibleSet.tiktok = true;
 
     if (_access.admin_override) {
       for (var mod in MODULE_DOM_MAP) visibleSet[mod] = true;
@@ -205,6 +229,8 @@
       for (var j = 0; j < selectors.length; j++) {
         if (show) {
           showElement(selectors[j]);
+        } else if (isTabSelector(selectors[j])) {
+          hideElement(selectors[j]);
         } else if (adminOnly) {
           hideElement(selectors[j]);
         } else {
@@ -258,7 +284,7 @@
     setAccess({
       role: "creator",
       admin_override: false,
-      visible_modules: ["trends", "prediction_engine", "analytics"],
+      visible_modules: ["tiktok", "prediction_engine", "analytics"],
       commerce_access: false,
     });
     applyModuleVisibility(null);
