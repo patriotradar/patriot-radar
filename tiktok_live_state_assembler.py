@@ -1,7 +1,8 @@
 """
 Live state assembly layer for TikTok SaaS frontend consumption.
 
-Consolidates backend module outputs into one deterministic UI-ready object.
+Step 1: buildSystemSnapshot(account_id) captures module state once per request.
+Step 2: assembleLiveState formats snapshot data into the strict UI contract.
 Core pipeline: trend → content → plan → insights.
 Commerce add-on gated by commerce_mode / features.commerce_mode.
 RBAC access block is appended read-only; does not alter core assembly logic.
@@ -9,9 +10,8 @@ RBAC access block is appended read-only; does not alter core assembly logic.
 
 from __future__ import annotations
 
-import importlib
 import logging
-from typing import Any, Callable
+from typing import Any
 
 from action_orchestrator import generatePrimaryActions
 from tiktok_access_control import (
@@ -20,21 +20,22 @@ from tiktok_access_control import (
     filterLiveStateForAccess,
     _load_feature_flags,
 )
+from tiktok_system_snapshot_builder import buildSystemSnapshot, empty_system_snapshot
 
 logger = logging.getLogger(__name__)
 
-_SOURCE_MODULES: tuple[tuple[str, str], ...] = (
-    ("trend_detection_engine", "get_state"),
-    ("emerging_products_engine", "get_state"),
-    ("trending_products_engine", "get_state"),
-    ("inventory_prevention_system", "get_state"),
-    ("inventory_gap_system", "get_state"),
-    ("content_queue_system", "get_state"),
-    ("approval_system", "get_state"),
-    ("performance_tracker", "get_state"),
-    ("learning_engine", "get_state"),
-    ("system_health_monitor", "get_state"),
-)
+_last_valid_state: dict[str, dict[str, Any]] = {}
+
+_REQUIRED_SNAPSHOT_KEYS = frozenset({
+    "trends_snapshot",
+    "product_snapshot",
+    "inventory_snapshot",
+    "queue_snapshot",
+    "approval_snapshot",
+    "performance_snapshot",
+    "learning_snapshot",
+    "system_health_snapshot",
+})
 
 
 def _empty_contract() -> dict[str, Any]:
@@ -77,17 +78,38 @@ def _resolve_commerce_mode(
     return bool(flags.get("commerce_mode", False))
 
 
-def _safe_invoke(module_name: str, fn_name: str, account_id: str) -> dict[str, Any]:
-    try:
-        module = importlib.import_module(module_name)
-        fn: Callable[[str], Any] | None = getattr(module, fn_name, None)
-        if not callable(fn):
-            return {}
-        result = fn(account_id)
-        return result if isinstance(result, dict) else {}
-    except Exception as exc:
-        logger.warning("assembleLiveState: %s.%s failed: %s", module_name, fn_name, exc)
-        return {}
+def _is_valid_snapshot(snapshot: dict[str, Any]) -> bool:
+    return _REQUIRED_SNAPSHOT_KEYS.issubset(snapshot.keys())
+
+
+def _extract_from_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+    trends_snapshot = _as_dict(snapshot.get("trends_snapshot"))
+    product_snapshot = _as_dict(snapshot.get("product_snapshot"))
+    inventory_snapshot = _as_dict(snapshot.get("inventory_snapshot"))
+    queue_snapshot = _as_dict(snapshot.get("queue_snapshot"))
+    approval_snapshot = _as_dict(snapshot.get("approval_snapshot"))
+    performance_snapshot = _as_dict(snapshot.get("performance_snapshot"))
+    learning_snapshot = _as_dict(snapshot.get("learning_snapshot"))
+    system_health_snapshot = _as_dict(snapshot.get("system_health_snapshot"))
+
+    emerging = _as_list(product_snapshot.get("emerging"))
+    trending = _as_list(product_snapshot.get("trending"))
+
+    return {
+        "trends": _as_list(trends_snapshot.get("trends")),
+        "emerging": emerging,
+        "trending": trending,
+        "inventory_gaps": _as_list(inventory_snapshot.get("inventory_gaps")),
+        "inventory_prevention": _as_list(inventory_snapshot.get("inventory_prevention")),
+        "content_queue": _as_list(queue_snapshot.get("content_queue")),
+        "approvals": _as_list(approval_snapshot.get("approvals")),
+        "performance": _as_dict(performance_snapshot.get("performance")),
+        "prediction": _as_dict(learning_snapshot.get("prediction")),
+        "system_health": _as_string(system_health_snapshot.get("system_health"), "unknown"),
+        "raw_logs": _as_list(system_health_snapshot.get("raw_logs")),
+        "partial_failures": _as_list(snapshot.get("partial_failures")),
+        "account_id": _as_string(snapshot.get("account_id"), ""),
+    }
 
 
 def _merge_products(emerging: list, trending: list) -> list:
@@ -189,7 +211,6 @@ def _derive_today_flow(
     system_health: str,
     commerce_mode: bool,
 ) -> dict[str, str]:
-    """Map orchestrated primary action to today_flow status for the UI."""
     core_step = "trend → content → plan → insights"
     commerce_step = "trend → product → content → queue"
     today_flow = {
@@ -207,12 +228,12 @@ def _derive_today_flow(
         today_flow["status"] = "awaiting_approval"
         return today_flow
 
-    if action in ("generate_content_from_products", "create_product_content", "create_trend_content", "create_content"):
-        today_flow["status"] = "ready_for_content"
+    if action in ("match_products_to_trends", "monetise_trending_topic", "match_products", "monetise_trending_product"):
+        today_flow["status"] = "trend_detected"
         return today_flow
 
-    if action in ("match_products_to_trends", "monetise_trending_topic", "match_products"):
-        today_flow["status"] = "trend_detected"
+    if action in ("generate_content_from_products", "create_product_content", "create_trend_content", "create_content", "generate_content"):
+        today_flow["status"] = "ready_for_content"
         return today_flow
 
     if content_queue and action in (
@@ -223,12 +244,12 @@ def _derive_today_flow(
         today_flow["status"] = "in_queue"
         return today_flow
 
-    if system_health in ("healthy", "degraded", "failing"):
-        today_flow["status"] = system_health
-        return today_flow
-
     if trends or products:
         today_flow["status"] = "active"
+        return today_flow
+
+    if system_health in ("healthy", "degraded", "failing"):
+        today_flow["status"] = system_health
         return today_flow
 
     return today_flow
@@ -250,46 +271,24 @@ def _apply_commerce_layer(
         return {"revenue_suggestions": []}
 
 
-def assembleLiveState(
-    account_id: str,
-    user_record: dict[str, Any] | None = None,
+def _assemble_from_extracted(
+    extracted: dict[str, Any],
     *,
+    user_record: dict[str, Any] | None = None,
     commerce_mode: bool | None = None,
 ) -> dict[str, Any]:
-    """
-    Assemble the strict UI contract from all optional backend modules.
-
-    Never raises. Never returns null. Every field is always present.
-    RBAC access block is computed server-side from secure role sources.
-    """
-    state = _empty_contract()
-    partial_failures: list[str] = []
-
-    collected: dict[str, Any] = {}
-    for module_name, fn_name in _SOURCE_MODULES:
-        payload = _safe_invoke(module_name, fn_name, account_id)
-        if not payload:
-            partial_failures.append(module_name)
-        collected[module_name] = payload
-
-    trends = _as_list(collected.get("trend_detection_engine", {}).get("trends"))
-    emerging = _as_list(collected.get("emerging_products_engine", {}).get("products"))
-    trending = _as_list(collected.get("trending_products_engine", {}).get("products"))
-    products = _merge_products(emerging, trending)
-
-    inventory_gaps = _as_list(collected.get("inventory_gap_system", {}).get("inventory_gaps"))
-    inventory_prevention = _as_list(
-        collected.get("inventory_prevention_system", {}).get("inventory_prevention")
-    )
-    content_queue = _as_list(collected.get("content_queue_system", {}).get("content_queue"))
-    approvals = _as_list(collected.get("approval_system", {}).get("approvals"))
-    performance = _as_dict(collected.get("performance_tracker", {}).get("performance"))
-    prediction = _as_dict(collected.get("learning_engine", {}).get("prediction"))
-    system_health = _as_string(
-        collected.get("system_health_monitor", {}).get("system_health"),
-        "unknown",
-    )
-    raw_logs = _as_list(collected.get("system_health_monitor", {}).get("raw_logs"))
+    account_id = extracted["account_id"]
+    partial_failures = extracted["partial_failures"]
+    trends = extracted["trends"]
+    products = _merge_products(extracted["emerging"], extracted["trending"])
+    inventory_gaps = extracted["inventory_gaps"]
+    inventory_prevention = extracted["inventory_prevention"]
+    content_queue = extracted["content_queue"]
+    approvals = extracted["approvals"]
+    performance = extracted["performance"]
+    prediction = extracted["prediction"]
+    system_health = extracted["system_health"]
+    raw_logs = extracted["raw_logs"]
 
     flags = _load_feature_flags()
     commerce_mode = _resolve_commerce_mode(commerce_mode, user_record, flags)
@@ -308,9 +307,21 @@ def assembleLiveState(
         "admin_override": admin_override,
         "system_health": system_health,
     }
-    actions = generatePrimaryActions(orchestration_input)
-    primary_action = actions["primary_action"]
-    secondary_actions = actions["secondary_actions"]
+
+    if commerce_mode and inventory_gaps:
+        gap = inventory_gaps[0] if isinstance(inventory_gaps[0], dict) else {}
+        primary_action = {
+            "label": "Fix inventory gap",
+            "action": "resolve_inventory_gap",
+            "priority": "high",
+            "context_id": _as_string(gap.get("product_name")),
+            "reason": "Inventory gap blocks product attachment until resolved.",
+        }
+        secondary_actions: list[dict[str, str]] = []
+    else:
+        actions = generatePrimaryActions(orchestration_input)
+        primary_action = actions["primary_action"]
+        secondary_actions = actions["secondary_actions"]
 
     if not commerce_mode:
         inventory_gaps = []
@@ -333,6 +344,7 @@ def assembleLiveState(
         partial_failures=partial_failures,
     )
 
+    state = _empty_contract()
     state["today_flow"] = today_flow
     state["trends"] = trends
     state["products"] = products if commerce_mode else []
@@ -379,3 +391,76 @@ def assembleLiveState(
         result["revenue_suggestions"] = state["revenue_suggestions"]
 
     return result
+
+
+def assembleLiveStateFromSnapshot(
+    snapshot: dict[str, Any],
+    user_record: dict[str, Any] | None = None,
+    *,
+    commerce_mode: bool | None = None,
+) -> dict[str, Any]:
+    """Assemble UI contract from a pre-built system snapshot. Never raises."""
+    account_id = str(snapshot.get("account_id") or "") if isinstance(snapshot, dict) else ""
+    try:
+        if not isinstance(snapshot, dict):
+            raise TypeError("snapshot must be a dict")
+        if not _is_valid_snapshot(snapshot):
+            raise ValueError("snapshot missing required keys")
+        extracted = _extract_from_snapshot(snapshot)
+        account_id = extracted["account_id"]
+        result = _assemble_from_extracted(
+            extracted,
+            user_record=user_record,
+            commerce_mode=commerce_mode,
+        )
+        cache_key = account_id or "__default__"
+        _last_valid_state[cache_key] = result
+        return result
+    except Exception as exc:
+        logger.warning("assembleLiveStateFromSnapshot failed for account=%s: %s", account_id, exc)
+        cache_key = account_id or "__default__"
+        if cache_key in _last_valid_state:
+            return dict(_last_valid_state[cache_key])
+        return _empty_contract()
+
+
+def assembleLiveState(
+    account_or_snapshot: str | dict[str, Any],
+    user_record: dict[str, Any] | None = None,
+    *,
+    commerce_mode: bool | None = None,
+) -> dict[str, Any]:
+    """
+    Assemble the strict UI contract.
+
+    Accepts an account_id (builds snapshot first) or a pre-built snapshot dict.
+  Never raises. Never returns null. Every field is always present.
+    """
+    if isinstance(account_or_snapshot, dict):
+        return assembleLiveStateFromSnapshot(
+            account_or_snapshot,
+            user_record,
+            commerce_mode=commerce_mode,
+        )
+    snapshot = buildSystemSnapshot(account_or_snapshot)
+    return assembleLiveStateFromSnapshot(
+        snapshot,
+        user_record,
+        commerce_mode=commerce_mode,
+    )
+
+
+def getLiveState(
+    account_id: str,
+    user_record: dict[str, Any] | None = None,
+    *,
+    commerce_mode: bool | None = None,
+) -> dict[str, Any]:
+    """End-to-end live state: build snapshot, then assemble UI contract."""
+    snapshot = buildSystemSnapshot(account_id)
+    return assembleLiveStateFromSnapshot(snapshot, user_record, commerce_mode=commerce_mode)
+
+
+def reset_last_valid_state() -> None:
+    """Clear cached last-valid states (for tests)."""
+    _last_valid_state.clear()
