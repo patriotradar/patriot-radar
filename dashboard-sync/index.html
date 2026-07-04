@@ -10691,6 +10691,9 @@ function renderAllSections(results, emerging, productTrends, creatorInsights) {
     document.getElementById("platformOptimizer").innerHTML = renderPlatformOptimizer(results);
     renderNotifications();
     renderDailyRecs(results);
+    if (window.TikTokShopInventoryGate && typeof TikTokShopInventoryGate.processTrendResults === "function") {
+      TikTokShopInventoryGate.processTrendResults(results);
+    }
     renderPersonalIntelligence(results);
     renderWeeklyScorecard();
     aiContentAngles(results);
