@@ -72,6 +72,30 @@ def _load_apify_config() -> dict[str, Any]:
     return config
 
 
+def _resolve_apify_run(run: Any) -> tuple[str | None, str | None, str | None]:
+    """
+    Extract run id, default dataset id, and status from Apify client response.
+
+    apify-client v3 returns a Pydantic Run model (snake_case fields); v2 returned dicts
+    with camelCase keys. Without this helper, v3 runs look like apify_run_missing_dataset.
+    """
+    if run is None:
+        return None, None, None
+
+    if isinstance(run, dict):
+        run_id = run.get("id")
+        dataset_id = run.get("defaultDatasetId") or run.get("default_dataset_id")
+        status = run.get("status")
+        return run_id, dataset_id, status
+
+    run_id = getattr(run, "id", None)
+    dataset_id = getattr(run, "default_dataset_id", None) or getattr(run, "defaultDatasetId", None)
+    status = getattr(run, "status", None)
+    if status is not None and not isinstance(status, str):
+        status = getattr(status, "value", str(status))
+    return run_id, dataset_id, status
+
+
 def _apify_item_to_extractor_input(item: dict[str, Any]) -> dict[str, Any]:
     """Map an Apify TikTok scraper result to tiktok_trend_extractor input format."""
     author_meta = item.get("authorMeta") or {}
@@ -179,12 +203,21 @@ def fetch_tiktok_via_apify(historical_keywords: set[str] | None = None) -> dict[
 
         client = ApifyClient(token)
         run = client.actor(actor_id).call(run_input=run_input)
-        run_id = run.get("id") if isinstance(run, dict) else None
-        dataset_id = run.get("defaultDatasetId") if isinstance(run, dict) else None
+        run_id, dataset_id, run_status = _resolve_apify_run(run)
+
+        if run is None:
+            result["error"] = "apify_run_failed"
+            logger.error("Apify actor call returned no run object.")
+            return result
 
         if not dataset_id:
             result["error"] = "apify_run_missing_dataset"
-            logger.error("Apify run completed but no defaultDatasetId returned.")
+            result["apify_run_id"] = run_id
+            logger.error(
+                "Apify run completed but no default dataset id returned (run_id=%s status=%s).",
+                run_id,
+                run_status,
+            )
             return result
 
         raw_items: list[dict[str, Any]] = []
