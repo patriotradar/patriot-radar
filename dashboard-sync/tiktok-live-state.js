@@ -262,6 +262,10 @@
     mount.innerHTML = render(state);
     global.TIKTOK_LIVE_STATE = state;
 
+    if (global.TiktokLiveStateIntegration && typeof global.TiktokLiveStateIntegration.apply === "function") {
+      global.TiktokLiveStateIntegration.apply(state);
+    }
+
     if (global.TiktokAccessControl) {
       if (state.access) global.TiktokAccessControl.setAccess(state.access);
       global.TiktokAccessControl.applyModuleVisibility(state);
