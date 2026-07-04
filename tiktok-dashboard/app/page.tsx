@@ -88,74 +88,99 @@ export default function Home() {
 
   const insights = result?.insights;
   const videos = result?.viralVideos ?? [];
+  const hasResults = Boolean(result?.success && insights);
 
   return (
     <div className="min-h-full bg-zinc-950 text-zinc-100">
-      <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-8 px-6 py-16">
-        <header className="space-y-2">
+      <main className="mx-auto flex min-h-full max-w-4xl flex-col px-6 py-10">
+        <header className="mb-8 space-y-2">
           <p className="text-sm font-medium uppercase tracking-widest text-pink-400">
             TikTok Insights Engine
           </p>
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
             Niche intelligence dashboard
           </h1>
-          <p className="max-w-xl text-zinc-400">
-            Enter a niche to discover what is trending, what customers are saying,
-            and what content to create next.
+          <p className="max-w-2xl text-zinc-400">
+            Discover what is trending, what customers care about, and what to post next.
           </p>
         </header>
 
-        <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-xl">
-          <label htmlFor="niche" className="mb-2 block text-sm font-medium text-zinc-300">
-            Niche
-          </label>
-          <input
-            id="niche"
-            type="text"
-            value={niche}
-            onChange={(e) => setNiche(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !loading) {
-                void handleRunScan();
-              }
-            }}
-            placeholder='e.g. "fitness coaching", "real estate", "crypto"'
-            disabled={loading}
-            className="mb-4 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-zinc-100 placeholder:text-zinc-500 outline-none ring-pink-500/0 transition focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 disabled:opacity-60"
-          />
+        {/* SECTION 1: Control Panel — always visible */}
+        <section
+          aria-label="Trend detection control panel"
+          className="sticky top-0 z-10 rounded-2xl border border-zinc-700/80 bg-zinc-900/95 p-6 shadow-2xl shadow-black/40 backdrop-blur"
+        >
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+              Control Panel
+            </h2>
+            <span className="rounded-full border border-zinc-700 px-2.5 py-0.5 text-xs text-zinc-500">
+              Always available
+            </span>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => void handleRunScan()}
-            disabled={loading || !niche.trim()}
-            className="inline-flex items-center justify-center rounded-xl bg-pink-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
-          >
-            {loading ? (
-              <>
-                <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                Running scan…
-              </>
-            ) : (
-              "Run Scan"
-            )}
-          </button>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label htmlFor="niche" className="mb-2 block text-sm font-medium text-zinc-300">
+                Niche
+              </label>
+              <input
+                id="niche"
+                type="text"
+                value={niche}
+                onChange={(e) => setNiche(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !loading) {
+                    void handleRunScan();
+                  }
+                }}
+                placeholder="Enter niche (e.g. fitness coaching)"
+                disabled={loading}
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 disabled:opacity-60"
+              />
+            </div>
 
-          {loading && (
-            <p className="mt-4 text-sm text-zinc-400">
-              Pipeline running: search → viral scoring → comment scrape → insights
-              generation → Supabase store. This can take a few minutes.
-            </p>
-          )}
+            <button
+              type="button"
+              onClick={() => void handleRunScan()}
+              disabled={loading}
+              aria-label="Detect TikTok trends for niche"
+              className="inline-flex h-[46px] shrink-0 items-center justify-center rounded-xl bg-pink-500 px-6 text-sm font-semibold text-white transition hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+            >
+              {loading ? "Detecting..." : "Detect Trends"}
+            </button>
+          </div>
 
-          {error && (
-            <p className="mt-4 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+          {error && !loading && (
+            <p
+              role="alert"
+              className="mt-4 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-300"
+            >
               {error}
             </p>
           )}
         </section>
 
-        {result?.success && (
-          <div className="flex flex-col gap-6">
+        {/* SECTION 2: Status Area — loading only */}
+        {loading && (
+          <section
+            aria-live="polite"
+            aria-busy="true"
+            className="mt-6 rounded-2xl border border-pink-900/40 bg-pink-950/20 px-6 py-5"
+          >
+            <div className="flex items-center gap-3">
+              <span
+                className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-pink-400/30 border-t-pink-400"
+                aria-hidden="true"
+              />
+              <p className="text-sm font-medium text-pink-200">Scanning TikTok trends...</p>
+            </div>
+          </section>
+        )}
+
+        {/* SECTION 3: Results Area — data only */}
+        {hasResults && insights && (
+          <div className="mt-8 flex flex-col gap-6">
             <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
               <h2 className="mb-4 text-lg font-medium text-pink-300">Rising Videos</h2>
               {videos.length === 0 ? (
@@ -179,28 +204,30 @@ export default function Home() {
               )}
             </section>
 
-            {insights && (
-              <section className="rounded-2xl border border-pink-900/40 bg-zinc-900/60 p-6">
-                <h2 className="mb-4 text-lg font-medium text-pink-300">Insights</h2>
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <InsightList title="Pain points" items={insights.pain_points} />
-                  <InsightList title="Questions" items={insights.questions} />
-                  <InsightList
-                    title="Content opportunities"
-                    items={insights.content_opportunities}
-                  />
-                  <InsightList title="Hooks" items={insights.hooks} />
-                  <InsightList title="Buying signals" items={insights.buying_signals} />
-                </div>
-              </section>
-            )}
+            <section className="rounded-2xl border border-pink-900/40 bg-zinc-900/60 p-6">
+              <h2 className="mb-4 text-lg font-medium text-pink-300">Insights</h2>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <InsightList title="Pain points" items={insights.pain_points} />
+                <InsightList title="Questions" items={insights.questions} />
+                <InsightList title="Buying signals" items={insights.buying_signals} />
+              </div>
+            </section>
 
-            {insights?.summary && (
-              <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
-                <h2 className="mb-3 text-lg font-medium text-pink-300">Summary</h2>
-                <p className="text-sm leading-relaxed text-zinc-300">{insights.summary}</p>
-              </section>
-            )}
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
+              <h2 className="mb-4 text-lg font-medium text-pink-300">
+                What You Should Post Next
+              </h2>
+              {insights.summary && (
+                <p className="mb-5 text-sm leading-relaxed text-zinc-300">{insights.summary}</p>
+              )}
+              <div className="grid gap-6 sm:grid-cols-2">
+                <InsightList
+                  title="Content opportunities"
+                  items={insights.content_opportunities}
+                />
+                <InsightList title="Hooks" items={insights.hooks} />
+              </div>
+            </section>
           </div>
         )}
       </main>
