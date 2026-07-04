@@ -1,0 +1,125 @@
+name: TikTok Trend Intelligence Scan
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+jobs:
+  tiktok-trend-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify Supabase feed table exists
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/verify_trend_intelligence_pipeline.py --json > verify_report.json || true
+          cat verify_report.json
+          python3 << 'PYEOF'
+          import json, sys
+          report = json.load(open("verify_report.json"))
+          probe = report.get("supabase_probe") or {}
+          if probe.get("table_missing"):
+              print("::error::trend_intelligence_feed table missing in Supabase. Run sql/trend_intelligence_feed_setup.sql in SQL Editor (or set SUPABASE_DB_URL secret and apply via scripts/apply_trend_feed_schema.py).")
+              sys.exit(1)
+          if not probe.get("ok"):
+              print(f"::error::Supabase probe failed: {probe.get('error')}")
+              sys.exit(1)
+          print(f"Supabase table OK — tiktok row_count={probe.get('row_count')}")
+          PYEOF
+
+      - name: Apply feed schema (optional, when SUPABASE_DB_URL is set)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -n "${SUPABASE_DB_URL}" ]; then
+            pip install -q psycopg2-binary
+            python scripts/apply_trend_feed_schema.py
+          else
+            echo "SUPABASE_DB_URL not set — skipping auto schema apply (table must already exist)."
+          fi
+
+      - name: Run TikTok trend scan (Apify → Supabase)
+        env:
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -e
+          python scripts/run_tiktok_trend_scan.py --output scan_result.json 2>&1 | tee scan_output.log
+          echo "--- Scan summary ---"
+          python3 -c "import json; r=json.load(open('scan_result.json')); print(json.dumps({k:r.get(k) for k in ['success','data_source','item_count','avg_virality_score'] if k in r}, indent=2)); print('store:', r.get('store_result')); print('apify:', {k:r.get('apify_fetch',{}).get(k) for k in ['success','item_count','token_present','apify_run_id','error']})"
+
+      - name: Validate pipeline result
+        if: always()
+        run: |
+          if [ ! -f scan_result.json ]; then
+            echo "::error::Scan produced no scan_result.json — check scan_output.log"
+            exit 1
+          fi
+          python3 << 'PYEOF'
+          import json, sys
+          result = json.load(open("scan_result.json"))
+          apify = result.get("apify_fetch") or {}
+          store = result.get("store_result") or {}
+          summary = {
+              "success": result.get("success"),
+              "data_source": result.get("data_source"),
+              "apify_fetch_succeeded": apify.get("success"),
+              "apify_items_returned": apify.get("item_count", 0),
+              "apify_raw_error": apify.get("error"),
+              "apify_token_present": apify.get("token_present"),
+              "apify_run_id": apify.get("apify_run_id"),
+              "extracted_item_count": result.get("item_count"),
+              "avg_virality_score": result.get("avg_virality_score", 0),
+              "supabase_rows_stored": store.get("stored", 0),
+              "supabase_rows_skipped": store.get("skipped", 0),
+              "supabase_error": store.get("error"),
+              "supabase_table_probe": store.get("table_probe"),
+          }
+          print("Validation summary:", json.dumps(summary, indent=2))
+          errors = []
+          if not summary.get("success"):
+              errors.append("scan returned success=false")
+          if summary.get("apify_token_present") and summary.get("data_source") != "apify":
+              errors.append(f"APIFY token set but data_source={summary.get('data_source')} (expected apify)")
+          if summary.get("apify_token_present") and not summary.get("apify_fetch_succeeded"):
+              errors.append(f"Apify fetch failed: {summary.get('apify_raw_error')}")
+          if summary.get("extracted_item_count", 0) == 0:
+              errors.append("zero items extracted")
+          if summary.get("supabase_rows_stored", 0) == 0 and summary.get("extracted_item_count", 0) > 0:
+              errors.append(f"zero Supabase rows stored: {summary.get('supabase_error')}")
+          if "table_missing" in str(summary.get("supabase_error") or ""):
+              errors.append("trend_intelligence_feed table missing — run sql/trend_intelligence_feed_setup.sql")
+          if summary.get("avg_virality_score", 0) == 0 and summary.get("extracted_item_count", 0) > 0:
+              errors.append("avg_virality_score is 0 — virality may not be computed")
+          if errors:
+              for e in errors:
+                  print(f"::error::{e}")
+              sys.exit(1)
+          print("Pipeline validation passed.")
+          PYEOF
+
+      - name: Diagnose missing secrets
+        if: failure()
+        run: |
+          if [ -z "${{ secrets.APIFY_API_TOKEN }}" ]; then
+            echo "::error::APIFY_API_TOKEN secret is missing. Add it in GitHub repo Settings → Secrets → Actions."
+          fi
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
+            echo "::error::SUPABASE_URL secret is missing."
+          fi
+          if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY secret is missing."
+          fi

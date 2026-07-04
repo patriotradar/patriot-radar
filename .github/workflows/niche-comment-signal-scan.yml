@@ -1,0 +1,69 @@
+name: Niche Comment Signal Scan
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 */6 * * *"
+
+jobs:
+  niche-comment-signal-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run niche comment signal scan (Apify → Supabase)
+        env:
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -e
+          python scripts/run_niche_comment_signal_scan.py --output scan_result.json 2>&1 | tee scan_output.log
+          echo "--- Scan summary ---"
+          python3 -c "import json; r=json.load(open('scan_result.json')); print(json.dumps({k:r.get(k) for k in ['success','data_source','video_count','avg_composite_signal'] if k in r}, indent=2)); print('store:', r.get('store_result')); print('apify:', {k:r.get('apify_fetch',{}).get(k) for k in ['success','item_count','token_present','apify_run_id','error']})"
+
+      - name: Validate pipeline result
+        if: always()
+        run: |
+          if [ ! -f scan_result.json ]; then
+            echo "::error::Scan produced no scan_result.json — check scan_output.log"
+            exit 1
+          fi
+          python3 << 'PYEOF'
+          import json, sys
+          result = json.load(open("scan_result.json"))
+          apify = result.get("apify_fetch") or {}
+          store = result.get("store_result") or {}
+          summary = {
+              "success": result.get("success"),
+              "data_source": result.get("data_source"),
+              "apify_fetch_succeeded": apify.get("success"),
+              "apify_items_returned": apify.get("item_count", 0),
+              "apify_raw_error": apify.get("error"),
+              "apify_token_present": apify.get("token_present"),
+              "video_count": result.get("video_count"),
+              "avg_composite_signal": result.get("avg_composite_signal", 0),
+              "supabase_rows_stored": store.get("stored", 0),
+              "supabase_error": store.get("error"),
+          }
+          print("Validation summary:", json.dumps(summary, indent=2))
+          errors = []
+          if not summary.get("success"):
+              errors.append("scan returned success=false")
+          if summary.get("apify_token_present") and summary.get("data_source") == "apify" and not summary.get("apify_fetch_succeeded"):
+              errors.append(f"Apify fetch failed: {summary.get('apify_raw_error')}")
+          if summary.get("video_count", 0) == 0:
+              errors.append("zero videos processed")
+          if errors:
+              for e in errors:
+                  print(f"::warning::{e}")
+          print("Pipeline validation complete.")
+          PYEOF

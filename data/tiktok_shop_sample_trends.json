@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "keyword": "british army pride",
+      "product": "British Army history books",
+      "viral_score": 72,
+      "rise_percent": 35,
+      "content_score": 68,
+      "category": "content"
+    },
+    {
+      "keyword": "union jack decor",
+      "product": "Union Jack flags and patriotic decor",
+      "viral_score": 58,
+      "rise_percent": 22,
+      "content_score": 55,
+      "category": "product"
+    }
+  ],
+  "emerging": [
+    {
+      "keyword": "fitness tracker trending",
+      "product": "Smart fitness tracker band",
+      "viral_score": 81,
+      "rise_percent": 65,
+      "content_score": 70,
+      "category": "emerging"
+    }
+  ],
+  "product_trends": [
+    {
+      "keyword": "royal collectibles",
+      "product": "Royal family collectibles",
+      "viral_score": 45,
+      "rise_percent": 18,
+      "category": "product"
+    }
+  ]
+}

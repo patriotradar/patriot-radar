@@ -1,0 +1,1787 @@
+[
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 55,
+    "virality_score": 57,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "8426bde053d06ea9c429a5cc6f74456b",
+      "url": "",
+      "author": "",
+      "caption_preview": "POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class thing? POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "hook_text": "POV: growing up on a council estate in Manchester changed how I see patriotism",
+        "hook_type": "opinion"
+      }
+    },
+    "summary": "opinion hook: POV: growing up on a council estate in Manchester changed how I see patriotism",
+    "dedupe_key": "8426bde053d06ea9c429a5cc6f74456b:hook:opinion"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 35,
+    "virality_score": 57,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "8426bde053d06ea9c429a5cc6f74456b",
+      "url": "",
+      "author": "",
+      "caption_preview": "POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class thing? POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "format_type": "talking_head",
+        "format_strength_score": 0.35
+      }
+    },
+    "summary": "Format: talking head",
+    "dedupe_key": "8426bde053d06ea9c429a5cc6f74456b:format:talking_head"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 53,
+    "virality_score": 57,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "8426bde053d06ea9c429a5cc6f74456b",
+      "url": "",
+      "author": "",
+      "caption_preview": "POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class thing? POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "dominant_emotion": "pride",
+        "emotion_mixture": {
+          "pride": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: pride (pride 100%)",
+    "dedupe_key": "8426bde053d06ea9c429a5cc6f74456b:emotion:pride"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 52,
+    "virality_score": 57,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "8426bde053d06ea9c429a5cc6f74456b",
+      "url": "",
+      "author": "",
+      "caption_preview": "POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class thing? POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "primary_topic": "culture",
+        "secondary_topics": [
+          "identity"
+        ]
+      }
+    },
+    "summary": "Topic: culture (+ identity)",
+    "dedupe_key": "8426bde053d06ea9c429a5cc6f74456b:topic:culture"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 74,
+    "virality_score": 57,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "8426bde053d06ea9c429a5cc6f74456b",
+      "url": "",
+      "author": "",
+      "caption_preview": "POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class thing? POV: growing up on a council estate in Manchester changed how I see patriotism. Is pride a class",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "pov",
+            "frequency": 3,
+            "velocity_signal": 0.08
+          },
+          {
+            "keyword": "growing",
+            "frequency": 3,
+            "velocity_signal": 0.08
+          },
+          {
+            "keyword": "council",
+            "frequency": 3,
+            "velocity_signal": 0.08
+          },
+          {
+            "keyword": "estate",
+            "frequency": 3,
+            "velocity_signal": 0.08
+          },
+          {
+            "keyword": "manchester",
+            "frequency": 3,
+            "velocity_signal": 0.08
+          },
+          {
+            "keyword": "changed",
+            "frequency": 3,
+            "velocity_signal": 0.08
+          },
+          {
+            "keyword": "how",
+            "frequency": 3,
+            "velocity_signal": 0.08
+          },
+          {
+            "keyword": "see",
+            "frequency": 3,
+            "velocity_signal": 0.08
+          }
+        ],
+        "phrase_patterns": []
+      }
+    },
+    "summary": "Keywords: pov, growing, council, estate, manchester",
+    "dedupe_key": "8426bde053d06ea9c429a5cc6f74456b:keyword_cluster:aggregate"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 45,
+    "virality_score": 42,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "5f80c35f092e134454a5bf9fdf0e57a9",
+      "url": "",
+      "author": "",
+      "caption_preview": "Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthe",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "hook_text": "Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly",
+        "hook_type": "opinion"
+      }
+    },
+    "summary": "opinion hook: Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly",
+    "dedupe_key": "5f80c35f092e134454a5bf9fdf0e57a9:hook:opinion"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 35,
+    "virality_score": 42,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "5f80c35f092e134454a5bf9fdf0e57a9",
+      "url": "",
+      "author": "",
+      "caption_preview": "Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthe",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "format_type": "talking_head",
+        "format_strength_score": 0.35
+      }
+    },
+    "summary": "Format: talking head",
+    "dedupe_key": "5f80c35f092e134454a5bf9fdf0e57a9:format:talking_head"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 43,
+    "virality_score": 42,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "5f80c35f092e134454a5bf9fdf0e57a9",
+      "url": "",
+      "author": "",
+      "caption_preview": "Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthe",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "dominant_emotion": "curiosity",
+        "emotion_mixture": {
+          "curiosity": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: curiosity (curiosity 100%)",
+    "dedupe_key": "5f80c35f092e134454a5bf9fdf0e57a9:emotion:curiosity"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 42,
+    "virality_score": 42,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "5f80c35f092e134454a5bf9fdf0e57a9",
+      "url": "",
+      "author": "",
+      "caption_preview": "Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthe",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "primary_topic": "entertainment",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: entertainment",
+    "dedupe_key": "5f80c35f092e134454a5bf9fdf0e57a9:topic:entertainment"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 64,
+    "virality_score": 42,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "5f80c35f092e134454a5bf9fdf0e57a9",
+      "url": "",
+      "author": "",
+      "caption_preview": "Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthetic tour of Oxford colleges \u2014 the architecture nobody films properly. Dark academia aesthe",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "dark",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "academia",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "aesthetic",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "tour",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "oxford",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "colleges",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "architecture",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "nobody",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          }
+        ],
+        "phrase_patterns": []
+      }
+    },
+    "summary": "Keywords: dark, academia, aesthetic, tour, oxford",
+    "dedupe_key": "5f80c35f092e134454a5bf9fdf0e57a9:keyword_cluster:aggregate"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 65,
+    "virality_score": 51,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "5d5042fed42c23ab6bec7ae2c8b1a937",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 51,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.51,
+        "virality_score": 51
+      },
+      "signal": {
+        "hook_text": "Story time: my grandad survived Dunkirk and never spoke about it until this one conversation",
+        "hook_type": "storytime"
+      }
+    },
+    "summary": "storytime hook: Story time: my grandad survived Dunkirk and never spoke about it until this one conversation",
+    "dedupe_key": "5d5042fed42c23ab6bec7ae2c8b1a937:hook:storytime"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 80,
+    "virality_score": 51,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "5d5042fed42c23ab6bec7ae2c8b1a937",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 51,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.51,
+        "virality_score": 51
+      },
+      "signal": {
+        "format_type": "storytime",
+        "format_strength_score": 0.8
+      }
+    },
+    "summary": "Format: storytime",
+    "dedupe_key": "5d5042fed42c23ab6bec7ae2c8b1a937:format:storytime"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 63,
+    "virality_score": 51,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "5d5042fed42c23ab6bec7ae2c8b1a937",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 51,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.51,
+        "virality_score": 51
+      },
+      "signal": {
+        "dominant_emotion": "curiosity",
+        "emotion_mixture": {
+          "curiosity": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: curiosity (curiosity 100%)",
+    "dedupe_key": "5d5042fed42c23ab6bec7ae2c8b1a937:emotion:curiosity"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 62,
+    "virality_score": 51,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "5d5042fed42c23ab6bec7ae2c8b1a937",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 51,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.51,
+        "virality_score": 51
+      },
+      "signal": {
+        "primary_topic": "other",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: other",
+    "dedupe_key": "5d5042fed42c23ab6bec7ae2c8b1a937:topic:other"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 86,
+    "virality_score": 51,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "5d5042fed42c23ab6bec7ae2c8b1a937",
+      "url": "",
+      "author": "",
+      "caption_preview": "Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: my grandad survived Dunkirk and never spoke about it until this one conversation. Story time: ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 51,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.51,
+        "virality_score": 51
+      },
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "story",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "time",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "grandad",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "survived",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "dunkirk",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "never",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "spoke",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          },
+          {
+            "keyword": "until",
+            "frequency": 3,
+            "velocity_signal": 0.1
+          }
+        ],
+        "phrase_patterns": [
+          "story time"
+        ]
+      }
+    },
+    "summary": "Keywords: story, time, grandad, survived, dunkirk | Phrases: story time",
+    "dedupe_key": "5d5042fed42c23ab6bec7ae2c8b1a937:keyword_cluster:aggregate"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 48,
+    "virality_score": 47,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "09f125f419ac4a725cdf241db4f8e57f",
+      "url": "",
+      "author": "",
+      "caption_preview": "Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 47,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.35,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.47,
+        "virality_score": 47
+      },
+      "signal": {
+        "hook_text": "Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss",
+        "hook_type": "opinion"
+      }
+    },
+    "summary": "opinion hook: Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss",
+    "dedupe_key": "09f125f419ac4a725cdf241db4f8e57f:hook:opinion"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 35,
+    "virality_score": 47,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "09f125f419ac4a725cdf241db4f8e57f",
+      "url": "",
+      "author": "",
+      "caption_preview": "Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 47,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.35,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.47,
+        "virality_score": 47
+      },
+      "signal": {
+        "format_type": "talking_head",
+        "format_strength_score": 0.35
+      }
+    },
+    "summary": "Format: talking head",
+    "dedupe_key": "09f125f419ac4a725cdf241db4f8e57f:format:talking_head"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 46,
+    "virality_score": 47,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "09f125f419ac4a725cdf241db4f8e57f",
+      "url": "",
+      "author": "",
+      "caption_preview": "Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 47,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.35,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.47,
+        "virality_score": 47
+      },
+      "signal": {
+        "dominant_emotion": "nostalgia",
+        "emotion_mixture": {
+          "nostalgia": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: nostalgia (nostalgia 100%)",
+    "dedupe_key": "09f125f419ac4a725cdf241db4f8e57f:emotion:nostalgia"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 45,
+    "virality_score": 47,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "09f125f419ac4a725cdf241db4f8e57f",
+      "url": "",
+      "author": "",
+      "caption_preview": "Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 47,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.35,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.47,
+        "virality_score": 47
+      },
+      "signal": {
+        "primary_topic": "culture",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: culture",
+    "dedupe_key": "09f125f419ac4a725cdf241db4f8e57f:topic:culture"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 67,
+    "virality_score": 47,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "09f125f419ac4a725cdf241db4f8e57f",
+      "url": "",
+      "author": "",
+      "caption_preview": "Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes in the Lake District \u2014 this is the England tourists miss. Rainy day cottagecore vibes ",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 47,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.35,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.47,
+        "virality_score": 47
+      },
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "rainy",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "day",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "cottagecore",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "vibes",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "lake",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "district",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "england",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "tourists",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          }
+        ],
+        "phrase_patterns": []
+      }
+    },
+    "summary": "Keywords: rainy, day, cottagecore, vibes, lake",
+    "dedupe_key": "09f125f419ac4a725cdf241db4f8e57f:keyword_cluster:aggregate"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 100,
+    "virality_score": 100,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "b15435de8b9e0f6084cfbfb1587d4bab",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an h",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 100,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.7,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt",
+            "debate_bait",
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 1.0,
+        "virality_score": 100
+      },
+      "signal": {
+        "hook_text": "Hot take: we need an honest debate about immigration policy without shouting",
+        "hook_type": "controversy"
+      }
+    },
+    "summary": "controversy hook: Hot take: we need an honest debate about immigration policy without shouting",
+    "dedupe_key": "b15435de8b9e0f6084cfbfb1587d4bab:hook:controversy"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 90,
+    "virality_score": 100,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "b15435de8b9e0f6084cfbfb1587d4bab",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an h",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 100,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.7,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt",
+            "debate_bait",
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 1.0,
+        "virality_score": 100
+      },
+      "signal": {
+        "format_type": "yes_no_debate",
+        "format_strength_score": 0.9
+      }
+    },
+    "summary": "Format: yes no debate",
+    "dedupe_key": "b15435de8b9e0f6084cfbfb1587d4bab:format:yes_no_debate"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 100,
+    "virality_score": 100,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "b15435de8b9e0f6084cfbfb1587d4bab",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an h",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 100,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.7,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt",
+            "debate_bait",
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 1.0,
+        "virality_score": 100
+      },
+      "signal": {
+        "dominant_emotion": "curiosity",
+        "emotion_mixture": {
+          "curiosity": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: curiosity (curiosity 100%)",
+    "dedupe_key": "b15435de8b9e0f6084cfbfb1587d4bab:emotion:curiosity"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 99,
+    "virality_score": 100,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "b15435de8b9e0f6084cfbfb1587d4bab",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an h",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 100,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.7,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt",
+            "debate_bait",
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 1.0,
+        "virality_score": 100
+      },
+      "signal": {
+        "primary_topic": "politics",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: politics",
+    "dedupe_key": "b15435de8b9e0f6084cfbfb1587d4bab:topic:politics"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 100,
+    "virality_score": 100,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "b15435de8b9e0f6084cfbfb1587d4bab",
+      "url": "",
+      "author": "",
+      "caption_preview": "Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an honest debate about immigration policy without shouting. Yes or No? Hot take: we need an h",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 100,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.7,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "question_prompt",
+            "debate_bait",
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 1.0,
+        "virality_score": 100
+      },
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "hot",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "take",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "need",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "honest",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "debate",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "immigration",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "policy",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "without",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          }
+        ],
+        "phrase_patterns": [
+          "hot take",
+          "yes or no"
+        ]
+      }
+    },
+    "summary": "Keywords: hot, take, need, honest, debate | Phrases: hot take, yes or no",
+    "dedupe_key": "b15435de8b9e0f6084cfbfb1587d4bab:keyword_cluster:aggregate"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 62,
+    "virality_score": 67,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "94f32330f9926a2dd7a7dc5a766922eb",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Bri",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 67,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.67,
+        "virality_score": 67
+      },
+      "signal": {
+        "hook_text": "5 Roman ruins in Britain that aren't Stonehenge",
+        "hook_type": "opinion"
+      }
+    },
+    "summary": "opinion hook: 5 Roman ruins in Britain that aren't Stonehenge",
+    "dedupe_key": "94f32330f9926a2dd7a7dc5a766922eb:hook:opinion"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 35,
+    "virality_score": 67,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "94f32330f9926a2dd7a7dc5a766922eb",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Bri",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 67,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.67,
+        "virality_score": 67
+      },
+      "signal": {
+        "format_type": "talking_head",
+        "format_strength_score": 0.35
+      }
+    },
+    "summary": "Format: talking head",
+    "dedupe_key": "94f32330f9926a2dd7a7dc5a766922eb:format:talking_head"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 60,
+    "virality_score": 67,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "94f32330f9926a2dd7a7dc5a766922eb",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Bri",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 67,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.67,
+        "virality_score": 67
+      },
+      "signal": {
+        "dominant_emotion": "curiosity",
+        "emotion_mixture": {
+          "curiosity": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: curiosity (curiosity 100%)",
+    "dedupe_key": "94f32330f9926a2dd7a7dc5a766922eb:emotion:curiosity"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 59,
+    "virality_score": 67,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "94f32330f9926a2dd7a7dc5a766922eb",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Bri",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 67,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.67,
+        "virality_score": 67
+      },
+      "signal": {
+        "primary_topic": "culture",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: culture",
+    "dedupe_key": "94f32330f9926a2dd7a7dc5a766922eb:topic:culture"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 81,
+    "virality_score": 67,
+    "trend_state": "peaking",
+    "raw_data": {
+      "content_key": "94f32330f9926a2dd7a7dc5a766922eb",
+      "url": "",
+      "author": "",
+      "caption_preview": "5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Britain that aren't Stonehenge. Educational breakdown for history nerds. 5 Roman ruins in Bri",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 67,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": true,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.67,
+        "virality_score": 67
+      },
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "roman",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "ruins",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "britain",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "aren't",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "stonehenge",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "educational",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "breakdown",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          },
+          {
+            "keyword": "history",
+            "frequency": 3,
+            "velocity_signal": 0.11
+          }
+        ],
+        "phrase_patterns": []
+      }
+    },
+    "summary": "Keywords: roman, ruins, britain, aren't, stonehenge",
+    "dedupe_key": "94f32330f9926a2dd7a7dc5a766922eb:keyword_cluster:aggregate"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 55,
+    "virality_score": 57,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "36980e7ee388292b1968ce96f4be788d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is redis",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "hook_text": "Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok",
+        "hook_type": "curiosity"
+      }
+    },
+    "summary": "curiosity hook: Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok",
+    "dedupe_key": "36980e7ee388292b1968ce96f4be788d:hook:curiosity"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 35,
+    "virality_score": 57,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "36980e7ee388292b1968ce96f4be788d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is redis",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "format_type": "talking_head",
+        "format_strength_score": 0.35
+      }
+    },
+    "summary": "Format: talking head",
+    "dedupe_key": "36980e7ee388292b1968ce96f4be788d:format:talking_head"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 53,
+    "virality_score": 57,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "36980e7ee388292b1968ce96f4be788d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is redis",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "dominant_emotion": "curiosity",
+        "emotion_mixture": {
+          "curiosity": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: curiosity (curiosity 100%)",
+    "dedupe_key": "36980e7ee388292b1968ce96f4be788d:emotion:curiosity"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 52,
+    "virality_score": 57,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "36980e7ee388292b1968ce96f4be788d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is redis",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "primary_topic": "culture",
+        "secondary_topics": [
+          "identity"
+        ]
+      }
+    },
+    "summary": "Topic: culture (+ identity)",
+    "dedupe_key": "36980e7ee388292b1968ce96f4be788d:topic:culture"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 70,
+    "virality_score": 57,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "36980e7ee388292b1968ce96f4be788d",
+      "url": "",
+      "author": "",
+      "caption_preview": "Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is rediscovering Churchill quotes on TikTok. Nobody is talking about how Gen Z is redis",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 57,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [
+            "hook_tension"
+          ],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.57,
+        "virality_score": 57
+      },
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "talking",
+            "frequency": 3,
+            "velocity_signal": 0.12
+          },
+          {
+            "keyword": "gen",
+            "frequency": 3,
+            "velocity_signal": 0.12
+          },
+          {
+            "keyword": "rediscovering",
+            "frequency": 3,
+            "velocity_signal": 0.12
+          },
+          {
+            "keyword": "churchill",
+            "frequency": 3,
+            "velocity_signal": 0.12
+          },
+          {
+            "keyword": "quotes",
+            "frequency": 3,
+            "velocity_signal": 0.12
+          },
+          {
+            "keyword": "tiktok",
+            "frequency": 3,
+            "velocity_signal": 0.12
+          }
+        ],
+        "phrase_patterns": [
+          "nobody is talking about"
+        ]
+      }
+    },
+    "summary": "Keywords: talking, gen, rediscovering, churchill, quotes | Phrases: nobody is talking about",
+    "dedupe_key": "36980e7ee388292b1968ce96f4be788d:keyword_cluster:aggregate"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "hook",
+    "signal_strength": 45,
+    "virality_score": 42,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "bc935e7a0097bdef4e8e5b4018c52cb4",
+      "url": "",
+      "author": "",
+      "caption_preview": "Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse w",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "hook_text": "Emotional reunion: veteran meets the nurse who saved his life 40 years later",
+        "hook_type": "opinion"
+      }
+    },
+    "summary": "opinion hook: Emotional reunion: veteran meets the nurse who saved his life 40 years later",
+    "dedupe_key": "bc935e7a0097bdef4e8e5b4018c52cb4:hook:opinion"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "format",
+    "signal_strength": 35,
+    "virality_score": 42,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "bc935e7a0097bdef4e8e5b4018c52cb4",
+      "url": "",
+      "author": "",
+      "caption_preview": "Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse w",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "format_type": "talking_head",
+        "format_strength_score": 0.35
+      }
+    },
+    "summary": "Format: talking head",
+    "dedupe_key": "bc935e7a0097bdef4e8e5b4018c52cb4:format:talking_head"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "emotion",
+    "signal_strength": 43,
+    "virality_score": 42,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "bc935e7a0097bdef4e8e5b4018c52cb4",
+      "url": "",
+      "author": "",
+      "caption_preview": "Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse w",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "dominant_emotion": "curiosity",
+        "emotion_mixture": {
+          "curiosity": 1.0
+        }
+      }
+    },
+    "summary": "Emotion: curiosity (curiosity 100%)",
+    "dedupe_key": "bc935e7a0097bdef4e8e5b4018c52cb4:emotion:curiosity"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "topic",
+    "signal_strength": 42,
+    "virality_score": 42,
+    "trend_state": "emerging",
+    "raw_data": {
+      "content_key": "bc935e7a0097bdef4e8e5b4018c52cb4",
+      "url": "",
+      "author": "",
+      "caption_preview": "Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse w",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "primary_topic": "culture",
+        "secondary_topics": []
+      }
+    },
+    "summary": "Topic: culture",
+    "dedupe_key": "bc935e7a0097bdef4e8e5b4018c52cb4:topic:culture"
+  },
+  {
+    "created_at": "2026-07-03T15:49:14.387547+00:00",
+    "source": "tiktok",
+    "type": "keyword_cluster",
+    "signal_strength": 64,
+    "virality_score": 42,
+    "trend_state": "rising",
+    "raw_data": {
+      "content_key": "bc935e7a0097bdef4e8e5b4018c52cb4",
+      "url": "",
+      "author": "",
+      "caption_preview": "Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse who saved his life 40 years later. Emotional reunion: veteran meets the nurse w",
+      "extraction_status": "complete",
+      "batch_timestamp": "2026-07-03T15:49:14.387547+00:00",
+      "virality_score": 42,
+      "virality": {
+        "virality_signals": {
+          "fast_hook": false,
+          "controversy_level": 0.2,
+          "relatability_level": 0.15,
+          "shareability_triggers": [],
+          "engagement_boost": 0.0,
+          "sentiment_intensity": 0.2
+        },
+        "viral_strength_score": 0.42,
+        "virality_score": 42
+      },
+      "signal": {
+        "keyword_clusters": [
+          {
+            "keyword": "emotional",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "reunion",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "veteran",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "meets",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "nurse",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "who",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "saved",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          },
+          {
+            "keyword": "his",
+            "frequency": 3,
+            "velocity_signal": 0.09
+          }
+        ],
+        "phrase_patterns": []
+      }
+    },
+    "summary": "Keywords: emotional, reunion, veteran, meets, nurse",
+    "dedupe_key": "bc935e7a0097bdef4e8e5b4018c52cb4:keyword_cluster:aggregate"
+  }
+]

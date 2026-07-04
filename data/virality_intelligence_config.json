@@ -1,0 +1,29 @@
+{
+  "default_niches": [
+    "fitness",
+    "skincare",
+    "crypto",
+    "cooking",
+    "tech",
+    "fashion",
+    "gaming",
+    "motivation"
+  ],
+  "outcome_detection": {
+    "velocity_percentile_min": 0.90,
+    "velocity_percentile_max": 0.95,
+    "extreme_acceleration_threshold": 50.0,
+    "acceleration_window_hours_min": 24,
+    "acceleration_window_hours_max": 72,
+    "min_comments_per_video": 3
+  },
+  "learning": {
+    "max_adjustment_pct": 0.03,
+    "min_adjustment_pct": 0.01,
+    "min_outcomes_for_learning": 3,
+    "error_threshold": 5.0
+  },
+  "snapshot": {
+    "snapshot_interval_hours": 6
+  }
+}
