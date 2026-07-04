@@ -917,6 +917,8 @@ input[type=range]::-webkit-slider-thumb{
   border-color:rgba(0,255,136,.4);
   color:var(--green);
 }
+.rbac-restricted{opacity:.45;pointer-events:none;position:relative}
+.rbac-restricted::after{content:"RESTRICTED";position:absolute;top:8px;right:8px;font-size:9px;color:var(--muted);letter-spacing:.5px}
 .tab-content{display:none}
 .tab-content.active{display:block}
 
