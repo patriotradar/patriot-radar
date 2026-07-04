@@ -145,8 +145,7 @@ def resolveVisibleModules(
 
     visible: list[str] = []
     for module in ALL_MODULES:
-        flag_keys = _MODULE_FLAG_ALIASES.get(module, (module,))
-        if not any(flags.get(key, False) for key in flag_keys):
+        if not flags.get(module, False):
             continue
         if module in COMMERCE_GATED_MODULES and not commerce_enabled:
             continue

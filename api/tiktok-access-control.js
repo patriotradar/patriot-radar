@@ -109,8 +109,7 @@ function resolveVisibleModules(userRole, featureFlags, commerceMode) {
 
   const visible = [];
   for (const module of ALL_MODULES) {
-    const flagKeys = MODULE_FLAG_ALIASES[module] || [module];
-    if (!flagKeys.some((key) => flags[key])) continue;
+    if (!flags[module]) continue;
     if (COMMERCE_GATED_MODULES.has(module) && !commerceEnabled) continue;
     visible.push(module);
   }
