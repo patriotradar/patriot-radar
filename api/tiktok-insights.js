@@ -12,7 +12,17 @@ function safeInt(v, d = 0) {
 }
 
 function emptyResponse() {
-  return { videos: [], insights: [], recommended_posts: [], trend_scores: [], errors: [] };
+  return {
+    videos: [],
+    insights: [],
+    recommended_posts: [],
+    trend_scores: [],
+    errors: [],
+    niche: { niche: "unknown", confidence: 0.0, keywords: [] },
+    emerging_products: [],
+    trending_products: [],
+    content_pack: { captions: [], hashtags: [], hook_variations: [] },
+  };
 }
 
 function videoViews(video) {
@@ -244,6 +254,10 @@ function runPipeline(videos, niche) {
     trend_scores: accepted.map(computeTrendScore),
     errors: [],
     success: true,
+    niche: { niche: niche || "unknown", confidence: 0.0, keywords: [] },
+    emerging_products: [],
+    trending_products: [],
+    content_pack: { captions: [], hashtags: [], hook_variations: [] },
   };
 }
 

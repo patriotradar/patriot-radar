@@ -18,6 +18,9 @@ from apify_tiktok_comment_fetcher import (
 from apify_tiktok_fetcher import fetch_tiktok_via_apify
 from niche_comment_signal_processor import compute_niche_comment_signals, group_raw_rows_by_video
 from niche_comment_raw_store import videos_to_raw_rows
+from tiktok_content_generator import generateContentPack
+from tiktok_emerging_products_engine import detectEmergingProducts
+from tiktok_niche_resolver import resolveNiche
 from tiktok_pipeline_hardening import (
     build_safe_pipeline_response,
     clean_comments,
@@ -29,6 +32,7 @@ from tiktok_pipeline_hardening import (
     validate_videos,
 )
 from tiktok_trend_extractor import extract_tiktok_trend_signals
+from tiktok_trending_products_engine import generateTrendingProducts
 from trend_intelligence_store import store_external_tiktok_signals
 
 logger = logging.getLogger(__name__)
@@ -70,8 +74,21 @@ def _flatten_cleaned_comments(videos: list[dict[str, Any]]) -> list[dict[str, An
     return flat
 
 
+def _derive_account_id(account_id: str, videos: list[dict[str, Any]]) -> str:
+    """Resolve account_id from explicit value or first video author."""
+    explicit = str(account_id or "").strip()
+    if explicit:
+        return explicit
+    for video in videos:
+        author = str(video.get("author") or "").strip()
+        if author:
+            return author
+    return "unknown"
+
+
 def run_hardened_tiktok_pipeline(
     *,
+    account_id: str = "",
     niche: str = "",
     video_inputs: list[dict[str, Any]] | None = None,
     use_apify: bool = True,
@@ -89,17 +106,28 @@ def run_hardened_tiktok_pipeline(
     try:
         videos: list[dict[str, Any]] = []
         data_source = "unknown"
+        apify_feedback: dict[str, Any] = {}
 
         if video_inputs:
             videos = [_normalize_video_for_gate(v) for v in video_inputs if isinstance(v, dict)]
             data_source = "explicit_inputs"
         elif use_apify:
             comment_result = fetch_tiktok_comments_via_apify()
+            apify_feedback = {
+                "success": comment_result.get("success", False),
+                "source": "apify_comments",
+                "error": comment_result.get("error") or "",
+            }
             if comment_result.get("success") and comment_result.get("items"):
                 videos = [_normalize_video_for_gate(v) for v in comment_result["items"]]
                 data_source = "apify_comments"
             else:
                 discovery = fetch_tiktok_via_apify()
+                apify_feedback = {
+                    "success": discovery.get("success", False),
+                    "source": "apify_discovery",
+                    "error": discovery.get("error") or "",
+                }
                 if discovery.get("success") and discovery.get("items"):
                     videos = [_normalize_video_for_gate(v) for v in discovery["items"]]
                     data_source = "apify_discovery"
@@ -107,12 +135,16 @@ def run_hardened_tiktok_pipeline(
                     path = sample_path or str(DEFAULT_SAMPLE_PATH)
                     videos = [_normalize_video_for_gate(v) for v in load_sample_comment_videos(path)]
                     data_source = "sample_fallback"
+                    apify_feedback = {"success": True, "source": "sample_fallback", "error": ""}
                 else:
                     errors.append(comment_result.get("error") or discovery.get("error") or "apify_fetch_failed")
         else:
             path = sample_path or str(DEFAULT_SAMPLE_PATH)
             videos = [_normalize_video_for_gate(v) for v in load_sample_comment_videos(path)]
             data_source = "sample_fallback"
+            apify_feedback = {"success": True, "source": "sample_fallback", "error": ""}
+
+        apify_feedback["data_source"] = data_source
 
         gate = validate_videos(videos)
         accepted_videos = gate.get("accepted") or []
@@ -132,8 +164,54 @@ def run_hardened_tiktok_pipeline(
 
         flat_comments = _flatten_cleaned_comments(cleaned_videos)
 
-        raw_insights = generate_insights(cleaned_videos, flat_comments, niche=niche)
+        resolved_account_id = _derive_account_id(account_id, accepted_videos)
+        niche_result = resolveNiche(
+            account_id=resolved_account_id,
+            videos=cleaned_videos,
+            comments=flat_comments,
+        )
+        niche_str = str(niche_result.get("niche") or niche or "unknown")
+        if niche and not niche_result.get("confidence"):
+            niche_str = niche
+
+        raw_insights = generate_insights(cleaned_videos, flat_comments, niche=niche_str)
         validated_insights = validate_insights(raw_insights, flat_comments, cleaned_videos)
+
+        emerging_products: list[dict[str, Any]] = []
+        trending_products: list[dict[str, Any]] = []
+        content_pack: dict[str, Any] = {"captions": [], "hashtags": [], "hook_variations": []}
+
+        try:
+            emerging_products = detectEmergingProducts(
+                videos=cleaned_videos,
+                comments=flat_comments,
+                niche=niche_result,
+                trend_scores=trend_scores,
+            )
+        except Exception as exc:
+            logger.warning("Emerging products detection skipped: %s", exc)
+            errors.append(f"emerging_products: {exc}")
+
+        try:
+            trending_products = generateTrendingProducts(
+                videos=cleaned_videos,
+                comments=flat_comments,
+                niche=niche_result,
+                trend_scores=trend_scores,
+            )
+        except Exception as exc:
+            logger.warning("Trending products detection skipped: %s", exc)
+            errors.append(f"trending_products: {exc}")
+
+        try:
+            content_pack = generateContentPack(
+                emerging_products=emerging_products,
+                niche=niche_result,
+                apify_feedback=apify_feedback,
+            )
+        except Exception as exc:
+            logger.warning("Content pack generation skipped: %s", exc)
+            errors.append(f"content_pack: {exc}")
 
         rec_result = generate_post_recommendations(validated_insights, cleaned_videos)
         recommended_posts = rec_result.get("recommended_posts") or []
@@ -160,10 +238,10 @@ def run_hardened_tiktok_pipeline(
                 errors.append(f"signal_extraction: {exc}")
 
         niche_signals = {}
-        if niche and cleaned_videos:
+        if niche_str and cleaned_videos:
             try:
                 raw_rows = videos_to_raw_rows(cleaned_videos)
-                niche_signals = compute_niche_comment_signals(raw_rows, niche)
+                niche_signals = compute_niche_comment_signals(raw_rows, niche_str)
             except Exception as exc:
                 logger.warning("Niche comment signals skipped: %s", exc)
                 errors.append(f"niche_signals: {exc}")
@@ -174,6 +252,10 @@ def run_hardened_tiktok_pipeline(
             recommended_posts=recommended_posts,
             trend_scores=trend_scores,
             errors=errors,
+            niche=niche_result,
+            emerging_products=emerging_products,
+            trending_products=trending_products,
+            content_pack=content_pack,
             extra={
                 "success": True,
                 "data_source": data_source,
@@ -198,6 +280,7 @@ def run_hardened_tiktok_pipeline(
 def run_hardened_pipeline_from_raw_rows(
     raw_rows: list[dict[str, Any]],
     niche: str,
+    account_id: str = "",
 ) -> dict[str, Any]:
     """Query-time hardened pipeline from niche_comment_raw rows."""
     errors: list[str] = []
@@ -214,16 +297,51 @@ def run_hardened_pipeline_from_raw_rows(
             cleaned_videos.append({**video, "comments": cleaned})
 
         flat_comments = _flatten_cleaned_comments(cleaned_videos)
-        raw_insights = generate_insights(cleaned_videos, flat_comments, niche=niche)
+        trend_scores = compute_trend_scores(accepted)
+
+        resolved_account_id = _derive_account_id(account_id, accepted)
+        niche_result = resolveNiche(
+            account_id=resolved_account_id,
+            videos=cleaned_videos,
+            comments=flat_comments,
+        )
+        niche_str = str(niche_result.get("niche") or niche or "unknown")
+        if niche and not niche_result.get("confidence"):
+            niche_str = niche
+
+        raw_insights = generate_insights(cleaned_videos, flat_comments, niche=niche_str)
         validated = validate_insights(raw_insights, flat_comments, cleaned_videos)
+
+        emerging_products = detectEmergingProducts(
+            videos=cleaned_videos,
+            comments=flat_comments,
+            niche=niche_result,
+            trend_scores=trend_scores,
+        )
+        trending_products = generateTrendingProducts(
+            videos=cleaned_videos,
+            comments=flat_comments,
+            niche=niche_result,
+            trend_scores=trend_scores,
+        )
+        content_pack = generateContentPack(
+            emerging_products=emerging_products,
+            niche=niche_result,
+            apify_feedback={},
+        )
+
         recs = generate_post_recommendations(validated, cleaned_videos)
 
         return build_safe_pipeline_response(
             videos=cleaned_videos,
             insights=validated,
             recommended_posts=recs.get("recommended_posts") or [],
-            trend_scores=compute_trend_scores(accepted),
+            trend_scores=trend_scores,
             errors=errors,
+            niche=niche_result,
+            emerging_products=emerging_products,
+            trending_products=trending_products,
+            content_pack=content_pack,
             extra={
                 "success": True,
                 "gate_stats": gate.get("stats") or {},

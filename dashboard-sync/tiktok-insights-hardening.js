@@ -294,7 +294,17 @@
   }
 
   function emptyPipelineResponse() {
-    return { videos: [], insights: [], recommended_posts: [], trend_scores: [], errors: [] };
+    return {
+      videos: [],
+      insights: [],
+      recommended_posts: [],
+      trend_scores: [],
+      errors: [],
+      niche: { niche: "unknown", confidence: 0.0, keywords: [] },
+      emerging_products: [],
+      trending_products: [],
+      content_pack: { captions: [], hashtags: [], hook_variations: [] }
+    };
   }
 
   function groupRawRowsByVideo(rows) {
@@ -357,7 +367,11 @@
         recommended_posts: recs.recommended_posts || [],
         trend_scores: trendScores,
         errors: gate.errors || [],
-        success: true
+        success: true,
+        niche: { niche: niche || "unknown", confidence: 0.0, keywords: [] },
+        emerging_products: [],
+        trending_products: [],
+        content_pack: { captions: [], hashtags: [], hook_variations: [] }
       };
     } catch (err) {
       var resp = emptyPipelineResponse();
@@ -375,9 +389,21 @@
     var posts = data.recommended_posts || [];
     var scores = data.trend_scores || [];
     var errors = data.errors || [];
+    var nicheInfo = data.niche || {};
+    var emergingProducts = data.emerging_products || [];
+    var trendingProducts = data.trending_products || [];
+    var contentPack = data.content_pack || {};
 
     var h = '<div class="card" style="margin-top:16px">';
     h += '<div class="card-header"><h2>Evidence-Based Insights</h2><div class="section-icon" style="color:var(--amber)">&#9889;</div></div>';
+
+    if (nicheInfo.niche && nicheInfo.niche !== "unknown") {
+      h += '<p style="font-size:11px;color:var(--muted);margin-bottom:10px">Account niche: <strong>' + escapeHtml(nicheInfo.niche) + '</strong>';
+      if (nicheInfo.confidence) {
+        h += ' (' + Math.round((nicheInfo.confidence || 0) * 100) + '% confidence)';
+      }
+      h += '</p>';
+    }
 
     if (errors.length) {
       h += '<p style="font-size:11px;color:var(--muted);margin-bottom:10px">Pipeline completed with ' + errors.length + ' non-blocking warning(s).</p>';
@@ -410,6 +436,48 @@
         h += '<span class="tag">' + escapeHtml(post.format) + '</span> ';
         h += '<span class="tag">' + escapeHtml(post.hook_type) + '</span>';
         h += '</div>';
+      }
+      h += '</div></div>';
+    }
+
+    if (emergingProducts.length > 0) {
+      h += '<div style="margin-top:16px"><h3 style="font-size:14px;margin-bottom:10px;color:var(--amber)">Emerging Products</h3>';
+      h += '<div style="display:grid;gap:10px">';
+      for (var ep = 0; ep < Math.min(emergingProducts.length, 5); ep++) {
+        var emerg = emergingProducts[ep];
+        h += '<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px">';
+        h += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">' + escapeHtml(emerg.product || "") + '</div>';
+        h += '<span class="tag">' + escapeHtml(emerg.velocity_state || "emerging") + '</span> ';
+        h += '<span class="tag">' + Math.round((emerg.signal_strength || 0) * 100) + '% signal</span>';
+        h += '</div>';
+      }
+      h += '</div></div>';
+    }
+
+    if (trendingProducts.length > 0) {
+      h += '<div style="margin-top:16px"><h3 style="font-size:14px;margin-bottom:10px;color:var(--green)">Trending Products</h3>';
+      h += '<div style="display:grid;gap:10px">';
+      for (var tp = 0; tp < Math.min(trendingProducts.length, 5); tp++) {
+        var trend = trendingProducts[tp];
+        h += '<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px">';
+        h += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">' + escapeHtml(trend.name || trend.product || "") + '</div>';
+        h += '<span class="tag">' + safeInt(trend.mention_count, 0) + ' mentions</span> ';
+        h += '<span class="tag">score ' + Math.round((trend.score || 0) * 100) + '%</span>';
+        h += '</div>';
+      }
+      h += '</div></div>';
+    }
+
+    var captions = contentPack.captions || [];
+    if (captions.length > 0) {
+      h += '<div style="margin-top:16px"><h3 style="font-size:14px;margin-bottom:10px;color:var(--cyan)">Content Pack</h3>';
+      h += '<div style="display:grid;gap:8px">';
+      for (var cc = 0; cc < Math.min(captions.length, 4); cc++) {
+        h += '<div style="font-size:12px;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px">' + escapeHtml(captions[cc]) + '</div>';
+      }
+      var hashtags = contentPack.hashtags || [];
+      if (hashtags.length > 0) {
+        h += '<p style="font-size:11px;color:var(--muted);margin-top:8px">' + escapeHtml(hashtags.slice(0, 8).join(" ")) + '</p>';
       }
       h += '</div></div>';
     }
