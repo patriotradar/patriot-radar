@@ -27,7 +27,7 @@
       raw_logs: [],
       primary_action: { label: "unknown", action: "unknown", context_id: "unknown" },
       system_health: "unknown",
-      access: { role: "creator", admin_override: false, visible_modules: ["tiktok", "prediction_engine", "analytics"], commerce_access: false },
+      access: { role: "creator", admin_override: false, visible_modules: ["trends", "tiktok", "prediction_engine", "analytics"], commerce_access: false },
     };
   }
 
@@ -137,12 +137,7 @@
     if (!access) return false;
     if (access.admin_override) return true;
     var visible = access.visible_modules || [];
-    var target = module === "trends" ? "tiktok" : module;
-    for (var i = 0; i < visible.length; i++) {
-      var item = visible[i] === "trends" ? "tiktok" : visible[i];
-      if (item === target) return true;
-    }
-    return false;
+    return visible.indexOf(module) !== -1;
   }
 
   function renderSection(title, bodyHtml, restricted) {

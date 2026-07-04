@@ -19,6 +19,7 @@ VALID_ROLES = frozenset({"admin", "creator", "viewer", "test"})
 DEFAULT_ROLE = "creator"
 
 ALL_MODULES = (
+    "trends",
     "tiktok",
     "products",
     "inventory_system",
@@ -31,10 +32,7 @@ ALL_MODULES = (
 
 COMMERCE_GATED_MODULES = frozenset({"products", "inventory_system"})
 
-# Legacy feature-flag alias: "trends" gates the same module as "tiktok".
-_MODULE_FLAG_ALIASES = {"tiktok": ("tiktok", "trends")}
-_MODULE_ID_ALIASES = {"trends": "tiktok"}
-_DEFAULT_VISIBLE_MODULES = ("tiktok", "prediction_engine", "analytics")
+_DEFAULT_VISIBLE_MODULES = ("trends", "tiktok", "prediction_engine", "analytics")
 
 _SENSITIVE_MODULES = frozenset({"system_health", "raw_logs", "hidden_alerts"})
 
@@ -97,19 +95,15 @@ def getAdminOverride(user_role: str) -> bool:
     return user_role == "admin"
 
 
-def _normalize_module_id(module: str) -> str:
-    return _MODULE_ID_ALIASES.get(module, module)
-
-
 def normalizeVisibleModules(
     modules: list[str] | None,
     admin_override: bool = False,
 ) -> list[str]:
-    """Canonicalize module IDs for UI (trends -> tiktok)."""
+    """Deduplicate visible module IDs without merging distinct modules."""
     seen: set[str] = set()
     out: list[str] = []
     for raw in modules or []:
-        mod = _normalize_module_id(str(raw))
+        mod = str(raw).strip()
         if mod and mod not in seen:
             seen.add(mod)
             out.append(mod)
@@ -123,8 +117,8 @@ def normalizeVisibleModules(
 
 
 def moduleIsVisible(visible_modules: list[str] | set[str] | None, module: str) -> bool:
-    visible = {_normalize_module_id(str(item)) for item in (visible_modules or [])}
-    return _normalize_module_id(module) in visible
+    visible = {str(item) for item in (visible_modules or [])}
+    return module in visible
 
 
 def resolveVisibleModules(
@@ -151,8 +145,7 @@ def resolveVisibleModules(
 
     visible: list[str] = []
     for module in ALL_MODULES:
-        flag_keys = _MODULE_FLAG_ALIASES.get(module, (module,))
-        if not any(flags.get(key, False) for key in flag_keys):
+        if not flags.get(module, False):
             continue
         if module in COMMERCE_GATED_MODULES and not commerce_enabled:
             continue

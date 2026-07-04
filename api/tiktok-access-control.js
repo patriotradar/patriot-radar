@@ -10,6 +10,7 @@ const VALID_ROLES = new Set(["admin", "creator", "viewer", "test"]);
 const DEFAULT_ROLE = "creator";
 
 const ALL_MODULES = [
+  "trends",
   "tiktok",
   "products",
   "inventory_system",
@@ -22,9 +23,7 @@ const ALL_MODULES = [
 
 const COMMERCE_GATED_MODULES = new Set(["products", "inventory_system"]);
 
-const MODULE_FLAG_ALIASES = { tiktok: ["tiktok", "trends"] };
-const MODULE_ID_ALIASES = { trends: "tiktok" };
-const DEFAULT_VISIBLE_MODULES = ["tiktok", "prediction_engine", "analytics"];
+const DEFAULT_VISIBLE_MODULES = ["trends", "tiktok", "prediction_engine", "analytics"];
 
 function loadFeatureFlags() {
   try {
@@ -78,15 +77,11 @@ function getAdminOverride(userRole) {
   return userRole === "admin";
 }
 
-function normalizeModuleId(module) {
-  return MODULE_ID_ALIASES[module] || module;
-}
-
 function normalizeVisibleModuleList(modules, adminOverride) {
   const seen = new Set();
   const out = [];
   for (const raw of modules || []) {
-    const mod = normalizeModuleId(String(raw));
+    const mod = String(raw).trim();
     if (mod && !seen.has(mod)) {
       seen.add(mod);
       out.push(mod);
@@ -101,8 +96,8 @@ function normalizeVisibleModuleList(modules, adminOverride) {
 }
 
 function moduleIsVisible(visibleModules, module) {
-  const visible = new Set((visibleModules || []).map((item) => normalizeModuleId(String(item))));
-  return visible.has(normalizeModuleId(module));
+  const visible = new Set(visibleModules || []);
+  return visible.has(module);
 }
 
 function resolveVisibleModules(userRole, featureFlags, commerceMode) {
@@ -114,8 +109,7 @@ function resolveVisibleModules(userRole, featureFlags, commerceMode) {
 
   const visible = [];
   for (const module of ALL_MODULES) {
-    const flagKeys = MODULE_FLAG_ALIASES[module] || [module];
-    if (!flagKeys.some((key) => flags[key])) continue;
+    if (!flags[module]) continue;
     if (COMMERCE_GATED_MODULES.has(module) && !commerceEnabled) continue;
     visible.push(module);
   }

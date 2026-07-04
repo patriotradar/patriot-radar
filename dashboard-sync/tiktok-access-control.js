@@ -5,25 +5,29 @@
 (function (global) {
   "use strict";
 
-  var MODULE_ID_ALIASES = { trends: "tiktok" };
-  var DEFAULT_VISIBLE_MODULES = ["tiktok", "prediction_engine", "analytics"];
+  var DEFAULT_VISIBLE_MODULES = ["trends", "tiktok", "prediction_engine", "analytics"];
 
-  // Sidebar tab id -> canonical RBAC module id
+  // Sidebar tab id -> RBAC module id (Google Trends and TikTok are separate)
   var TAB_MODULE_MAP = {
-    trends: "tiktok",
+    trends: "trends",
+    tiktok: "tiktok",
     mystats: "analytics",
   };
 
-  // Content panels only — tab buttons are handled by TAB_MODULE_MAP
   var MODULE_DOM_MAP = {
-    tiktok: [
-      "#intelligenceFeed",
-      "#tiktokTrendIntelligence",
-      "#liveFeed",
+    trends: [
+      "#scoringGuide",
       "#topOpportunities",
       "#aiTrendInsights",
       "#themeAnalysis",
-      "#scoringGuide",
+      "#intelligenceFeed",
+    ],
+    tiktok: [
+      "#tiktokLiveStateDashboard",
+      "#tiktokTrendIntelligence",
+      "#tiktokInsightsHardening",
+      "#tiktokInventoryPredictor",
+      "#tiktokShopInventoryGate",
     ],
     products: ["#primaryTarget", "#contentFunnel"],
     inventory_system: ["#inventorySystemPanel"],
@@ -45,16 +49,12 @@
     commerce_access: false,
   };
 
-  function normalizeModuleId(module) {
-    return MODULE_ID_ALIASES[module] || module;
-  }
-
   function normalizeVisibleModules(modules, adminOverride) {
     var out = [];
     var seen = {};
     var list = Array.isArray(modules) ? modules : [];
     for (var i = 0; i < list.length; i++) {
-      var mod = normalizeModuleId(String(list[i]));
+      var mod = String(list[i]).trim();
       if (mod && !seen[mod]) {
         seen[mod] = true;
         out.push(mod);
@@ -108,12 +108,7 @@
 
   function isModuleVisible(module) {
     if (_access.admin_override) return true;
-    var target = normalizeModuleId(module);
-    var modules = _access.visible_modules || [];
-    for (var i = 0; i < modules.length; i++) {
-      if (normalizeModuleId(modules[i]) === target) return true;
-    }
-    return false;
+    return (_access.visible_modules || []).indexOf(module) !== -1;
   }
 
   function canAccessCommerce() {
@@ -172,8 +167,8 @@
   }
 
   function ensureAdminPanels() {
-    var trendsTab = document.getElementById("tab-trends");
-    if (!trendsTab) return;
+    var tiktokTab = document.getElementById("tab-tiktok");
+    if (!tiktokTab) return;
 
     if (!document.getElementById("rbacSystemHealthPanel")) {
       var health = document.createElement("div");
@@ -183,7 +178,7 @@
       health.innerHTML =
         '<h4 style="margin:0 0 8px;font-size:13px;color:var(--amber)">System Health (Admin)</h4>' +
         '<div id="rbacSystemHealthContent" style="font-size:11px;color:var(--muted)">Loading...</div>';
-      trendsTab.appendChild(health);
+      tiktokTab.appendChild(health);
     }
 
     if (!document.getElementById("rbacRawLogsPanel")) {
@@ -194,7 +189,7 @@
       logs.innerHTML =
         '<h4 style="margin:0 0 8px;font-size:13px;color:var(--amber)">Raw Logs (Admin)</h4>' +
         '<pre id="rbacRawLogsContent" style="font-size:10px;max-height:160px;overflow:auto;margin:0;color:var(--muted)"></pre>';
-      trendsTab.appendChild(logs);
+      tiktokTab.appendChild(logs);
     }
 
     if (!document.getElementById("rbacHiddenAlertsPanel")) {
@@ -205,7 +200,7 @@
       hidden.innerHTML =
         '<h4 style="margin:0 0 8px;font-size:13px;color:var(--red,#ff4444)">Hidden Alerts (Admin)</h4>' +
         '<div id="rbacHiddenAlertsContent" style="font-size:11px;color:var(--muted)"></div>';
-      trendsTab.appendChild(hidden);
+      tiktokTab.appendChild(hidden);
     }
 
     if (!document.getElementById("inventorySystemPanel")) {
@@ -216,7 +211,7 @@
       inv.innerHTML =
         '<h4 style="margin:0 0 8px;font-size:13px">Inventory System</h4>' +
         '<div id="inventorySystemContent" style="font-size:11px;color:var(--muted)">No inventory data</div>';
-      trendsTab.appendChild(inv);
+      tiktokTab.appendChild(inv);
     }
   }
 

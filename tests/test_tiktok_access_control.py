@@ -66,38 +66,61 @@ class TestVisibleModules(unittest.TestCase):
             "commerce_mode": False,
         }
         modules = rbac.resolveVisibleModules("creator", flags, commerce_mode=False)
+        self.assertIn("trends", modules)
         self.assertIn("tiktok", modules)
         self.assertNotIn("products", modules)
         self.assertNotIn("inventory_system", modules)
         self.assertNotIn("system_health", modules)
 
-    def test_tiktok_flag_aliases_legacy_trends_flag(self):
-        flags = {
-            "trends": True,
-            "products": False,
-            "inventory_system": False,
-            "prediction_engine": False,
-            "analytics": False,
-            "system_health": False,
-            "raw_logs": False,
-            "hidden_alerts": False,
-            "commerce_mode": False,
-        }
-        modules = rbac.resolveVisibleModules("creator", flags, commerce_mode=False)
-        self.assertIn("tiktok", modules)
-        self.assertNotIn("trends", modules)
+    def test_trends_and_tiktok_are_independent_flags(self):
+        trends_only = rbac.resolveVisibleModules(
+            "creator",
+            {
+                "trends": True,
+                "tiktok": False,
+                "products": False,
+                "inventory_system": False,
+                "prediction_engine": False,
+                "analytics": False,
+                "system_health": False,
+                "raw_logs": False,
+                "hidden_alerts": False,
+                "commerce_mode": False,
+            },
+            commerce_mode=False,
+        )
+        tiktok_only = rbac.resolveVisibleModules(
+            "creator",
+            {
+                "trends": False,
+                "tiktok": True,
+                "products": False,
+                "inventory_system": False,
+                "prediction_engine": False,
+                "analytics": False,
+                "system_health": False,
+                "raw_logs": False,
+                "hidden_alerts": False,
+                "commerce_mode": False,
+            },
+            commerce_mode=False,
+        )
+        self.assertIn("trends", trends_only)
+        self.assertNotIn("tiktok", trends_only)
+        self.assertIn("tiktok", tiktok_only)
+        self.assertNotIn("trends", tiktok_only)
 
-    def test_legacy_trends_module_alias_maps_to_tiktok(self):
-        normalized = rbac.normalizeVisibleModules(["trends", "analytics"])
-        self.assertIn("tiktok", normalized)
-        self.assertNotIn("trends", normalized)
+    def test_normalize_keeps_trends_and_tiktok_distinct(self):
+        normalized = rbac.normalizeVisibleModules(["trends", "tiktok", "analytics"])
+        self.assertEqual(normalized, ["trends", "tiktok", "analytics"])
 
-    def test_filter_accepts_legacy_trends_visible_module(self):
+    def test_google_trends_module_does_not_expose_tiktok_live_state(self):
         state = {"trends": [{"summary": "t1"}]}
         access = {"admin_override": False, "visible_modules": ["trends"]}
         filtered = rbac.filterLiveStateForAccess(state, access)
-        self.assertEqual(len(filtered["trends"]), 1)
-        self.assertIn("tiktok", filtered["access"]["visible_modules"])
+        self.assertEqual(filtered["trends"], [])
+        self.assertIn("trends", filtered["access"]["visible_modules"])
+        self.assertNotIn("tiktok", filtered["access"]["visible_modules"])
 
     def test_commerce_mode_unlocks_products_for_creator(self):
         flags = {
@@ -225,6 +248,7 @@ class TestLiveStateAssembler(unittest.TestCase):
         self.assertEqual(state["access"]["role"], "creator")
         self.assertFalse(state["access"]["admin_override"])
         self.assertIsInstance(state["access"]["visible_modules"], list)
+        self.assertIn("trends", state["access"]["visible_modules"])
         self.assertIn("tiktok", state["access"]["visible_modules"])
         self.assertIn("trends", state)
         self.assertIn("products", state)
