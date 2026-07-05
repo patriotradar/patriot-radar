@@ -1,0 +1,108 @@
+name: Vercel Preview Branch Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "dashboard-sync/**"
+      - "index.html"
+      - "vercel.json"
+      - ".github/workflows/vercel-preview-branch-deploy.yml"
+
+jobs:
+  deploy-preview-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push preview branch to patriot-radar-dashboard
+        id: push
+        env:
+          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
+        run: |
+          set -e
+          PREVIEW_BRANCH="preview/phase-2-safe"
+          git clone "https://x-access-token:${DASHBOARD_TOKEN}@github.com/patriotradar/patriot-radar-dashboard.git" dashboard
+          cd dashboard
+          git checkout -B "$PREVIEW_BRANCH"
+
+          # Static dashboard + client modules
+          cp ../dashboard-sync/index.html index.html
+          for f in niche-comment-intelligence.js niche-comment-virality-prediction.js \
+            virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-integration.js \
+            tiktok-live-state-client.js tiktok-access-control.js tiktok-insights-hardening.js \
+            tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js \
+            commerce-mode.js commerce-dashboard.js tiktok-orchestration-dashboard.js niche-comment-signals.js; do
+            cp "../dashboard-sync/$f" "$f"
+          done
+
+          # API routes (serverless)
+          mkdir -p api/chat
+          cp ../dashboard-sync/api/public-config.js api/public-config.js
+          cp ../dashboard-sync/api/health.js api/health.js
+          cp ../dashboard-sync/api/trend-intelligence.js api/trend-intelligence.js
+          cp ../dashboard-sync/api/trend-intelligence-providers.js api/trend-intelligence-providers.js
+          cp ../dashboard-sync/api/tiktok-live-state.js api/tiktok-live-state.js
+          cp ../dashboard-sync/api/tiktok-live-state-assembler.js api/tiktok-live-state-assembler.js
+          cp ../dashboard-sync/api/tiktok-access-control.js api/tiktok-access-control.js
+          cp ../dashboard-sync/api/tiktok-content-approval.js api/tiktok-content-approval.js
+          cp ../dashboard-sync/api/tiktok-insights.js api/tiktok-insights.js
+          cp ../dashboard-sync/api/chat/completions.js api/chat/completions.js
+          cp ../dashboard-sync/api/chat/audit-prompts.js api/chat/audit-prompts.js
+          cp ../dashboard-sync/vercel.json vercel.json
+
+          git config user.name "Patriot Radar Bot"
+          git config user.email "bot@patriotradar.github.io"
+          git add -A
+          git commit -m "Vercel preview: Phase 2 safe deploy from patriot-radar@${GITHUB_SHA::7}" || true
+          git push -f origin "$PREVIEW_BRANCH"
+          echo "preview_branch=$PREVIEW_BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Vercel preview deployment
+        id: wait
+        run: |
+          set -e
+          for i in $(seq 1 30); do
+            dep=$(gh api "repos/patriotradar/patriot-radar-dashboard/deployments" \
+              --jq '[.[] | select(.creator.login=="vercel[bot]" and (.ref|test("preview")))] | .[0]')
+            if [ -n "$dep" ] && [ "$dep" != "null" ]; then
+              dep_id=$(echo "$dep" | jq -r '.id')
+              state=$(gh api "repos/patriotradar/patriot-radar-dashboard/deployments/${dep_id}/statuses" \
+                --jq '.[0].state // empty')
+              url=$(gh api "repos/patriotradar/patriot-radar-dashboard/deployments/${dep_id}/statuses" \
+                --jq '.[0].environment_url // empty')
+              echo "state=$state" >> "$GITHUB_OUTPUT"
+              echo "preview_url=$url" >> "$GITHUB_OUTPUT"
+              if [ "$state" = "success" ] && [ -n "$url" ]; then
+                echo "Preview URL: $url"
+                exit 0
+              fi
+            fi
+            echo "Waiting for Vercel preview deployment... ($i/30)"
+            sleep 10
+          done
+          echo "::warning::Timed out waiting for Vercel preview deployment URL"
+          exit 0
+
+      - name: Smoke test preview /api/health
+        if: steps.wait.outputs.preview_url != ''
+        run: |
+          url="${{ steps.wait.outputs.preview_url }}"
+          curl -fsSL "$url/api/health" | tee /tmp/health.json
+          grep -q '"status":"ok"' /tmp/health.json
+
+      - name: Smoke test preview /api/trend-intelligence
+        if: steps.wait.outputs.preview_url != ''
+        run: |
+          url="${{ steps.wait.outputs.preview_url }}"
+          curl -fsSL "$url/api/trend-intelligence?niche=patriotic" | tee /tmp/trends.json
+          grep -q '"success":true' /tmp/trends.json
+
+      - name: Summary
+        run: |
+          echo "## Vercel Preview Deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch: \`${{ steps.push.outputs.preview_branch }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Preview URL: ${{ steps.wait.outputs.preview_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deployment state: ${{ steps.wait.outputs.state }}" >> "$GITHUB_STEP_SUMMARY"
