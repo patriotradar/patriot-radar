@@ -12,6 +12,7 @@
     "api/tiktok-live-state.js": { "maxDuration": 30 },
     "api/tiktok-insights.js": { "maxDuration": 30 },
     "api/tiktok-content-approval.js": { "maxDuration": 15 },
+    "api/ai-governance.js": { "maxDuration": 120 },
     "api/public-config.js": { "maxDuration": 10 },
     "api/tiktok-auth.js": { "maxDuration": 10 },
     "api/tiktok-callback.js": { "maxDuration": 30 },
