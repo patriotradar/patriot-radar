@@ -1,0 +1,230 @@
+{
+  "timestamp": "2026-07-05T09:56:56.382860+00:00",
+  "niche": "general",
+  "providers_online": [
+    "social"
+  ],
+  "providers_offline": [
+    "tiktok_apify",
+    "google_trends",
+    "reddit",
+    "youtube",
+    "news",
+    "blogs",
+    "forums",
+    "historical"
+  ],
+  "warnings": [
+    "TikTok (Apify): missing_apify_api_token",
+    "YouTube Search: YouTube suggestions returned no results",
+    "Public Forums: Forum feeds returned no discussions",
+    "CreatorRadar History: CreatorRadar History unavailable (missing credentials or dependencies)"
+  ],
+  "trend_count": 1,
+  "opportunity_count": 1,
+  "trends": [
+    {
+      "trend": "bbclaurak",
+      "keyword": "bbclaurak",
+      "source": "social",
+      "timestamp": "2026-07-05T09:56:58.003627+00:00",
+      "popularity": 83.33333333333333,
+      "buying_intent": 0.0,
+      "competition": 50.0,
+      "category": "general",
+      "sentiment": "neutral",
+      "related_creators": [],
+      "recommended_content": {
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "format": "short-form TikTok / Reels",
+        "angle": "Trend-jacking bbclaurak with authentic creator POV",
+        "platforms": {
+          "tiktok": "TikTok: Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+          "youtube": "YouTube: Deep dive \u2014 bbclaurak",
+          "instagram": "Instagram: Carousel on bbclaurak",
+          "blog": "Blog/SEO: Ultimate guide to bbclaurak",
+          "newsletter": "Newsletter: This week's bbclaurak opportunity"
+        }
+      },
+      "raw_data": {
+        "keyword": "bbclaurak",
+        "source_keyword": "Twitter UK",
+        "rise_value": 250,
+        "discovery_type": "twitter",
+        "provider": "social",
+        "niche": "general"
+      },
+      "opportunity": {
+        "search_demand": 57,
+        "buying_intent": 0,
+        "competition": 50,
+        "content_opportunity": 81,
+        "affiliate_potential": 10,
+        "product_potential": 4,
+        "brand_opportunity": 57,
+        "opportunity_score": 37
+      },
+      "content_intelligence": {
+        "content_angle": "Trend-jacking bbclaurak with authentic creator POV",
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "target_audience": "UK creators and patriotic audience on TikTok/YouTube",
+        "search_keywords": [
+          "bbclaurak"
+        ],
+        "pain_points": [
+          "Hard to find trustworthy information about bbclaurak",
+          "Creators oversaturate generic patriotic content"
+        ],
+        "questions": [
+          "What is the best bbclaurak?",
+          "Is bbclaurak worth buying in 2026?",
+          "How do I get started with bbclaurak?",
+          "What do people regret about bbclaurak?"
+        ],
+        "buying_signals": [],
+        "cta_suggestions": [
+          "Follow for daily British trend alerts",
+          "Save this before it trends"
+        ],
+        "suggested_format": "short-form TikTok / Reels",
+        "viral_potential_score": 83
+      },
+      "niche": "general",
+      "signal_type": "social_trend",
+      "dedupe_key": "social:bbclaurak:social_trend"
+    }
+  ],
+  "opportunities": [
+    {
+      "trend": "bbclaurak",
+      "keyword": "bbclaurak",
+      "source": "social",
+      "timestamp": "2026-07-05T09:56:58.003627+00:00",
+      "popularity": 83.33333333333333,
+      "buying_intent": 0.0,
+      "competition": 50.0,
+      "category": "general",
+      "sentiment": "neutral",
+      "related_creators": [],
+      "recommended_content": {
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "format": "short-form TikTok / Reels",
+        "angle": "Trend-jacking bbclaurak with authentic creator POV",
+        "platforms": {
+          "tiktok": "TikTok: Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+          "youtube": "YouTube: Deep dive \u2014 bbclaurak",
+          "instagram": "Instagram: Carousel on bbclaurak",
+          "blog": "Blog/SEO: Ultimate guide to bbclaurak",
+          "newsletter": "Newsletter: This week's bbclaurak opportunity"
+        }
+      },
+      "raw_data": {
+        "keyword": "bbclaurak",
+        "source_keyword": "Twitter UK",
+        "rise_value": 250,
+        "discovery_type": "twitter",
+        "provider": "social",
+        "niche": "general"
+      },
+      "opportunity": {
+        "search_demand": 57,
+        "buying_intent": 0,
+        "competition": 50,
+        "content_opportunity": 81,
+        "affiliate_potential": 10,
+        "product_potential": 4,
+        "brand_opportunity": 57,
+        "opportunity_score": 37
+      },
+      "content_intelligence": {
+        "content_angle": "Trend-jacking bbclaurak with authentic creator POV",
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "target_audience": "UK creators and patriotic audience on TikTok/YouTube",
+        "search_keywords": [
+          "bbclaurak"
+        ],
+        "pain_points": [
+          "Hard to find trustworthy information about bbclaurak",
+          "Creators oversaturate generic patriotic content"
+        ],
+        "questions": [
+          "What is the best bbclaurak?",
+          "Is bbclaurak worth buying in 2026?",
+          "How do I get started with bbclaurak?",
+          "What do people regret about bbclaurak?"
+        ],
+        "buying_signals": [],
+        "cta_suggestions": [
+          "Follow for daily British trend alerts",
+          "Save this before it trends"
+        ],
+        "suggested_format": "short-form TikTok / Reels",
+        "viral_potential_score": 83
+      },
+      "niche": "general",
+      "signal_type": "social_trend",
+      "dedupe_key": "social:bbclaurak:social_trend"
+    }
+  ],
+  "recommendations": {
+    "content_to_create_today": [
+      {
+        "keyword": "bbclaurak",
+        "opportunity_score": 37,
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "format": "short-form TikTok / Reels",
+        "source": "social"
+      }
+    ],
+    "products_to_promote": [],
+    "affiliate_opportunities": [],
+    "newsletter_topics": [
+      {
+        "topic": "bbclaurak",
+        "angle": "Newsletter: This week's bbclaurak opportunity"
+      }
+    ],
+    "youtube_ideas": [
+      {
+        "idea": "YouTube: Deep dive \u2014 bbclaurak",
+        "score": 37
+      }
+    ],
+    "tiktok_ideas": [
+      {
+        "idea": "TikTok: Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "score": 37
+      }
+    ],
+    "instagram_ideas": [
+      {
+        "idea": "Instagram: Carousel on bbclaurak",
+        "score": 37
+      }
+    ],
+    "blog_topics": [
+      {
+        "topic": "bbclaurak",
+        "title": "Blog/SEO: Ultimate guide to bbclaurak"
+      }
+    ],
+    "seo_opportunities": [
+      {
+        "keyword": "bbclaurak",
+        "search_keywords": [
+          "bbclaurak"
+        ],
+        "opportunity_score": 37
+      }
+    ],
+    "primary_action": {
+      "label": "Create content: bbclaurak",
+      "action": "create_content",
+      "context": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+      "opportunity_score": 37
+    },
+    "generated_at": "2026-07-05T09:56:58.003627+00:00",
+    "niche": "general",
+    "ai_enriched": false
+  }
+}

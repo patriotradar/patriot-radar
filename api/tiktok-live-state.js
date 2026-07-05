@@ -273,7 +273,7 @@ async function buildLiveState(niche, authToken) {
   try {
     feed = await supabaseQuery(
       "trend_intelligence_feed",
-      ["select=*", "source=eq.tiktok", "order=timestamp.desc", "limit=200"],
+      ["select=*", "order=created_at.desc", "limit=200"],
       authToken
     );
   } catch (err) {

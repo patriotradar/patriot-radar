@@ -13,6 +13,7 @@
 <script src="/api/public-config.js"></script>
 <script src="tiktok-live-state-client.js"></script>
 <script src="tiktok-access-control.js"></script>
+<script src="trend-intelligence-dashboard.js"></script>
 <script src="tiktok-live-state.js"></script>
 <script src="tiktok-live-state-integration.js"></script>
 <script src="niche-comment-intelligence.js"></script>
@@ -9153,6 +9154,7 @@ function switchTab(tab) {
   trackEvent("tab_switch", {tab: tab});
   if (tab === "trends") { aiTrendInsights(); }
   if (tab === "tiktok") {
+    if (typeof TrendIntelligenceDashboard !== "undefined") TrendIntelligenceDashboard.mount();
     refreshTiktokTrendIntelligenceFeed();
     if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
     if (typeof refreshTiktokOrchestrationDashboard === "function") refreshTiktokOrchestrationDashboard();
@@ -11703,15 +11705,18 @@ async function showDashboard(sessionUser) {
       } else {
         checkAdminStatus();
       }
+      if (typeof TrendIntelligenceDashboard !== "undefined") TrendIntelligenceDashboard.mount();
       if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
       loadActiveTab();
     }).catch(function() {
       checkAdminStatus();
+      if (typeof TrendIntelligenceDashboard !== "undefined") TrendIntelligenceDashboard.mount();
       if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
       loadActiveTab();
     });
   } else {
     checkAdminStatus();
+    if (typeof TrendIntelligenceDashboard !== "undefined") TrendIntelligenceDashboard.mount();
     if (typeof TiktokLiveState !== "undefined") TiktokLiveState.mount();
   }
   initNicheSwitcher();

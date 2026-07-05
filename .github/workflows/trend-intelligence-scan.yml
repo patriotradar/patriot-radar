@@ -1,0 +1,99 @@
+name: Trend Intelligence Scan
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      niche:
+        description: "Niche to scan"
+        required: false
+        default: "general"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Apply trend intelligence schema (optional)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -n "$SUPABASE_DB_URL" ]; then
+            python scripts/apply_trend_feed_schema.py || true
+            python scripts/apply_trend_feed_schema.py --sql sql/trend_intelligence_history.sql || true
+          fi
+        continue-on-error: true
+
+      - name: Run multi-source trend intelligence scan
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TREND_HISTORY_TABLE: trend_intelligence_history
+          TREND_SCAN_TABLE: trend_intelligence_scans
+          TREND_RECOMMENDATIONS_TABLE: trend_recommendations
+          TREND_PROVIDER_TIMEOUT_SEC: "90"
+          TREND_INTELLIGENCE_FAST_MODE: "true"
+        run: |
+          NICHE="${{ github.event.inputs.niche || 'general' }}"
+          set +e
+          python scripts/run_trend_intelligence_scan.py --niche "$NICHE" --output trend_scan_report.json
+          SCAN_EXIT=$?
+          cat trend_scan_report.json
+          if [ ! -s trend_scan_report.json ]; then
+            echo '{"warnings":["scan produced empty output"],"trend_count":0,"providers_online":[]}' > trend_scan_report.json
+          fi
+          echo "scan_exit_code=$SCAN_EXIT" >> "$GITHUB_OUTPUT"
+        id: run_scan
+        continue-on-error: true
+
+      - name: Upload scan report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trend-scan-report
+          path: trend_scan_report.json
+          retention-days: 7
+
+      - name: Validate scan produced data
+        if: always()
+        run: |
+          python3 << 'PYEOF'
+          import json, sys
+          try:
+              with open("trend_scan_report.json") as f:
+                  r = json.load(f)
+          except Exception as exc:
+              print(f"::warning::Could not parse scan report: {exc}")
+              sys.exit(0)
+          online = r.get("providers_online") or []
+          offline = r.get("providers_offline") or []
+          trends = r.get("trend_count", 0) or 0
+          opps = r.get("opportunity_count", 0) or 0
+          warnings = r.get("warnings") or []
+          print(f"online={len(online)} offline={len(offline)} trends={trends} opportunities={opps}")
+          for w in warnings[:10]:
+              print(f"::warning::{w}")
+          if trends > 0 or opps > 0:
+              print("Pipeline produced partial or full trend data.")
+              sys.exit(0)
+          if online:
+              print("::warning::Providers online but zero trends — continuing workflow")
+              sys.exit(0)
+          print("::error::All providers offline and scan returned zero trends")
+          sys.exit(1)
+          PYEOF
