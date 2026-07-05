@@ -289,7 +289,7 @@
   }
 
   async function fetchAccessFromLiveState(accountId, authToken) {
-    var url = "/api/tiktok-live-state?account_id=" + encodeURIComponent(accountId || "");
+    var url = "/api/trend-intelligence?account_id=" + encodeURIComponent(accountId || "");
     var headers = {};
     if (authToken) headers.Authorization = "Bearer " + authToken;
     try {

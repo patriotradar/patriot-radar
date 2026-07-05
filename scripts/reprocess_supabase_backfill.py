@@ -28,7 +28,7 @@ from recommendation_output import finalize_recommendation
 from user_calibration import flatten_performance_posts
 
 DEFAULT_TRENDS_URL = (
-    "https://raw.githubusercontent.com/patriotradar/patriot-radar-dashboard/main/results.json"
+    "https://raw.githubusercontent.com/patriotradar/patriot-radar/main/results.json"
 )
 DEFAULT_OUTPUT_VERSION = "v2-recommendation-layer"
 DEFAULT_OUTPUT_TABLE = "cr_recommendation_outputs"

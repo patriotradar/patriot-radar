@@ -1,6 +1,6 @@
 /**
  * Live state → existing dashboard section bridge.
- * Injects /api/tiktok-live-state data into existing pages only.
+ * Injects /api/trend-intelligence data into existing pages only.
  * Does not change navigation, layout, tabs, or routing.
  */
 (function (global) {
@@ -314,7 +314,7 @@
 
     var html = '<div id="liveStateMyStats" ' + INJECT_ATTR + '="stats" class="pi-card" style="margin-top:12px">';
     html += "<h3>&#128202; Backend Analytics</h3>";
-    html += '<p style="font-size:11px;color:var(--muted);margin-bottom:10px">Live pipeline metrics from /api/tiktok-live-state</p>';
+    html += '<p style="font-size:11px;color:var(--muted);margin-bottom:10px">Live pipeline metrics from /api/trend-intelligence</p>';
 
     if (hasPerf) {
       html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px">';

@@ -35,17 +35,14 @@ jobs:
             results.txt
             results.json
 
-      - name: Push results to dashboard website
+      - name: Commit results for GitHub Pages site
         run: |
-          git clone https://x-access-token:${{ secrets.DASHBOARD_TOKEN }}@github.com/patriotradar/patriot-radar-dashboard.git dashboard
-          cp results.json dashboard/results.json
-          cd dashboard
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add results.json
           git commit -m "Update live trend results" || echo "No changes to commit"
           git pull --rebase origin main || true
-          git push || echo "Dashboard push failed"
+          git push || echo "Results push failed"
 
       - name: Keep workflow active
         run: |

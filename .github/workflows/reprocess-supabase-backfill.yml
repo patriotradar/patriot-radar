@@ -46,7 +46,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          TRENDS_JSON_URL: https://raw.githubusercontent.com/patriotradar/patriot-radar-dashboard/main/results.json
+          TRENDS_JSON_URL: https://raw.githubusercontent.com/patriotradar/patriot-radar/main/results.json
           BACKFILL_OUTPUT_VERSION: ${{ github.event.inputs.output_version }}
           SUPABASE_OUTPUT_TABLE: cr_recommendation_outputs
         run: |
