@@ -14,6 +14,9 @@ on:
 jobs:
   deploy-preview-branch:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: read
     steps:
       - uses: actions/checkout@v4
 
@@ -62,6 +65,8 @@ jobs:
 
       - name: Wait for Vercel preview deployment
         id: wait
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -e
           for i in $(seq 1 30); do
