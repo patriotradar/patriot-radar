@@ -1,4 +1,8 @@
 {
+  "rewrites": [
+    { "source": "/api/trend-intelligence", "destination": "/api/tiktok-live-state" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
   "functions": {
     "api/chat/completions.js": {
       "maxDuration": 60
@@ -7,6 +11,9 @@
       "maxDuration": 10
     },
     "api/tiktok-live-state.js": {
+      "maxDuration": 30
+    },
+    "api/trend-intelligence.js": {
       "maxDuration": 30
     },
     "api/tiktok-insights.js": {
