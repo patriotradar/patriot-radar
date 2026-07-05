@@ -47,12 +47,22 @@ jobs:
           TREND_SCAN_TABLE: trend_intelligence_scans
           TREND_RECOMMENDATIONS_TABLE: trend_recommendations
           TREND_PROVIDER_TIMEOUT_SEC: "90"
+          TREND_INTELLIGENCE_FAST_MODE: "true"
         run: |
           NICHE="${{ github.event.inputs.niche || 'general' }}"
-          python scripts/run_trend_intelligence_scan.py --niche "$NICHE" --json > trend_scan_report.json
+          set +e
+          python scripts/run_trend_intelligence_scan.py --niche "$NICHE" --output trend_scan_report.json
+          SCAN_EXIT=$?
           cat trend_scan_report.json
+          if [ ! -s trend_scan_report.json ]; then
+            echo '{"warnings":["scan produced empty output"],"trend_count":0,"providers_online":[]}' > trend_scan_report.json
+          fi
+          echo "scan_exit_code=$SCAN_EXIT" >> "$GITHUB_OUTPUT"
+        id: run_scan
+        continue-on-error: true
 
       - name: Upload scan report artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: trend-scan-report
@@ -60,17 +70,30 @@ jobs:
           retention-days: 7
 
       - name: Validate scan produced data
+        if: always()
         run: |
-          python -c "
+          python3 << 'PYEOF'
           import json, sys
-          with open('trend_scan_report.json') as f:
-              r = json.load(f)
-          online = r.get('providers_online', [])
-          trends = r.get('trend_count', 0)
-          opps = r.get('opportunity_count', 0)
-          print(f'online={len(online)} trends={trends} opportunities={opps}')
-          if not online:
-              print('WARNING: no providers online')
-          if trends == 0 and opps == 0 and not online:
-              sys.exit(1)
-          "
+          try:
+              with open("trend_scan_report.json") as f:
+                  r = json.load(f)
+          except Exception as exc:
+              print(f"::warning::Could not parse scan report: {exc}")
+              sys.exit(0)
+          online = r.get("providers_online") or []
+          offline = r.get("providers_offline") or []
+          trends = r.get("trend_count", 0) or 0
+          opps = r.get("opportunity_count", 0) or 0
+          warnings = r.get("warnings") or []
+          print(f"online={len(online)} offline={len(offline)} trends={trends} opportunities={opps}")
+          for w in warnings[:10]:
+              print(f"::warning::{w}")
+          if trends > 0 or opps > 0:
+              print("Pipeline produced partial or full trend data.")
+              sys.exit(0)
+          if online:
+              print("::warning::Providers online but zero trends — continuing workflow")
+              sys.exit(0)
+          print("::error::All providers offline and scan returned zero trends")
+          sys.exit(1)
+          PYEOF

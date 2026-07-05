@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from typing import Any
 
@@ -34,6 +35,17 @@ PRODUCT_CATEGORY_HINTS = [
 ]
 
 
+def _safe_score(value: Any, default: float = 0.0) -> float:
+    """Clamp numeric score to 0–100; treat None/NaN as default."""
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return default
+    if not math.isfinite(n):
+        return default
+    return float(min(100.0, max(0.0, n)))
+
+
 def detect_buying_signals(text: str) -> list[str]:
     """Return matched buying-intent signal labels for text."""
     if not text:
@@ -53,7 +65,7 @@ def estimate_buying_intent(text: str) -> float:
     for _label, pattern, weight in BUYING_INTENT_PATTERNS:
         if pattern.search(text):
             score += weight
-    return min(100.0, score)
+    return _safe_score(score, 0.0)
 
 
 def infer_category(keyword: str) -> str:
@@ -77,9 +89,9 @@ def score_opportunity(
 ) -> OpportunityScores:
     """Compute full opportunity scores for a normalized trend result."""
     text = f"{result.trend} {result.keyword}"
-    buying = int(min(100, max(result.buying_intent, estimate_buying_intent(text))))
-    popularity = int(min(100, max(0, result.popularity)))
-    competition = int(min(100, max(0, result.competition)))
+    buying = int(_safe_score(max(_safe_score(result.buying_intent), estimate_buying_intent(text))))
+    popularity = int(_safe_score(result.popularity))
+    competition = int(_safe_score(result.competition, 50.0))
 
     search_demand = int(min(100, popularity * 0.6 + platform_count * 8))
     content_opportunity = int(min(100, max(0, 100 - competition * 0.7 + popularity * 0.2)))

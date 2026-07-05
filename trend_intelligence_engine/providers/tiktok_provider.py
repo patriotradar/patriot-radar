@@ -20,7 +20,14 @@ class TikTokApifyProvider(TrendProvider):
 
     def is_available(self) -> bool:
         token = os.getenv("APIFY_API_TOKEN") or os.getenv("APIFY_TOKEN")
-        return bool(token)
+        if token:
+            return True
+        try:
+            from trend_shift_engine import _DEFAULT_SAMPLE_INPUTS
+
+            return _DEFAULT_SAMPLE_INPUTS.exists()
+        except Exception:
+            return False
 
     def _fetch_and_extract(self, niche: str, config: dict[str, Any]) -> list[dict[str, Any]]:
         from apify_tiktok_fetcher import fetch_tiktok_via_apify

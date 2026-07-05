@@ -18,7 +18,12 @@ class SocialProvider(TrendProvider):
     source_key = "social"
 
     def is_available(self) -> bool:
-        return True
+        try:
+            import requests  # noqa: F401
+            from pytrends.request import TrendReq  # noqa: F401
+            return True
+        except ImportError:
+            return False
 
     def search_niche(self, niche: str, config: dict[str, Any] | None = None) -> list[NormalizedTrendResult]:
         config = config or {}

@@ -20,6 +20,7 @@ class RedditProvider(TrendProvider):
     def is_available(self) -> bool:
         try:
             import requests  # noqa: F401
+            from pytrends.request import TrendReq  # noqa: F401
             return True
         except ImportError:
             return False

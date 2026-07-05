@@ -30,6 +30,19 @@ DEFAULT_PROVIDER_TIMEOUT_SEC = int(os.getenv("TREND_PROVIDER_TIMEOUT_SEC", "30")
 FAST_PROVIDER_TIMEOUT_SEC = int(os.getenv("TREND_FAST_PROVIDER_TIMEOUT_SEC", "15"))
 
 
+def _dedupe_results(results: list[NormalizedTrendResult]) -> list[NormalizedTrendResult]:
+    """Post-processing dedupe by keyword/dedupe_key without changing provider output."""
+    seen: set[str] = set()
+    unique: list[NormalizedTrendResult] = []
+    for item in results:
+        key = (item.dedupe_key or item.keyword or item.trend or "").strip().lower()[:120]
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        unique.append(item)
+    return unique
+
+
 def _scan_provider_with_timeout(provider, niche: str, config: dict[str, Any], timeout_sec: int):
     """Run provider.scan with a hard timeout."""
     with ThreadPoolExecutor(max_workers=1) as executor:
@@ -115,8 +128,12 @@ class TrendIntelligenceEngine:
             report.provider_results.append(result)
 
             if result.online and result.success:
-                report.providers_online.append(provider.name)
                 all_results.extend(result.results)
+
+            if result.online and result.success and result.item_count > 0:
+                report.providers_online.append(provider.name)
+            elif result.online:
+                report.providers_offline.append(provider.name)
             else:
                 report.providers_offline.append(provider.name)
 
@@ -126,7 +143,7 @@ class TrendIntelligenceEngine:
                 report.warnings.append(f"{provider.display_name} error: {result.error}")
 
         merged = merge_cross_platform(all_results)
-        enriched = enrich_all(merged)
+        enriched = _dedupe_results(enrich_all(merged))
         opportunities = [r for r in rank_opportunities(enriched) if r.opportunity.opportunity_score >= 35]
         trends = enriched[:50]
 
@@ -261,6 +278,13 @@ def run_trend_intelligence_scan(
     store_feed: bool = True,
 ) -> dict[str, Any]:
     """CLI/CI entry point. Returns JSON-serializable report."""
-    engine = TrendIntelligenceEngine()
-    report = engine.scan(niche=niche, persist=persist, store_feed=store_feed)
-    return report.to_dict()
+    try:
+        engine = TrendIntelligenceEngine()
+        report = engine.scan(niche=niche, persist=persist, store_feed=store_feed)
+        return report.to_dict()
+    except Exception as exc:
+        logger.exception("run_trend_intelligence_scan failed: %s", exc)
+        return ScanReport(
+            niche=niche or "general",
+            warnings=[f"Scan failed: {exc}"],
+        ).to_dict()

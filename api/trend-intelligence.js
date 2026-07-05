@@ -50,6 +50,12 @@ function readCache() {
   return null;
 }
 
+function clampScore(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback != null ? fallback : 0;
+  return Math.min(100, Math.max(0, Math.round(n)));
+}
+
 function emptyResponse(niche) {
   return {
     success: true,
@@ -96,22 +102,57 @@ function providerAvailability() {
   return { online, offline, checks };
 }
 
-function mapHistoryRow(row) {
-  const raw = row.raw_data || {};
-  const ci = row.content_intelligence || raw.content_intelligence || {};
-  const opp = row.opportunity_scores || raw.opportunity || {};
+function normalizeTrendItem(item) {
+  if (!item || typeof item !== "object") return null;
+  const raw = item.raw_data && typeof item.raw_data === "object" ? item.raw_data : {};
+  const ci =
+    item.content_intelligence && typeof item.content_intelligence === "object"
+      ? item.content_intelligence
+      : raw.content_intelligence && typeof raw.content_intelligence === "object"
+        ? raw.content_intelligence
+        : {};
+  const opp =
+    item.opportunity_scores && typeof item.opportunity_scores === "object"
+      ? item.opportunity_scores
+      : item.opportunity && typeof item.opportunity === "object"
+        ? item.opportunity
+        : raw.opportunity && typeof raw.opportunity === "object"
+          ? raw.opportunity
+          : {};
+  const keyword = String(item.keyword || item.trend || raw.keyword || raw.trend || item.summary || "").trim();
+  const trend = String(item.trend || keyword || "").trim();
+  const opportunityScore = clampScore(
+    item.opportunity_score != null ? item.opportunity_score : opp.opportunity_score,
+    0
+  );
   return {
-    trend: row.trend || row.keyword || row.summary || "",
-    keyword: row.keyword || row.trend || "",
-    source: row.source || "unknown",
-    timestamp: row.created_at || row.scanned_at,
-    popularity: row.popularity || row.signal_strength || 0,
-    buying_intent: row.buying_intent || 0,
-    competition: row.competition || 50,
-    opportunity_score: row.opportunity_score || opp.opportunity_score || 0,
-    category: row.category || "general",
+    trend: trend || keyword || "Unknown trend",
+    keyword: keyword || trend || "Unknown trend",
+    source: String(item.source || raw.provider || "unknown"),
+    timestamp: item.timestamp || item.created_at || item.scanned_at || null,
+    popularity: clampScore(item.popularity != null ? item.popularity : item.signal_strength, 0),
+    buying_intent: clampScore(item.buying_intent != null ? item.buying_intent : raw.buying_intent, 0),
+    competition: clampScore(item.competition, 50),
+    opportunity_score: opportunityScore,
+    category: String(item.category || raw.category || "general"),
     content_intelligence: ci,
-    hook: ci.hook || row.summary || "",
+    hook: String(ci.hook || item.hook || item.summary || keyword || ""),
+  };
+}
+
+function mapHistoryRow(row) {
+  return normalizeTrendItem(row) || {
+    trend: "",
+    keyword: "",
+    source: "unknown",
+    timestamp: null,
+    popularity: 0,
+    buying_intent: 0,
+    competition: 50,
+    opportunity_score: 0,
+    category: "general",
+    content_intelligence: {},
+    hook: "",
   };
 }
 
@@ -149,14 +190,14 @@ async function buildTrendIntelligenceState(niche) {
 
   const cache = readCache();
   if ((!Array.isArray(history) || !history.length) && cache) {
-    state.trends = cache.trends || [];
-    state.opportunities = cache.opportunities || [];
-    state.recommendations = cache.recommendations || {};
+    state.trends = (cache.trends || []).map(normalizeTrendItem).filter(Boolean);
+    state.opportunities = (cache.opportunities || []).map(normalizeTrendItem).filter(Boolean);
+    state.recommendations = cache.recommendations && typeof cache.recommendations === "object" ? cache.recommendations : {};
     state.last_scan_time = state.last_scan_time || cache.timestamp;
     state.from_cache = true;
     if (Array.isArray(cache.warnings)) warnings.push(...cache.warnings);
   } else if (Array.isArray(history)) {
-    const mapped = history.map(mapHistoryRow);
+    const mapped = history.map(mapHistoryRow).filter(Boolean);
     state.trends = mapped.slice(0, 30);
     state.opportunities = mapped
       .filter((r) => (r.opportunity_score || 0) >= 35 || (r.buying_intent || 0) >= 40)
@@ -177,12 +218,14 @@ async function buildTrendIntelligenceState(niche) {
     .filter((t) => (t.popularity || 0) >= 40)
     .slice(0, 15)
     .map((t) => ({
-      keyword: t.keyword,
-      source: t.source,
-      popularity: t.popularity,
+      keyword: t.keyword || t.trend || "",
+      source: t.source || "unknown",
+      popularity: clampScore(t.popularity, 0),
     }));
 
   state.buying_intent_opportunities = (state.opportunities || [])
+    .map(normalizeTrendItem)
+    .filter(Boolean)
     .sort((a, b) => (b.opportunity_score || 0) - (a.opportunity_score || 0))
     .slice(0, 12);
 

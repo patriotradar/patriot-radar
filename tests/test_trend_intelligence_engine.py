@@ -41,6 +41,20 @@ class TestBuyingIntent(unittest.TestCase):
         self.assertGreaterEqual(enriched.opportunity.opportunity_score, 0)
         self.assertLessEqual(enriched.opportunity.opportunity_score, 100)
 
+    def test_nan_buying_intent_guarded(self):
+        result = NormalizedTrendResult(
+            trend="test",
+            keyword="test",
+            source="news",
+            popularity=float("nan"),
+            buying_intent=float("nan"),
+            competition=float("nan"),
+        )
+        enriched = enrich_with_opportunity(result)
+        self.assertGreaterEqual(enriched.opportunity.opportunity_score, 0)
+        self.assertLessEqual(enriched.opportunity.opportunity_score, 100)
+        self.assertFalse(str(enriched.opportunity.opportunity_score) == "nan")
+
 
 class TestContentIntelligence(unittest.TestCase):
     def test_generates_hook_and_format(self):

@@ -110,8 +110,12 @@
     return opps
       .slice(0, 8)
       .map(function (o) {
-        var score = o.opportunity_score != null ? o.opportunity_score : 0;
-        var hook = o.hook || o.keyword || o.trend || "";
+        var nestedOpp =
+          o.opportunity && typeof o.opportunity === "object" ? o.opportunity.opportunity_score : null;
+        var score = o.opportunity_score != null ? o.opportunity_score : nestedOpp != null ? nestedOpp : 0;
+        score = Number(score);
+        if (!Number.isFinite(score)) score = 0;
+        var hook = o.hook || (o.content_intelligence && o.content_intelligence.hook) || o.keyword || o.trend || "";
         return (
           '<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)">' +
           '<div style="display:flex;justify-content:space-between;gap:8px">' +

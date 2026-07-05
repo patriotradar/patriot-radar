@@ -93,19 +93,23 @@ def build_recommendations(
     return rec
 
 
-def _primary_action(opportunities: list[NormalizedTrendResult]) -> dict[str, str]:
+def _primary_action(opportunities: list[NormalizedTrendResult]) -> dict[str, Any]:
     if not opportunities:
         return {
             "label": "Run trend intelligence scan",
             "action": "run_scan",
             "context": "No opportunities detected yet",
+            "opportunity_score": 0,
         }
     top = opportunities[0]
+    score = 0
+    if top.opportunity:
+        score = int(min(100, max(0, top.opportunity.opportunity_score or 0)))
     return {
         "label": f"Create content: {top.keyword[:60]}",
         "action": "create_content",
         "context": top.content_intelligence.hook or top.keyword,
-        "opportunity_score": str(top.opportunity.opportunity_score if top.opportunity else 0),
+        "opportunity_score": score,
     }
 
 
