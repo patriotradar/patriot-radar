@@ -1,6 +1,6 @@
 /**
- * TikTok Live State client — single frontend data source for dashboard modules.
- * Fetches /api/tiktok-live-state and provides safe fallbacks for all fields.
+ * Trend Intelligence client — single frontend data source for dashboard modules.
+ * Fetches /api/trend-intelligence and provides safe fallbacks for all fields.
  */
 (function () {
   "use strict";
@@ -26,9 +26,9 @@
   function debugLog(label, payload) {
     if (!isDebugMode()) return;
     if (payload === undefined) {
-      console.log("[TikTokLiveState]", label);
+      console.log("[TrendIntelligence]", label);
     } else {
-      console.log("[TikTokLiveState]", label, payload);
+      console.log("[TrendIntelligence]", label, payload);
     }
   }
 
@@ -67,6 +67,14 @@
     if (!raw || typeof raw !== "object") return base;
 
     var kw = raw.niche_keywords || {};
+    if ((!kw.results || !kw.results.length) && Array.isArray(raw.results) && raw.results.length) {
+      kw = {
+        results: raw.results,
+        emerging: Array.isArray(raw.emerging) ? raw.emerging : [],
+        product_trends: Array.isArray(raw.product_trends) ? raw.product_trends : [],
+        creator_insights: Array.isArray(raw.creator_insights) ? raw.creator_insights : [],
+      };
+    }
     var virality = raw.virality || {};
 
     return {
@@ -96,6 +104,7 @@
       trend_history:
         raw.trend_history && typeof raw.trend_history === "object" ? raw.trend_history : {},
       breaking_news: Array.isArray(raw.breaking_news) ? raw.breaking_news : [],
+      sources: raw.sources && typeof raw.sources === "object" ? raw.sources : {},
       errors: Array.isArray(raw.errors) ? raw.errors : [],
       success: raw.success !== false,
     };
@@ -113,11 +122,11 @@
     ];
     checks.forEach(function (pair) {
       if (!pair[1] || !pair[1].length) {
-        console.warn("[TikTokLiveState] missing or empty field:", pair[0]);
+        console.warn("[TrendIntelligence] missing or empty field:", pair[0]);
       }
     });
     if (state.errors && state.errors.length) {
-      console.warn("[TikTokLiveState] API errors:", state.errors);
+      console.warn("[TrendIntelligence] API errors:", state.errors);
     }
   }
 
@@ -159,7 +168,7 @@
     }
 
     inflight = (async function () {
-      var url = "/api/tiktok-live-state?niche=" + encodeURIComponent(resolvedNiche);
+      var url = "/api/trend-intelligence?niche=" + encodeURIComponent(resolvedNiche);
       debugLog("fetch start", url);
 
       try {

@@ -1937,7 +1937,7 @@ async function refreshTiktokTrendIntelligenceFeed() {
   if (!el) return;
 
   var niche = USER_NICHE || "general";
-  tiktokFeedDebug("fetch start", { source: "/api/tiktok-live-state", niche: niche });
+  tiktokFeedDebug("fetch start", { source: "/api/trend-intelligence", niche: niche });
 
   el.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--muted);padding:12px 0">Loading TikTok trends from live state...</p></div>';
 
@@ -5524,21 +5524,18 @@ var cachedBreakingNews = [];
 async function fetchBreakingNews() {
   var niche = (USER_NICHE || "general").toLowerCase();
   var newsCacheKey = "cr_news_cache_" + niche;
-  var queries = [];
-  if (niche === "patriotic" || niche === "patriot" || niche === "uk politics") {
-    queries = ["UK politics", "UK news today", "British news", "UK government"];
-  } else if (niche === "crypto" || niche === "cryptocurrency" || niche === "bitcoin") {
-    queries = ["cryptocurrency news", "bitcoin news", "crypto market", "blockchain news"];
-  } else if (niche === "finance" || niche === "investing") {
-    queries = ["finance news", "stock market news", "investing news", "economy news"];
-  } else if (niche === "tech" || niche === "technology") {
-    queries = ["tech news today", "technology news", "AI news", "startup news"];
-  } else if (niche === "gaming") {
-    queries = ["gaming news", "video game news", "esports news"];
-  } else if (niche === "fitness" || niche === "health") {
-    queries = ["fitness news", "health news", "wellness trending"];
-  } else {
-    queries = [niche + " news", niche + " trending today", niche + " latest"];
+
+  if (window.TikTokLiveState && window.TikTokLiveState.getCache) {
+    var cachedState = window.TikTokLiveState.getCache();
+    if (
+      cachedState &&
+      cachedState.niche === niche &&
+      Array.isArray(cachedState.breaking_news) &&
+      cachedState.breaking_news.length
+    ) {
+      cachedBreakingNews = cachedState.breaking_news;
+      return cachedBreakingNews;
+    }
   }
 
   var cachedNews = null;
@@ -5546,39 +5543,21 @@ async function fetchBreakingNews() {
   if (cachedNews && cachedNews.items && cachedNews.items.length > 0) {
     var newsAge = Date.now() - (cachedNews.ts || 0);
     cachedBreakingNews = cachedNews.items;
-    if (newsAge < 600000) return cachedBreakingNews;
+    if (newsAge < 3600000) return cachedBreakingNews;
   }
 
-  var allNews = [];
-  var seen = {};
-  for (var q = 0; q < Math.min(2, queries.length); q++) {
-    try {
-      var rssUrl = "https://news.google.com/rss/search?q=" + encodeURIComponent(queries[q]) + "&hl=en&gl=GB";
-      var proxyUrl = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(rssUrl);
-      var resp = await fetch(proxyUrl, {signal: AbortSignal.timeout(6000)});
-      if (!resp.ok) continue;
-      var data = await resp.json();
-      if (data.items) {
-        for (var i = 0; i < Math.min(5, data.items.length); i++) {
-          var item = data.items[i];
-          var title = (item.title || "").replace(/ - .*$/, "").trim();
-          if (!title || seen[title.toLowerCase()]) continue;
-          seen[title.toLowerCase()] = true;
-          var pubDate = item.pubDate ? new Date(item.pubDate) : new Date();
-          var hoursAgo = Math.round((Date.now() - pubDate.getTime()) / 3600000);
-          allNews.push({title: title, source: (item.title || "").match(/ - (.+)$/) ? RegExp.$1 : "News", link: item.link, hoursAgo: hoursAgo, pubDate: pubDate});
-        }
+  try {
+    if (window.TikTokLiveState && window.TikTokLiveState.fetch) {
+      var liveState = await window.TikTokLiveState.fetch(niche, { force: true });
+      if (liveState && Array.isArray(liveState.breaking_news) && liveState.breaking_news.length) {
+        cachedBreakingNews = liveState.breaking_news;
+        try { localStorage.setItem(newsCacheKey, JSON.stringify({items: cachedBreakingNews, ts: Date.now()})); } catch(e) {}
+        return cachedBreakingNews;
       }
-    } catch(e) {}
-  }
-  if (allNews.length > 0) {
-    allNews.sort(function(a,b){return a.hoursAgo - b.hoursAgo});
-    cachedBreakingNews = allNews.slice(0, 8);
-    try { localStorage.setItem(newsCacheKey, JSON.stringify({items: cachedBreakingNews, ts: Date.now()})); } catch(e) {}
-  } else if (cachedBreakingNews && cachedBreakingNews.length > 0) {
-    return cachedBreakingNews;
-  }
-  return cachedBreakingNews;
+    }
+  } catch(e) {}
+
+  return cachedBreakingNews || [];
 }
 
 function renderBreakingNews(newsItems) {
@@ -10750,22 +10729,27 @@ async function loadLiveStats() {
   kwEl.innerHTML = '<span style="animation:pulse 1.5s infinite;display:inline-block">...</span>';
   oppEl.innerHTML = '<span style="animation:pulse 1.5s infinite;display:inline-block">...</span>';
   viralEl.innerHTML = '<span style="animation:pulse 1.5s infinite;display:inline-block">...</span>';
-  updEl.textContent = "Loading " + titleCase(niche) + " live state...";
-
-  fetchBreakingNews().then(function(news) {
-    var newsContainer = document.getElementById("breakingNewsContainer");
-    if (newsContainer) newsContainer.innerHTML = renderBreakingNews(news);
-  });
+  updEl.textContent = "Loading " + titleCase(niche) + " trend intelligence...";
 
   try {
     var liveState = window.TikTokLiveState
       ? await window.TikTokLiveState.fetch(niche)
-      : { niche_keywords: { results: [], emerging: [], product_trends: [], creator_insights: [] } };
+      : { niche_keywords: { results: [], emerging: [], product_trends: [], creator_insights: [] }, breaking_news: [] };
     var kw = (liveState && liveState.niche_keywords) || {};
     var results = kw.results || [];
     var emerging = kw.emerging || [];
     var productTrends = kw.product_trends || [];
     var creatorInsights = kw.creator_insights || [];
+
+    var newsContainer = document.getElementById("breakingNewsContainer");
+    if (newsContainer && liveState && Array.isArray(liveState.breaking_news) && liveState.breaking_news.length) {
+      cachedBreakingNews = liveState.breaking_news;
+      newsContainer.innerHTML = renderBreakingNews(liveState.breaking_news);
+    } else {
+      fetchBreakingNews().then(function(news) {
+        if (newsContainer) newsContainer.innerHTML = renderBreakingNews(news);
+      });
+    }
 
     if (!results.length) {
       var nl = niche.toLowerCase().trim();
@@ -10802,7 +10786,7 @@ async function loadLiveStats() {
       updEl.textContent = "Last Updated: " + formatTimestamp(updatedAt);
     }
   } catch (e) {
-    updEl.textContent = "Live state unavailable";
+    updEl.textContent = "Trend intelligence unavailable";
     renderAllSections([], [], [], []);
   }
 }

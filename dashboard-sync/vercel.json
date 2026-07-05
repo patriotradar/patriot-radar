@@ -9,11 +9,20 @@
     "api/tiktok-live-state.js": {
       "maxDuration": 30
     },
+    "api/trend-intelligence.js": {
+      "maxDuration": 60
+    },
     "api/tiktok-insights.js": {
       "maxDuration": 30
     },
     "api/tiktok-content-approval.js": {
       "maxDuration": 15
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/trend-intelligence?niche=patriotic&refresh=1",
+      "schedule": "0 * * * *"
+    }
+  ]
 }

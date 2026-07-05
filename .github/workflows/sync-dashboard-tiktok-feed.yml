@@ -37,6 +37,9 @@ jobs:
           cp dashboard-sync/tiktok-shop-inventory-gate.js dashboard/tiktok-shop-inventory-gate.js
           cp dashboard-sync/tiktok-content-mode-resolver.js dashboard/tiktok-content-mode-resolver.js
           cp dashboard-sync/api/tiktok-live-state.js dashboard/api/tiktok-live-state.js
+          cp dashboard-sync/api/trend-intelligence.js dashboard/api/trend-intelligence.js
+          cp dashboard-sync/api/trend-intelligence-providers.js dashboard/api/trend-intelligence-providers.js
+          cp dashboard-sync/tiktok-live-state-client.js dashboard/tiktok-live-state-client.js
           cp dashboard-sync/api/tiktok-live-state-assembler.js dashboard/api/tiktok-live-state-assembler.js
           cp dashboard-sync/api/tiktok-access-control.js dashboard/api/tiktok-access-control.js
           cp dashboard-sync/api/tiktok-content-approval.js dashboard/api/tiktok-content-approval.js
@@ -45,7 +48,7 @@ jobs:
           cd dashboard
           git config user.name "Patriot Radar Bot"
           git config user.email "bot@patriotradar.github.io"
-          git add index.html niche-comment-intelligence.js tiktok-insights-hardening.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-integration.js tiktok-access-control.js tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js api/public-config.js api/chat/completions.js api/chat/audit-prompts.js api/tiktok-insights.js api/tiktok-live-state.js api/tiktok-live-state-assembler.js api/tiktok-access-control.js api/tiktok-content-approval.js vercel.json .env.example
+          git add index.html niche-comment-intelligence.js tiktok-insights-hardening.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-client.js tiktok-live-state-integration.js tiktok-access-control.js tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js api/public-config.js api/chat/completions.js api/chat/audit-prompts.js api/tiktok-insights.js api/tiktok-live-state.js api/trend-intelligence.js api/trend-intelligence-providers.js api/tiktok-live-state-assembler.js api/tiktok-access-control.js api/tiktok-content-approval.js vercel.json .env.example
           if git diff --staged --quiet; then
             echo "No dashboard UI changes to sync."
             exit 0
