@@ -357,7 +357,7 @@ async function buildLiveState(niche, authToken) {
   return state;
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -405,4 +405,8 @@ module.exports = async function handler(req, res) {
     fallback.success = false;
     return res.status(200).json(fallback);
   }
-};
+}
+
+module.exports = handler;
+module.exports.buildLiveState = buildLiveState;
+module.exports.emptyLiveState = emptyLiveState;

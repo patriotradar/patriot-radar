@@ -8,8 +8,10 @@
     { "source": "/generate-post/", "destination": "/generate-post.html" }
   ],
   "functions": {
+    "api/health.js": { "maxDuration": 10 },
     "api/chat/completions.js": { "maxDuration": 60 },
     "api/tiktok-live-state.js": { "maxDuration": 30 },
+    "api/trend-intelligence.js": { "maxDuration": 60 },
     "api/tiktok-insights.js": { "maxDuration": 30 },
     "api/tiktok-content-approval.js": { "maxDuration": 15 },
     "api/public-config.js": { "maxDuration": 10 },

@@ -1,0 +1,51 @@
+name: Vercel Preview Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to deploy
+        required: false
+        default: cursor/safe-vercel-setup-b49b
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Deploy to Vercel (preview)
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -e
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN secret is not configured"
+            exit 1
+          fi
+          npx vercel@latest pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          npx vercel@latest build --token="$VERCEL_TOKEN"
+          url=$(npx vercel@latest deploy --prebuilt --token="$VERCEL_TOKEN")
+          echo "preview_url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview URL: $url"
+
+      - name: Smoke test /api/health
+        if: steps.deploy.outputs.preview_url != ''
+        run: |
+          url="${{ steps.deploy.outputs.preview_url }}"
+          curl -fsS "$url/api/health" | grep -q '"status":"ok"'
+
+      - name: Smoke test /api/trend-intelligence
+        if: steps.deploy.outputs.preview_url != ''
+        run: |
+          url="${{ steps.deploy.outputs.preview_url }}"
+          curl -fsS "$url/api/trend-intelligence?niche=patriotic" | grep -q '"success":true'

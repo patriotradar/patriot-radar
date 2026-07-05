@@ -1,6 +1,12 @@
 {
   "functions": {
+    "api/health.js": {
+      "maxDuration": 10
+    },
     "api/chat/completions.js": {
+      "maxDuration": 60
+    },
+    "api/trend-intelligence.js": {
       "maxDuration": 60
     },
     "api/public-config.js": {
