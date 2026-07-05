@@ -21,10 +21,13 @@ jobs:
           set -e
           git clone "https://x-access-token:${DASHBOARD_TOKEN}@github.com/patriotradar/patriot-radar-dashboard.git" dashboard
           cp dashboard-sync/index.html dashboard/index.html
-          cp dashboard-sync/niche-comment-intelligence.js dashboard/niche-comment-intelligence.js
-          cp dashboard-sync/tiktok-insights-hardening.js dashboard/tiktok-insights-hardening.js
-          cp dashboard-sync/niche-comment-virality-prediction.js dashboard/niche-comment-virality-prediction.js
-          cp dashboard-sync/virality-intelligence-dashboard.js dashboard/virality-intelligence-dashboard.js
+          for f in niche-comment-intelligence.js niche-comment-virality-prediction.js \
+            virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-integration.js \
+            tiktok-live-state-client.js tiktok-access-control.js tiktok-insights-hardening.js \
+            tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js \
+            commerce-mode.js commerce-dashboard.js tiktok-orchestration-dashboard.js niche-comment-signals.js; do
+            cp "dashboard-sync/$f" "dashboard/$f"
+          done
           cp dashboard-sync/public-config.js dashboard/api/public-config.js
           mkdir -p dashboard/api/chat
           cp dashboard-sync/api/chat/completions.js dashboard/api/chat/completions.js
@@ -48,7 +51,7 @@ jobs:
           cd dashboard
           git config user.name "Patriot Radar Bot"
           git config user.email "bot@patriotradar.github.io"
-          git add index.html niche-comment-intelligence.js tiktok-insights-hardening.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-integration.js tiktok-access-control.js tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js api/public-config.js api/chat/completions.js api/chat/audit-prompts.js api/tiktok-insights.js api/tiktok-live-state.js api/tiktok-live-state-assembler.js api/tiktok-access-control.js api/tiktok-content-approval.js api/health.js api/trend-intelligence.js api/trend-intelligence-providers.js vercel.json .env.example
+          git add index.html niche-comment-intelligence.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-integration.js tiktok-live-state-client.js tiktok-access-control.js tiktok-insights-hardening.js tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js commerce-mode.js commerce-dashboard.js tiktok-orchestration-dashboard.js niche-comment-signals.js api/public-config.js api/chat/completions.js api/chat/audit-prompts.js api/tiktok-insights.js api/tiktok-live-state.js api/tiktok-live-state-assembler.js api/tiktok-access-control.js api/tiktok-content-approval.js api/health.js api/trend-intelligence.js api/trend-intelligence-providers.js vercel.json .env.example
           if git diff --staged --quiet; then
             echo "No dashboard UI changes to sync."
             exit 0

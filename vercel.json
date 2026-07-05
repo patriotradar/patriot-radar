@@ -5,7 +5,11 @@
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/privacy/", "destination": "/privacy.html" },
     { "source": "/generate-post", "destination": "/generate-post.html" },
-    { "source": "/generate-post/", "destination": "/generate-post.html" }
+    { "source": "/generate-post/", "destination": "/generate-post.html" },
+    { "source": "/audit", "destination": "/audit.html" },
+    { "source": "/audit/", "destination": "/audit.html" },
+    { "source": "/api/public-config.js", "destination": "/api/public-config" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/health.js": { "maxDuration": 10 },
