@@ -11839,7 +11839,7 @@ async function login() {
 async function resetPassword() {
   var em = document.getElementById("email").value.trim();
   if (!em) { document.getElementById("authMessage").innerText = "Enter your email first."; return; }
-  var r = await supabaseClient.auth.resetPasswordForEmail(em, { redirectTo: "https://patriotradar.github.io/patriot-radar-dashboard/" });
+  var r = await supabaseClient.auth.resetPasswordForEmail(em, { redirectTo: window.location.origin + "/" });
   document.getElementById("authMessage").innerText = r.error ? r.error.message : "Check your email to create a new password.";
 }
 
@@ -11848,7 +11848,7 @@ async function sendPasswordReset() {
   var msg = document.getElementById("forgotMessage");
   if (!em) { msg.innerText = "Please enter your email address."; msg.style.color = "var(--red)"; return; }
   msg.innerText = "Sending reset link..."; msg.style.color = "var(--muted)";
-  var r = await supabaseClient.auth.resetPasswordForEmail(em, { redirectTo: "https://patriotradar.github.io/patriot-radar-dashboard/" });
+  var r = await supabaseClient.auth.resetPasswordForEmail(em, { redirectTo: window.location.origin + "/" });
   if (r.error) { msg.innerText = r.error.message; msg.style.color = "var(--red)"; }
   else { msg.innerText = "Password reset link sent! Check your email (including spam folder)."; msg.style.color = "var(--green)"; }
 }
@@ -12352,7 +12352,7 @@ async function loadAdminAuditApps() {
   var container = document.getElementById("adminAuditApps");
   if (!container) return;
 
-  var landingUrl = "patriotradar.github.io/patriot-radar-dashboard/audit.html";
+  var landingUrl = window.location.origin + "/audit.html";
   var linkBox = '<div style="margin-bottom:8px;padding:8px;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.15);border-radius:8px">';
   linkBox += '<div style="font-size:10px;color:#a855f7;font-weight:700">LANDING PAGE: </div>';
   linkBox += '<div style="font-size:10px;color:var(--white);word-break:break-all">' + landingUrl + '</div>';
@@ -12831,7 +12831,7 @@ function generateRefLink() {
   var name = (document.getElementById("refNameInput").value || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
   if (!name) { document.getElementById("refNameInput").style.borderColor = "#ff4757"; return; }
   document.getElementById("refNameInput").style.borderColor = "var(--border)";
-  var link = "https://patriotradar.github.io/patriot-radar-dashboard/audit.html?ref=" + name;
+  var link = window.location.origin + "/audit.html?ref=" + name;
   document.getElementById("refLinkText").textContent = link;
   document.getElementById("refLinkOutput").style.display = "block";
   document.getElementById("refCopyBtn").textContent = "COPY LINK";
