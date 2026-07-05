@@ -89,14 +89,29 @@ jobs:
               "supabase_table_probe": store.get("table_probe"),
           }
           print("Validation summary:", json.dumps(summary, indent=2))
+          QUOTA_PHRASES = ("monthly usage hard limit", "hard limit exceeded", "usage limit exceeded")
+          def is_quota_error(msg):
+              return any(p in (msg or "").lower() for p in QUOTA_PHRASES)
+
+          apify_error = summary.get("apify_raw_error") or ""
           errors = []
+          warnings = []
           if not summary.get("success"):
-              errors.append("scan returned success=false")
+              if is_quota_error(apify_error):
+                  warnings.append(f"Apify monthly usage limit reached — scan skipped: {apify_error}")
+              else:
+                  errors.append("scan returned success=false")
           if summary.get("apify_token_present") and summary.get("data_source") != "apify":
-              errors.append(f"APIFY token set but data_source={summary.get('data_source')} (expected apify)")
+              if is_quota_error(apify_error):
+                  warnings.append(f"Apify quota exceeded; data_source={summary.get('data_source')}")
+              else:
+                  errors.append(f"APIFY token set but data_source={summary.get('data_source')} (expected apify)")
           if summary.get("apify_token_present") and not summary.get("apify_fetch_succeeded"):
-              errors.append(f"Apify fetch failed: {summary.get('apify_raw_error')}")
-          if summary.get("extracted_item_count", 0) == 0:
+              if is_quota_error(apify_error):
+                  warnings.append(f"Apify quota exceeded: {apify_error}")
+              else:
+                  errors.append(f"Apify fetch failed: {apify_error}")
+          if summary.get("extracted_item_count", 0) == 0 and not is_quota_error(apify_error):
               errors.append("zero items extracted")
           if summary.get("supabase_rows_stored", 0) == 0 and summary.get("extracted_item_count", 0) > 0:
               errors.append(f"zero Supabase rows stored: {summary.get('supabase_error')}")
@@ -104,11 +119,16 @@ jobs:
               errors.append("trend_intelligence_feed table missing — run sql/trend_intelligence_feed_setup.sql")
           if summary.get("avg_virality_score", 0) == 0 and summary.get("extracted_item_count", 0) > 0:
               errors.append("avg_virality_score is 0 — virality may not be computed")
+          for w in warnings:
+              print(f"::warning::{w}")
           if errors:
               for e in errors:
                   print(f"::error::{e}")
               sys.exit(1)
-          print("Pipeline validation passed.")
+          if warnings:
+              print("Pipeline skipped due to Apify quota limit — no action needed.")
+          else:
+              print("Pipeline validation passed.")
           PYEOF
 
       - name: Diagnose missing secrets
