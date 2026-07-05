@@ -77,19 +77,34 @@ function asNumber(value) {
 
 async function fetchTrends() {
   const rows = await supabaseRequest(
-    `${DEFAULT_FEED_TABLE}?source=eq.tiktok&select=timestamp,type,signal_strength,virality_score,trend_state,summary,dedupe_key&order=timestamp.desc&limit=50`,
+    `${DEFAULT_FEED_TABLE}?select=created_at,source,type,signal_strength,virality_score,trend_state,summary,dedupe_key,raw_data&order=created_at.desc&limit=80`,
     { method: "GET" }
   );
   if (!Array.isArray(rows)) return [];
-  return rows.map((row) => ({
-    id: asString(row.dedupe_key || row.summary),
-    type: asString(row.type),
-    signal_strength: row.signal_strength || 0,
-    virality_score: row.virality_score || 0,
-    trend_state: asString(row.trend_state),
-    summary: asString(row.summary),
-    timestamp: asString(row.timestamp),
-  }));
+  return rows.map((row) => {
+    const raw = asDict(row.raw_data);
+    const keyword = asString(raw.keyword || raw.trend || row.summary, "");
+    return {
+      id: asString(row.dedupe_key || row.summary),
+      type: asString(row.type),
+      source: asString(row.source, "unknown"),
+      signal_strength: row.signal_strength || 0,
+      virality_score: row.virality_score || 0,
+      trend_state: asString(row.trend_state, "emerging"),
+      summary: asString(row.summary || keyword, "Trend signal"),
+      keyword: keyword || asString(row.summary, "Trend signal"),
+      timestamp: asString(row.created_at || row.timestamp, ""),
+    };
+  });
+}
+
+async function fetchTrendIntelligenceStatus() {
+  try {
+    const { buildTrendIntelligenceState } = require("./trend-intelligence");
+    return await buildTrendIntelligenceState("general");
+  } catch {
+    return null;
+  }
 }
 
 async function fetchCachedProducts(accountId, key) {
@@ -385,10 +400,37 @@ async function assembleLiveState(accountId, userRecord) {
   const resolvedAccountId = String(accountId || "");
 
   let trends = [];
+  let trendIntelligence = null;
   try {
     trends = await fetchTrends();
   } catch {
     partialFailures.push("trend_detection_engine");
+  }
+
+  try {
+    trendIntelligence = await fetchTrendIntelligenceStatus();
+    if (trendIntelligence && Array.isArray(trendIntelligence.trends) && trendIntelligence.trends.length) {
+      const seen = new Set(trends.map((t) => asString(t.summary, "").toLowerCase()));
+      for (const item of trendIntelligence.trends.slice(0, 20)) {
+        const label = asString(item.keyword || item.trend || item.summary, "");
+        const key = label.toLowerCase();
+        if (!label || seen.has(key)) continue;
+        seen.add(key);
+        trends.push({
+          id: key,
+          type: "multi_source",
+          source: asString(item.source, "multi"),
+          signal_strength: item.popularity || item.signal_strength || 0,
+          virality_score: item.opportunity_score || item.popularity || 0,
+          trend_state: "rising",
+          summary: label,
+          keyword: label,
+          timestamp: asString(item.timestamp, ""),
+        });
+      }
+    }
+  } catch {
+    partialFailures.push("trend_intelligence_engine");
   }
 
   let emerging = [];
@@ -454,6 +496,14 @@ async function assembleLiveState(accountId, userRecord) {
 
   state.today_flow = todayFlow;
   state.trends = trends;
+  state.trend_intelligence = trendIntelligence || {
+    system_status: partialFailures.includes("trend_intelligence_engine") ? "degraded" : "ready",
+    health_status: systemHealth,
+    providers_online: [],
+    providers_offline: [],
+    warnings: partialFailures.map((m) => `Module unavailable: ${m}`),
+    last_scan_time: null,
+  };
   state.products = products;
   state.inventory_gaps = inventoryGaps;
   state.inventory_prevention = inventoryPrevention;

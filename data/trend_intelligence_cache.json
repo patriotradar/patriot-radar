@@ -1,0 +1,413 @@
+{
+  "timestamp": "2026-07-05T09:41:45.051421+00:00",
+  "niche": "patriotic",
+  "providers_online": [
+    "google_trends",
+    "reddit",
+    "youtube",
+    "news",
+    "blogs",
+    "forums",
+    "social"
+  ],
+  "providers_offline": [
+    "tiktok_apify",
+    "historical"
+  ],
+  "warnings": [
+    "TikTok (Apify): TikTok (Apify) unavailable (missing credentials or dependencies)",
+    "YouTube Search: YouTube suggestions returned no results",
+    "Public Forums: Forum feeds returned no discussions",
+    "CreatorRadar History: CreatorRadar History unavailable (missing credentials or dependencies)"
+  ],
+  "trend_count": 2,
+  "opportunity_count": 2,
+  "trends": [
+    {
+      "trend": "britain to extend military recall liability to age 65",
+      "keyword": "britain to extend military recall liability to age 65",
+      "source": "reddit",
+      "timestamp": "2026-07-05T09:41:48.506393+00:00",
+      "popularity": 66.66666666666667,
+      "buying_intent": 0.0,
+      "competition": 50.0,
+      "category": "military",
+      "sentiment": "neutral",
+      "related_creators": [],
+      "recommended_content": {
+        "hook": "Nobody is talking about Britain to extend military recall liability to age 65 \u2014 and that's your opportunity",
+        "format": "community reaction / stitch video",
+        "angle": "Emotional British pride angle on britain to extend military recall liability to age 65",
+        "platforms": {
+          "tiktok": "TikTok: Nobody is talking about Britain to extend military recall liability to age 65 \u2014 ",
+          "youtube": "YouTube: Deep dive \u2014 britain to extend military recall liability to age 65",
+          "instagram": "Instagram: Carousel on britain to extend military recall liability to age 65",
+          "blog": "Blog/SEO: Ultimate guide to britain to extend military recall liability to age 65",
+          "newsletter": "Newsletter: This week's britain to extend military recall liability to age 65 opportunity"
+        }
+      },
+      "raw_data": {
+        "keyword": "britain to extend military recall liability to age 65",
+        "source_keyword": "Reddit r/unitedkingdom",
+        "rise_value": 200,
+        "discovery_type": "reddit",
+        "provider": "reddit",
+        "niche": "patriotic"
+      },
+      "opportunity": {
+        "search_demand": 47,
+        "buying_intent": 0,
+        "competition": 50,
+        "content_opportunity": 78,
+        "affiliate_potential": 30,
+        "product_potential": 12,
+        "brand_opportunity": 49,
+        "opportunity_score": 37
+      },
+      "content_intelligence": {
+        "content_angle": "Emotional British pride angle on britain to extend military recall liability to age 65",
+        "hook": "Nobody is talking about Britain to extend military recall liability to age 65 \u2014 and that's your opportunity",
+        "target_audience": "British veterans, military families, and patriotic supporters",
+        "search_keywords": [
+          "britain to extend military recall liability to age 65",
+          "britain",
+          "extend",
+          "military"
+        ],
+        "pain_points": [
+          "Hard to find trustworthy information about britain to extend military recall liability to age 65",
+          "Creators oversaturate generic patriotic content"
+        ],
+        "questions": [
+          "What is the best britain to extend military recall liability to age 65?",
+          "Is britain to extend military recall liability to age 65 worth buying in 2026?",
+          "How do I get started with britain to extend military recall liability to age 65?",
+          "What do people regret about britain to extend military recall liability to age 65?"
+        ],
+        "buying_signals": [],
+        "cta_suggestions": [
+          "Follow for daily British trend alerts",
+          "Save this before it trends"
+        ],
+        "suggested_format": "community reaction / stitch video",
+        "viral_potential_score": 66
+      },
+      "niche": "patriotic",
+      "signal_type": "reddit_discussion",
+      "dedupe_key": "reddit:britain to extend military recall liability to age 65:reddit_discussion"
+    },
+    {
+      "trend": "bbclaurak",
+      "keyword": "bbclaurak",
+      "source": "social",
+      "timestamp": "2026-07-05T09:41:49.436729+00:00",
+      "popularity": 83.33333333333333,
+      "buying_intent": 0.0,
+      "competition": 50.0,
+      "category": "general",
+      "sentiment": "neutral",
+      "related_creators": [],
+      "recommended_content": {
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "format": "short-form TikTok / Reels",
+        "angle": "Trend-jacking bbclaurak with authentic creator POV",
+        "platforms": {
+          "tiktok": "TikTok: Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+          "youtube": "YouTube: Deep dive \u2014 bbclaurak",
+          "instagram": "Instagram: Carousel on bbclaurak",
+          "blog": "Blog/SEO: Ultimate guide to bbclaurak",
+          "newsletter": "Newsletter: This week's bbclaurak opportunity"
+        }
+      },
+      "raw_data": {
+        "keyword": "bbclaurak",
+        "source_keyword": "Twitter UK",
+        "rise_value": 250,
+        "discovery_type": "twitter",
+        "provider": "social",
+        "niche": "patriotic"
+      },
+      "opportunity": {
+        "search_demand": 57,
+        "buying_intent": 0,
+        "competition": 50,
+        "content_opportunity": 81,
+        "affiliate_potential": 10,
+        "product_potential": 4,
+        "brand_opportunity": 57,
+        "opportunity_score": 37
+      },
+      "content_intelligence": {
+        "content_angle": "Trend-jacking bbclaurak with authentic creator POV",
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "target_audience": "UK creators and patriotic audience on TikTok/YouTube",
+        "search_keywords": [
+          "bbclaurak"
+        ],
+        "pain_points": [
+          "Hard to find trustworthy information about bbclaurak",
+          "Creators oversaturate generic patriotic content"
+        ],
+        "questions": [
+          "What is the best bbclaurak?",
+          "Is bbclaurak worth buying in 2026?",
+          "How do I get started with bbclaurak?",
+          "What do people regret about bbclaurak?"
+        ],
+        "buying_signals": [],
+        "cta_suggestions": [
+          "Follow for daily British trend alerts",
+          "Save this before it trends"
+        ],
+        "suggested_format": "short-form TikTok / Reels",
+        "viral_potential_score": 83
+      },
+      "niche": "patriotic",
+      "signal_type": "social_trend",
+      "dedupe_key": "social:bbclaurak:social_trend"
+    }
+  ],
+  "opportunities": [
+    {
+      "trend": "britain to extend military recall liability to age 65",
+      "keyword": "britain to extend military recall liability to age 65",
+      "source": "reddit",
+      "timestamp": "2026-07-05T09:41:48.506393+00:00",
+      "popularity": 66.66666666666667,
+      "buying_intent": 0.0,
+      "competition": 50.0,
+      "category": "military",
+      "sentiment": "neutral",
+      "related_creators": [],
+      "recommended_content": {
+        "hook": "Nobody is talking about Britain to extend military recall liability to age 65 \u2014 and that's your opportunity",
+        "format": "community reaction / stitch video",
+        "angle": "Emotional British pride angle on britain to extend military recall liability to age 65",
+        "platforms": {
+          "tiktok": "TikTok: Nobody is talking about Britain to extend military recall liability to age 65 \u2014 ",
+          "youtube": "YouTube: Deep dive \u2014 britain to extend military recall liability to age 65",
+          "instagram": "Instagram: Carousel on britain to extend military recall liability to age 65",
+          "blog": "Blog/SEO: Ultimate guide to britain to extend military recall liability to age 65",
+          "newsletter": "Newsletter: This week's britain to extend military recall liability to age 65 opportunity"
+        }
+      },
+      "raw_data": {
+        "keyword": "britain to extend military recall liability to age 65",
+        "source_keyword": "Reddit r/unitedkingdom",
+        "rise_value": 200,
+        "discovery_type": "reddit",
+        "provider": "reddit",
+        "niche": "patriotic"
+      },
+      "opportunity": {
+        "search_demand": 47,
+        "buying_intent": 0,
+        "competition": 50,
+        "content_opportunity": 78,
+        "affiliate_potential": 30,
+        "product_potential": 12,
+        "brand_opportunity": 49,
+        "opportunity_score": 37
+      },
+      "content_intelligence": {
+        "content_angle": "Emotional British pride angle on britain to extend military recall liability to age 65",
+        "hook": "Nobody is talking about Britain to extend military recall liability to age 65 \u2014 and that's your opportunity",
+        "target_audience": "British veterans, military families, and patriotic supporters",
+        "search_keywords": [
+          "britain to extend military recall liability to age 65",
+          "britain",
+          "extend",
+          "military"
+        ],
+        "pain_points": [
+          "Hard to find trustworthy information about britain to extend military recall liability to age 65",
+          "Creators oversaturate generic patriotic content"
+        ],
+        "questions": [
+          "What is the best britain to extend military recall liability to age 65?",
+          "Is britain to extend military recall liability to age 65 worth buying in 2026?",
+          "How do I get started with britain to extend military recall liability to age 65?",
+          "What do people regret about britain to extend military recall liability to age 65?"
+        ],
+        "buying_signals": [],
+        "cta_suggestions": [
+          "Follow for daily British trend alerts",
+          "Save this before it trends"
+        ],
+        "suggested_format": "community reaction / stitch video",
+        "viral_potential_score": 66
+      },
+      "niche": "patriotic",
+      "signal_type": "reddit_discussion",
+      "dedupe_key": "reddit:britain to extend military recall liability to age 65:reddit_discussion"
+    },
+    {
+      "trend": "bbclaurak",
+      "keyword": "bbclaurak",
+      "source": "social",
+      "timestamp": "2026-07-05T09:41:49.436729+00:00",
+      "popularity": 83.33333333333333,
+      "buying_intent": 0.0,
+      "competition": 50.0,
+      "category": "general",
+      "sentiment": "neutral",
+      "related_creators": [],
+      "recommended_content": {
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "format": "short-form TikTok / Reels",
+        "angle": "Trend-jacking bbclaurak with authentic creator POV",
+        "platforms": {
+          "tiktok": "TikTok: Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+          "youtube": "YouTube: Deep dive \u2014 bbclaurak",
+          "instagram": "Instagram: Carousel on bbclaurak",
+          "blog": "Blog/SEO: Ultimate guide to bbclaurak",
+          "newsletter": "Newsletter: This week's bbclaurak opportunity"
+        }
+      },
+      "raw_data": {
+        "keyword": "bbclaurak",
+        "source_keyword": "Twitter UK",
+        "rise_value": 250,
+        "discovery_type": "twitter",
+        "provider": "social",
+        "niche": "patriotic"
+      },
+      "opportunity": {
+        "search_demand": 57,
+        "buying_intent": 0,
+        "competition": 50,
+        "content_opportunity": 81,
+        "affiliate_potential": 10,
+        "product_potential": 4,
+        "brand_opportunity": 57,
+        "opportunity_score": 37
+      },
+      "content_intelligence": {
+        "content_angle": "Trend-jacking bbclaurak with authentic creator POV",
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "target_audience": "UK creators and patriotic audience on TikTok/YouTube",
+        "search_keywords": [
+          "bbclaurak"
+        ],
+        "pain_points": [
+          "Hard to find trustworthy information about bbclaurak",
+          "Creators oversaturate generic patriotic content"
+        ],
+        "questions": [
+          "What is the best bbclaurak?",
+          "Is bbclaurak worth buying in 2026?",
+          "How do I get started with bbclaurak?",
+          "What do people regret about bbclaurak?"
+        ],
+        "buying_signals": [],
+        "cta_suggestions": [
+          "Follow for daily British trend alerts",
+          "Save this before it trends"
+        ],
+        "suggested_format": "short-form TikTok / Reels",
+        "viral_potential_score": 83
+      },
+      "niche": "patriotic",
+      "signal_type": "social_trend",
+      "dedupe_key": "social:bbclaurak:social_trend"
+    }
+  ],
+  "recommendations": {
+    "content_to_create_today": [
+      {
+        "keyword": "britain to extend military recall liability to age 65",
+        "opportunity_score": 37,
+        "hook": "Nobody is talking about Britain to extend military recall liability to age 65 \u2014 and that's your opportunity",
+        "format": "community reaction / stitch video",
+        "source": "reddit"
+      },
+      {
+        "keyword": "bbclaurak",
+        "opportunity_score": 37,
+        "hook": "Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "format": "short-form TikTok / Reels",
+        "source": "social"
+      }
+    ],
+    "products_to_promote": [],
+    "affiliate_opportunities": [],
+    "newsletter_topics": [
+      {
+        "topic": "britain to extend military recall liability to age 65",
+        "angle": "Newsletter: This week's britain to extend military recall liability to age 65 opportunity"
+      },
+      {
+        "topic": "bbclaurak",
+        "angle": "Newsletter: This week's bbclaurak opportunity"
+      }
+    ],
+    "youtube_ideas": [
+      {
+        "idea": "YouTube: Deep dive \u2014 britain to extend military recall liability to age 65",
+        "score": 37
+      },
+      {
+        "idea": "YouTube: Deep dive \u2014 bbclaurak",
+        "score": 37
+      }
+    ],
+    "tiktok_ideas": [
+      {
+        "idea": "TikTok: Nobody is talking about Britain to extend military recall liability to age 65 \u2014 ",
+        "score": 37
+      },
+      {
+        "idea": "TikTok: Nobody is talking about Bbclaurak \u2014 and that's your opportunity",
+        "score": 37
+      }
+    ],
+    "instagram_ideas": [
+      {
+        "idea": "Instagram: Carousel on britain to extend military recall liability to age 65",
+        "score": 37
+      },
+      {
+        "idea": "Instagram: Carousel on bbclaurak",
+        "score": 37
+      }
+    ],
+    "blog_topics": [
+      {
+        "topic": "britain to extend military recall liability to age 65",
+        "title": "Blog/SEO: Ultimate guide to britain to extend military recall liability to age 65"
+      },
+      {
+        "topic": "bbclaurak",
+        "title": "Blog/SEO: Ultimate guide to bbclaurak"
+      }
+    ],
+    "seo_opportunities": [
+      {
+        "keyword": "britain to extend military recall liability to age 65",
+        "search_keywords": [
+          "britain to extend military recall liability to age 65",
+          "britain",
+          "extend",
+          "military"
+        ],
+        "opportunity_score": 37
+      },
+      {
+        "keyword": "bbclaurak",
+        "search_keywords": [
+          "bbclaurak"
+        ],
+        "opportunity_score": 37
+      }
+    ],
+    "primary_action": {
+      "label": "Create content: britain to extend military recall liability to age 65",
+      "action": "create_content",
+      "context": "Nobody is talking about Britain to extend military recall liability to age 65 \u2014 and that's your opportunity",
+      "opportunity_score": "37"
+    },
+    "generated_at": "2026-07-05T09:41:48.506393+00:00",
+    "niche": "patriotic",
+    "ai_enriched": false
+  }
+}

@@ -27,8 +27,8 @@
       features: { commerce_mode: commerceMode },
       today_flow: {
         step: commerceMode ? "trend → product → content → queue" : "trend → content → plan → insights",
-        next_action: "unknown",
-        status: "unknown",
+        next_action: "Run trend intelligence scan or open Trends tab",
+        status: "ready",
       },
       trends: [],
       products: [],
@@ -41,8 +41,9 @@
       alerts: [],
       hidden_alerts: [],
       raw_logs: [],
-      primary_action: { label: "unknown", action: "unknown", context_id: "unknown" },
-      system_health: "unknown",
+      trend_intelligence: null,
+      primary_action: { label: "View trend opportunities", action: "view_trends", context_id: "trend_intelligence" },
+      system_health: "ready",
       access: { role: "creator", admin_override: false, visible_modules: ["trends", "tiktok", "prediction_engine", "analytics"], commerce_access: false },
     };
   }
@@ -77,6 +78,7 @@
     normalized.alerts = asList(state.alerts);
     normalized.hidden_alerts = asList(state.hidden_alerts);
     normalized.raw_logs = asList(state.raw_logs);
+    normalized.trend_intelligence = state.trend_intelligence || null;
     normalized.performance = asDict(state.performance);
     normalized.prediction = asDict(state.prediction);
     normalized.system_health =
@@ -137,17 +139,18 @@
     }
   }
 
-  function renderList(items, labelKey, restricted) {
+  function renderList(items, labelKey, restricted, emptyLabel) {
     if (restricted) {
-      return '<p style="font-size:11px;color:var(--muted)">Restricted</p>';
+      return '<p style="font-size:11px;color:var(--muted)">Module hidden by access policy — trend intelligence panel still active below</p>';
     }
     var list = Array.isArray(items) ? items : [];
-    if (!list.length) return '<p style="font-size:11px;color:var(--muted)">None</p>';
+    if (!list.length) return '<p style="font-size:11px;color:var(--muted)">' + esc(emptyLabel || "No signals yet — scan runs hourly") + "</p>";
     return list
       .slice(0, 8)
       .map(function (item) {
-        var label = esc((item && (item[labelKey] || item.name || item.summary || item.caption)) || "unknown");
-        return '<div style="font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">• ' + label + "</div>";
+        var label = esc((item && (item[labelKey] || item.keyword || item.name || item.summary || item.caption)) || "Signal");
+        var src = item && item.source ? ' <span style="color:var(--muted);font-size:10px">(' + esc(item.source) + ")</span>" : "";
+        return '<div style="font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">• ' + label + src + "</div>";
       })
       .join("");
   }
@@ -184,7 +187,12 @@
     var action = s.primary_action || {};
 
     var healthRestricted = !isModuleVisible(access, "system_health");
-    var healthLabel = healthRestricted ? "restricted" : s.system_health;
+    var ti = s.trend_intelligence || (global.TREND_INTELLIGENCE_STATE || null);
+    var healthLabel = healthRestricted
+      ? "restricted"
+      : s.system_health === "unknown"
+        ? (ti && ti.health_status ? ti.health_status : "ready")
+        : s.system_health;
 
     var html =
       '<div class="card" style="margin-bottom:12px">' +
@@ -216,7 +224,7 @@
 
     html += renderSection(
       "Trends",
-      renderList(s.trends, "summary", !isModuleVisible(access, "tiktok")),
+      renderList(s.trends, "summary", !isModuleVisible(access, "tiktok"), "Trend signals populate after hourly scan"),
       !isModuleVisible(access, "tiktok")
     );
     html += renderSection(
