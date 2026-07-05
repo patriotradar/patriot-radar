@@ -40,7 +40,7 @@ jobs:
 
           # API routes (serverless)
           mkdir -p api/chat
-          cp ../dashboard-sync/api/public-config.js api/public-config.js
+          cp ../dashboard-sync/public-config.js api/public-config.js
           cp ../dashboard-sync/api/health.js api/health.js
           cp ../dashboard-sync/api/trend-intelligence.js api/trend-intelligence.js
           cp ../dashboard-sync/api/trend-intelligence-providers.js api/trend-intelligence-providers.js
