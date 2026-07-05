@@ -1,6 +1,6 @@
 /**
  * TikTok live state client — single API consumption for the dashboard.
- * Frontend MUST only use /api/tiktok-live-state (never individual subsystem APIs).
+ * Frontend MUST only use /api/trend-intelligence (never individual subsystem APIs).
  * All roles receive the same JSON schema; visibility is content-level only.
  */
 (function (global) {
@@ -118,7 +118,7 @@
   }
 
   async function fetchLiveState(accountId) {
-    var url = "/api/tiktok-live-state?account_id=" + encodeURIComponent(accountId || "");
+    var url = "/api/trend-intelligence?account_id=" + encodeURIComponent(accountId || "");
     var headers = {};
     try {
       if (global.supabaseClient) {
