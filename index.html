@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://api.groq.com" crossorigin>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="ai-governance-panel.js"></script>
 
 <style>
 :root{
@@ -12101,10 +12102,15 @@ async function loadAdminPanel() {
   h += '</div>';
 
   // Users section
-  h += '<div class="card">';
+  h += '<div class="card" style="margin-bottom:16px">';
   h += '<h2 style="font-size:14px;color:var(--purple);margin-bottom:12px">&#128101; Active Users</h2>';
   h += '<div id="adminUsersList"><p style="color:var(--muted);font-size:12px">Loading user data...</p></div>';
   h += '</div>';
+
+  // AI Code Governance Panel
+  if (typeof AiGovernancePanel !== "undefined") {
+    h += AiGovernancePanel.mountAdminSection();
+  }
 
   document.getElementById("adminFeedback").innerHTML = h;
 
@@ -12113,6 +12119,7 @@ async function loadAdminPanel() {
   loadAdminReferrals();
   loadAdminAuditApps();
   loadAdminUsers();
+  if (typeof AiGovernancePanel !== "undefined") AiGovernancePanel.init();
 }
 
 async function loadAdminAuditApps() {
