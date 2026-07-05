@@ -2,11 +2,13 @@ name: Vercel Preview Deploy
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: Branch to deploy
-        required: false
-        default: cursor/safe-vercel-setup-b49b
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "index.html"
+      - "vercel.json"
+      - ".github/workflows/vercel-preview-deploy.yml"
 
 jobs:
   deploy-preview:
@@ -14,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ github.event.inputs.branch || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
