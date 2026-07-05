@@ -1,4 +1,9 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "",
+  "installCommand": "",
+  "outputDirectory": ".",
   "rewrites": [
     { "source": "/terms", "destination": "/terms.html" },
     { "source": "/terms/", "destination": "/terms.html" },
@@ -9,6 +14,7 @@
     { "source": "/audit", "destination": "/audit.html" },
     { "source": "/audit/", "destination": "/audit.html" },
     { "source": "/api/public-config.js", "destination": "/api/public-config" },
+    { "source": "/", "destination": "/index.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "functions": {
