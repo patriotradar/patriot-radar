@@ -14,13 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Push TikTok feed UI to patriot-radar-dashboard
+      - name: Push TikTok feed UI to dashboard
         env:
           DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
         run: |
           set -e
           git clone "https://x-access-token:${DASHBOARD_TOKEN}@github.com/patriotradar/patriot-radar-dashboard.git" dashboard
           cp dashboard-sync/index.html dashboard/index.html
+          cp dashboard-sync/CNAME dashboard/CNAME
+          cp dashboard-sync/404.html dashboard/404.html
           cp dashboard-sync/niche-comment-intelligence.js dashboard/niche-comment-intelligence.js
           cp dashboard-sync/tiktok-insights-hardening.js dashboard/tiktok-insights-hardening.js
           cp dashboard-sync/niche-comment-virality-prediction.js dashboard/niche-comment-virality-prediction.js
@@ -31,24 +33,30 @@ jobs:
           cp dashboard-sync/api/chat/audit-prompts.js dashboard/api/chat/audit-prompts.js
           cp dashboard-sync/api/tiktok-insights.js dashboard/api/tiktok-insights.js
           cp dashboard-sync/tiktok-live-state.js dashboard/tiktok-live-state.js
+          cp dashboard-sync/tiktok-live-state-client.js dashboard/tiktok-live-state-client.js
           cp dashboard-sync/tiktok-live-state-integration.js dashboard/tiktok-live-state-integration.js
           cp dashboard-sync/tiktok-access-control.js dashboard/tiktok-access-control.js
           cp dashboard-sync/tiktok-inventory-predictor.js dashboard/tiktok-inventory-predictor.js
           cp dashboard-sync/tiktok-shop-inventory-gate.js dashboard/tiktok-shop-inventory-gate.js
           cp dashboard-sync/tiktok-content-mode-resolver.js dashboard/tiktok-content-mode-resolver.js
+          cp dashboard-sync/tiktok-orchestration-dashboard.js dashboard/tiktok-orchestration-dashboard.js
+          cp dashboard-sync/commerce-mode.js dashboard/commerce-mode.js
+          cp dashboard-sync/commerce-dashboard.js dashboard/commerce-dashboard.js
+          cp dashboard-sync/niche-comment-signals.js dashboard/niche-comment-signals.js
           cp dashboard-sync/api/tiktok-live-state.js dashboard/api/tiktok-live-state.js
+          cp dashboard-sync/api/trend-intelligence.js dashboard/api/trend-intelligence.js
           cp dashboard-sync/api/tiktok-live-state-assembler.js dashboard/api/tiktok-live-state-assembler.js
           cp dashboard-sync/api/tiktok-access-control.js dashboard/api/tiktok-access-control.js
           cp dashboard-sync/api/tiktok-content-approval.js dashboard/api/tiktok-content-approval.js
           cp dashboard-sync/vercel.json dashboard/vercel.json
           cp dashboard-sync/.env.example dashboard/.env.example
           cd dashboard
-          git config user.name "Patriot Radar Bot"
-          git config user.email "bot@patriotradar.github.io"
-          git add index.html niche-comment-intelligence.js tiktok-insights-hardening.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-integration.js tiktok-access-control.js tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js api/public-config.js api/chat/completions.js api/chat/audit-prompts.js api/tiktok-insights.js api/tiktok-live-state.js api/tiktok-live-state-assembler.js api/tiktok-access-control.js api/tiktok-content-approval.js vercel.json .env.example
+          git config user.name "Creator Radar Bot"
+          git config user.email "bot@creatorradar.co.uk"
+          git add index.html CNAME 404.html niche-comment-intelligence.js niche-comment-signals.js tiktok-insights-hardening.js niche-comment-virality-prediction.js virality-intelligence-dashboard.js tiktok-live-state.js tiktok-live-state-client.js tiktok-live-state-integration.js tiktok-access-control.js tiktok-inventory-predictor.js tiktok-shop-inventory-gate.js tiktok-content-mode-resolver.js tiktok-orchestration-dashboard.js commerce-mode.js commerce-dashboard.js api/public-config.js api/chat/completions.js api/chat/audit-prompts.js api/tiktok-insights.js api/tiktok-live-state.js api/trend-intelligence.js api/tiktok-live-state-assembler.js api/tiktok-access-control.js api/tiktok-content-approval.js vercel.json .env.example
           if git diff --staged --quiet; then
             echo "No dashboard UI changes to sync."
             exit 0
           fi
-          git commit -m "Sync TikTok trend_intelligence_feed UI from patriot-radar"
+          git commit -m "Sync TikTok trend_intelligence_feed UI from Creator Radar"
           git push origin main

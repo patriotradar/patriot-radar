@@ -1,6 +1,6 @@
 /**
  * TikTok Live State client — single frontend data source for dashboard modules.
- * Fetches /api/tiktok-live-state and provides safe fallbacks for all fields.
+ * Fetches /api/trend-intelligence and provides safe fallbacks for all fields.
  */
 (function () {
   "use strict";
@@ -159,7 +159,7 @@
     }
 
     inflight = (async function () {
-      var url = "/api/tiktok-live-state?niche=" + encodeURIComponent(resolvedNiche);
+      var url = "/api/trend-intelligence?niche=" + encodeURIComponent(resolvedNiche);
       debugLog("fetch start", url);
 
       try {

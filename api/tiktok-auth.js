@@ -4,7 +4,7 @@
  * Required environment variables:
  *   TIKTOK_CLIENT_KEY
  *   TIKTOK_CLIENT_SECRET
- *   TIKTOK_REDIRECT_URI  (e.g. https://creatorradar.co.uk/api/tiktok-callback)
+ *   TIKTOK_REDIRECT_URI  (e.g. /api/tiktok-callback on your deployment host)
  */
 export default async function handler(req, res) {
   const clientKey = process.env.TIKTOK_CLIENT_KEY;

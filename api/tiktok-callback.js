@@ -45,7 +45,9 @@ export default async function handler(req, res) {
 
     // Redirect back to dashboard with success indicator.
     // Storing the token server-side in Supabase is recommended before production use.
-    const redirectTarget = `https://creatorradar.co.uk/?tiktok=connected&state=${encodeURIComponent(state)}`;
+    const host = req.headers["x-forwarded-host"] || req.headers.host || "";
+    const proto = req.headers["x-forwarded-proto"] || "https";
+    const redirectTarget = `${proto}://${host}/?tiktok=connected&state=${encodeURIComponent(state)}`;
     res.writeHead(302, { Location: redirectTarget });
     res.end();
   } catch (err) {
