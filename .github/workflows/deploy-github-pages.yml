@@ -1,0 +1,59 @@
+name: Deploy GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "dashboard-sync/**"
+      - "terms.html"
+      - "privacy.html"
+      - "generate-post.html"
+      - "CNAME"
+      - "404.html"
+      - "results.json"
+      - ".well-known/**"
+      - ".github/workflows/deploy-github-pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble site for creatorradar.co.uk
+        run: |
+          set -e
+          mkdir -p _site
+          cp -r dashboard-sync/. _site/
+          cp terms.html privacy.html generate-post.html _site/
+          cp CNAME 404.html _site/
+          if [ -d .well-known ]; then
+            cp -r .well-known _site/
+          fi
+          if [ -f results.json ]; then
+            cp results.json _site/
+          fi
+          touch _site/.nojekyll
+          rm -f _site/vercel.json _site/.env.example
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
