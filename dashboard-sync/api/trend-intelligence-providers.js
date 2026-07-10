@@ -198,12 +198,23 @@ async function fetchGoogleSuggestTrends(niche, region) {
         .map(function (item) {
           const keyword = String(item && item.keyword ? item.keyword : "").trim();
           if (!keyword) return null;
-          const viralScore = Number(item.viral_score) || Number(item.latest_score) || 50;
-          const risePercent =
-            Number(item.rise_percent) ||
-            Number(item.momentum_score) ||
-            Number(item.rise_value) / 5 ||
-            20;
+          const viralScoreValue = Number(item.viral_score);
+          const latestScoreValue = Number(item.latest_score);
+          const risePercentValue = Number(item.rise_percent);
+          const momentumScoreValue = Number(item.momentum_score);
+          const riseValue = Number(item.rise_value);
+          const viralScore = Number.isFinite(viralScoreValue)
+            ? viralScoreValue
+            : Number.isFinite(latestScoreValue)
+              ? latestScoreValue
+              : 50;
+          const risePercent = Number.isFinite(risePercentValue)
+            ? risePercentValue
+            : Number.isFinite(momentumScoreValue)
+              ? momentumScoreValue
+              : Number.isFinite(riseValue)
+                ? riseValue / 5
+                : 20;
           const normalizedKeyword =
             keyword === keyword.toUpperCase()
               ? keyword
@@ -212,7 +223,7 @@ async function fetchGoogleSuggestTrends(niche, region) {
             keyword: normalizedKeyword,
             source: item.source || "Google Trends",
             source_keyword: item.source_keyword || keyword,
-            rise_value: Number(item.rise_value) || Math.round(risePercent * 5),
+            rise_value: Number.isFinite(riseValue) ? riseValue : Math.round(risePercent * 5),
             discovery_type: item.discovery_type || "google_trends",
             viral_score: viralScore,
             rise_percent: risePercent,
@@ -226,11 +237,13 @@ async function fetchGoogleSuggestTrends(niche, region) {
             debate: Number(item.debate) || 35,
             product: item.product || "",
             trend_state: item.trend_state || item.momentum_label || "trending",
-            latest_score: Number(item.latest_score) || null,
-            recent_avg: Number(item.recent_avg) || null,
-            previous_avg: Number(item.previous_avg) || null,
-            opportunity_gap: Number(item.opportunity_gap) || null,
-            momentum_score: Number(item.momentum_score) || null,
+            latest_score: Number.isFinite(latestScoreValue) ? latestScoreValue : null,
+            recent_avg: Number.isFinite(Number(item.recent_avg)) ? Number(item.recent_avg) : null,
+            previous_avg: Number.isFinite(Number(item.previous_avg)) ? Number(item.previous_avg) : null,
+            opportunity_gap: Number.isFinite(Number(item.opportunity_gap))
+              ? Number(item.opportunity_gap)
+              : null,
+            momentum_score: Number.isFinite(momentumScoreValue) ? momentumScoreValue : null,
             niche: item.niche || niche || "general",
             last_updated: trendsSnapshot.last_updated || null,
           };
