@@ -215,6 +215,11 @@ async function fetchGoogleSuggestTrends(niche, region) {
               : Number.isFinite(riseValue)
                 ? riseValue / 5
                 : 20;
+          const searchVolumeValue = Number(item.search_volume);
+          const contentScoreValue = Number(item.content_score);
+          const freshValue = Number(item.fresh);
+          const emotionValue = Number(item.emotion);
+          const debateValue = Number(item.debate);
           const normalizedKeyword =
             keyword === keyword.toUpperCase()
               ? keyword
@@ -227,14 +232,15 @@ async function fetchGoogleSuggestTrends(niche, region) {
             discovery_type: item.discovery_type || "google_trends",
             viral_score: viralScore,
             rise_percent: risePercent,
-            search_volume:
-              Number(item.search_volume) ||
-              Number(item.latest_score) ||
-              Math.min(99, 50 + Math.round(viralScore / 2)),
-            content_score: Number(item.content_score) || viralScore,
-            fresh: Number(item.fresh) || 55,
-            emotion: Number(item.emotion) || 45,
-            debate: Number(item.debate) || 35,
+            search_volume: Number.isFinite(searchVolumeValue)
+              ? searchVolumeValue
+              : Number.isFinite(latestScoreValue)
+                ? latestScoreValue
+                : Math.min(99, 50 + Math.round(viralScore / 2)),
+            content_score: Number.isFinite(contentScoreValue) ? contentScoreValue : viralScore,
+            fresh: Number.isFinite(freshValue) ? freshValue : 55,
+            emotion: Number.isFinite(emotionValue) ? emotionValue : 45,
+            debate: Number.isFinite(debateValue) ? debateValue : 35,
             product: item.product || "",
             trend_state: item.trend_state || item.momentum_label || "trending",
             latest_score: Number.isFinite(latestScoreValue) ? latestScoreValue : null,
