@@ -8,6 +8,18 @@ import os
 import requests
 from caption_templates import apply_caption_pipeline
 
+
+def iso_now():
+    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+
+# The live dashboard reads this file from GitHub raw at runtime. We reuse the
+# last-published copy for honest carry-forward when Google Trends rate-limits us.
+DASHBOARD_RESULTS_URL = (
+    "https://raw.githubusercontent.com/patriotradar/"
+    "patriot-radar-dashboard/main/results.json"
+)
+
 CONTENT_KEYWORDS = [
     # Core
     "england", "britain", "great britain", "united kingdom", "british", "english",
@@ -289,7 +301,11 @@ def analyse_keywords(pytrends, keywords, category):
                 "rise_percent": round(rise_percent, 1),
                 "viral_score": round(viral_score, 1),
                 "question": QUESTIONS.get(keyword, f"Is {keyword.title()} being ignored in modern Britain? Yes or No?"),
-                "product": make_product(keyword)
+                "product": make_product(keyword),
+                "measured": True,
+                "data_source": "google_trends",
+                "measured_at": iso_now(),
+                "data_points": len(scores)
             })
 
         except Exception as e:
@@ -1045,28 +1061,51 @@ def score_opportunity_gap(item):
         "competition_score": comp_score
     }
 
-def fallback_results():
-    fallback = []
-    shuffled = list(CONTENT_KEYWORDS)
-    random.shuffle(shuffled)
-    sample = shuffled[:12]
+def carry_forward_results(existing_keywords, needed):
+    """Honest replacement for the old random fallback.
 
-    for keyword in sample:
-        score = random.randint(45, 78)
-        fallback.append({
-            "category": "content",
-            "keyword": keyword,
-            "latest_score": score,
-            "recent_avg": score - random.randint(1, 8),
-            "previous_avg": score - random.randint(8, 20),
-            "rise_percent": random.randint(10, 70),
-            "viral_score": score,
-            "question": QUESTIONS.get(keyword, f"Is {keyword.title()} being ignored in modern Britain? Yes or No?"),
-            "product": make_product(keyword)
-        })
+    When Google Trends blocks the scanner and we get too few live results, we
+    DO NOT invent numbers. Instead we re-show the most recent REAL measurements
+    from the last published results.json, clearly flagged as cached with the
+    timestamp of when they were actually measured. If we have no real history to
+    fall back on, we return nothing and the dashboard simply shows fewer (but
+    true) results.
+    """
+    carried = []
+    if needed <= 0:
+        return carried
+    try:
+        resp = requests.get(DASHBOARD_RESULTS_URL, timeout=10)
+        if resp.status_code != 200:
+            print(f"Carry-forward: previous results unavailable (HTTP {resp.status_code}).")
+            return carried
+        prev = resp.json()
+    except Exception as e:
+        print(f"Carry-forward: could not load previous results ({e}).")
+        return carried
 
-    fallback.sort(key=lambda x: x["viral_score"], reverse=True)
-    return fallback
+    prev_updated = prev.get("last_updated")
+    for item in (prev.get("results") or []):
+        if len(carried) >= needed:
+            break
+        # Only carry forward values that were genuinely measured before.
+        if not item.get("measured"):
+            continue
+        kw = (item.get("keyword") or "").lower()
+        if not kw or kw in existing_keywords:
+            continue
+        clone = dict(item)
+        clone["is_stale"] = True
+        clone["data_status"] = "cached"
+        clone["measured_at"] = item.get("measured_at") or prev_updated
+        carried.append(clone)
+        existing_keywords.add(kw)
+
+    if carried:
+        print(f"Carry-forward: re-showing {len(carried)} last-known REAL results (Google Trends rate-limited this run).")
+    else:
+        print("Carry-forward: no prior real results to reuse; publishing fewer, honest results.")
+    return carried
 
 def determine_virality_state(item):
     if not item:
@@ -1468,6 +1507,14 @@ def save_results(results, emerging, product_trends=None, creator_insights=None):
         "product_trends": product_trends or [],
         "creator_insights": creator_insights or [],
         "recommendation_meta": recommendation["based_on"],
+        "generated_at": iso_now(),
+        "data_integrity": {
+            "policy": ("Only real Google Trends measurements are published. When Trends is "
+                       "unavailable, the last real reading is reused and flagged 'cached' with "
+                       "its measured_at time. No values are ever randomly generated."),
+            "measured_results": sum(1 for r in results[:15] if r.get("measured") and not r.get("is_stale")),
+            "cached_results": sum(1 for r in results[:15] if r.get("is_stale")),
+        },
         "last_updated": now
     }
 
@@ -1493,14 +1540,10 @@ def main():
     all_results = content_results
 
     if len(all_results) < 5:
-        print(f"Only {len(all_results)} live results. Supplementing with fallback data.")
-        fallback = fallback_results()
-        existing_kws = {r["keyword"] for r in all_results}
-        for fb in fallback:
-            if fb["keyword"] not in existing_kws:
-                all_results.append(fb)
-            if len(all_results) >= 12:
-                break
+        print(f"Only {len(all_results)} live results from Google Trends. Filling from last REAL scan (no fabrication).")
+        existing_kws = {(r.get("keyword") or "").lower() for r in all_results}
+        carried = carry_forward_results(existing_kws, needed=12 - len(all_results))
+        all_results.extend(carried)
 
     all_results.sort(key=lambda x: x["viral_score"], reverse=True)
 
