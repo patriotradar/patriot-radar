@@ -204,8 +204,12 @@ async function fetchGoogleSuggestTrends(niche, region) {
             Number(item.momentum_score) ||
             Number(item.rise_value) / 5 ||
             20;
+          const normalizedKeyword =
+            keyword === keyword.toUpperCase()
+              ? keyword
+              : keyword.charAt(0).toUpperCase() + keyword.slice(1);
           return {
-            keyword: keyword.charAt(0).toUpperCase() + keyword.slice(1),
+            keyword: normalizedKeyword,
             source: item.source || "Google Trends",
             source_keyword: item.source_keyword || keyword,
             rise_value: Number(item.rise_value) || Math.round(risePercent * 5),
