@@ -28,7 +28,7 @@ This downloads the official `ffuf_2.2.1_linux_amd64.tar.gz` release, verifies it
 
 # POST body fuzzing
 ./bin/ffuf -u https://example.com/login -X POST \
-  -d "username=admin&******" \
+  -d "username=admin&FUZZ" \
   -w /path/to/passwords.txt \
   -H "Content-Type: application/x-www-form-urlencoded"
 
