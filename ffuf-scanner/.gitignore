@@ -1,6 +1,0 @@
-# Ignore the downloaded binary and any scan output
-bin/
-*.txt
-*.json
-*.csv
-*.html
