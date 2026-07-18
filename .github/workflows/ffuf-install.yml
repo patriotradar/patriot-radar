@@ -1,0 +1,55 @@
+name: ffuf Install
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Target URL (e.g. https://example.com/FUZZ)"
+        required: false
+        default: ""
+      wordlist:
+        description: "Wordlist to use (relative path inside ffuf-scanner/)"
+        required: false
+        default: ""
+
+jobs:
+  ffuf-install:
+    name: Install ffuf v2.2.1
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache ffuf binary
+        id: cache-ffuf
+        uses: actions/cache@v4
+        with:
+          path: ffuf-scanner/bin/ffuf
+          key: ffuf-v2.2.1-linux-amd64
+
+      - name: Install ffuf
+        if: steps.cache-ffuf.outputs.cache-hit != 'true'
+        working-directory: ffuf-scanner
+        run: bash setup.sh
+
+      - name: Verify ffuf binary
+        run: |
+          ./ffuf-scanner/bin/ffuf -V
+
+      - name: Run ffuf scan (optional)
+        if: ${{ inputs.target_url != '' && inputs.wordlist != '' }}
+        run: |
+          ./ffuf-scanner/bin/ffuf \
+            -u "${{ inputs.target_url }}" \
+            -w "ffuf-scanner/${{ inputs.wordlist }}" \
+            -o ffuf-scanner/results.json \
+            -of json
+
+      - name: Upload scan results
+        if: ${{ inputs.target_url != '' && inputs.wordlist != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffuf-results
+          path: ffuf-scanner/results.json
+          if-no-files-found: ignore
