@@ -2,7 +2,7 @@
  * Trend Intelligence API — live server-side aggregation for CreatorRadar.
  * GET /api/trend-intelligence?niche=patriotic
  *
- * Aggregates Google Trends snapshot, Google Suggest, Reddit RSS, News RSS,
+ * Aggregates Google Trends snapshot (with Google Suggest fallback), Reddit RSS, News RSS,
  * and TikTok signals (Supabase trend_intelligence_feed via live-state builder).
  * Compatible with hourly cron refresh (Cache-Control + optional CRON_SECRET).
  */
@@ -100,7 +100,7 @@ async function buildTrendIntelligence(niche, authToken, options) {
         error: r.error || null,
       };
       if (r.error && r.error !== "no_suggestions") errors.push("google_suggest: " + r.error);
-      return { source: "Google Suggest", results: r.results || [] };
+      return { source: "Google Trends", results: r.results || [] };
     }),
     fetchRedditTrends().then(function (r) {
       sources.reddit = {
