@@ -91,6 +91,13 @@ jobs:
           echo "::warning::Timed out waiting for Vercel preview deployment URL"
           exit 0
 
+      - name: Smoke test preview root /
+        if: steps.wait.outputs.preview_url != ''
+        run: |
+          url="${{ steps.wait.outputs.preview_url }}"
+          curl -fsSL "$url/" | tee /tmp/root.html
+          grep -qi 'Creator Radar' /tmp/root.html
+
       - name: Smoke test preview /api/health
         if: steps.wait.outputs.preview_url != ''
         run: |
