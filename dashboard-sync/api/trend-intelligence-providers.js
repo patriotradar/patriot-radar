@@ -5,6 +5,17 @@
 
 const DEFAULT_TRENDS_JSON_URL =
   "https://raw.githubusercontent.com/patriotradar/patriot-radar-dashboard/main/results.json";
+const TRENDS_JSON_CACHE_MS = Math.max(1000, Number(process.env.TRENDS_JSON_CACHE_MS) || 300000);
+const TRENDS_JSON_ERROR_CACHE_MS = Math.max(
+  1000,
+  Number(process.env.TRENDS_JSON_ERROR_CACHE_MS) || 30000
+);
+
+let trendsSnapshotCache = {
+  value: null,
+  expires_at: 0,
+  pending: null,
+};
 
 const DEFAULT_HEADERS = {
   "User-Agent":
@@ -87,35 +98,65 @@ async function fetchWithTimeout(url, options, timeoutMs) {
 }
 
 async function fetchGoogleTrendsSnapshot() {
+  const now = Date.now();
+  if (trendsSnapshotCache.value && trendsSnapshotCache.expires_at > now) {
+    return trendsSnapshotCache.value;
+  }
+
+  if (trendsSnapshotCache.pending) {
+    return trendsSnapshotCache.pending;
+  }
+
   const url =
     process.env.TRENDS_JSON_URL ||
     process.env.RESULTS_JSON_URL ||
     DEFAULT_TRENDS_JSON_URL;
 
-  try {
-    const resp = await fetchWithTimeout(url, { cache: "no-store" }, 10000);
-    if (!resp.ok) {
-      return { ok: false, error: "http_" + resp.status, results: [], emerging: [], product_trends: [] };
+  trendsSnapshotCache.pending = (async function () {
+    try {
+      const resp = await fetchWithTimeout(url, { cache: "no-store" }, 10000);
+      if (!resp.ok) {
+        const failed = {
+          ok: false,
+          error: "http_" + resp.status,
+          results: [],
+          emerging: [],
+          product_trends: [],
+        };
+        trendsSnapshotCache.value = failed;
+        trendsSnapshotCache.expires_at = Date.now() + TRENDS_JSON_ERROR_CACHE_MS;
+        return failed;
+      }
+      const data = await resp.json();
+      const snapshot = {
+        ok: true,
+        url: url,
+        last_updated: data.last_updated || null,
+        results: Array.isArray(data.results) ? data.results : [],
+        emerging: Array.isArray(data.emerging) ? data.emerging : [],
+        product_trends: Array.isArray(data.product_trends) ? data.product_trends : [],
+        creator_insights: Array.isArray(data.creator_insights) ? data.creator_insights : [],
+      };
+      trendsSnapshotCache.value = snapshot;
+      trendsSnapshotCache.expires_at = Date.now() + TRENDS_JSON_CACHE_MS;
+      return snapshot;
+    } catch (err) {
+      const failed = {
+        ok: false,
+        error: String(err && err.message ? err.message : err),
+        results: [],
+        emerging: [],
+        product_trends: [],
+      };
+      trendsSnapshotCache.value = failed;
+      trendsSnapshotCache.expires_at = Date.now() + TRENDS_JSON_ERROR_CACHE_MS;
+      return failed;
+    } finally {
+      trendsSnapshotCache.pending = null;
     }
-    const data = await resp.json();
-    return {
-      ok: true,
-      url: url,
-      last_updated: data.last_updated || null,
-      results: Array.isArray(data.results) ? data.results : [],
-      emerging: Array.isArray(data.emerging) ? data.emerging : [],
-      product_trends: Array.isArray(data.product_trends) ? data.product_trends : [],
-      creator_insights: Array.isArray(data.creator_insights) ? data.creator_insights : [],
-    };
-  } catch (err) {
-    return {
-      ok: false,
-      error: String(err && err.message ? err.message : err),
-      results: [],
-      emerging: [],
-      product_trends: [],
-    };
-  }
+  })();
+
+  return trendsSnapshotCache.pending;
 }
 
 async function fetchGoogleSuggest(seed, region) {
@@ -151,6 +192,79 @@ function defaultSuggestSeeds(niche) {
 }
 
 async function fetchGoogleSuggestTrends(niche, region) {
+  const trendsSnapshot = await fetchGoogleTrendsSnapshot();
+  const trendsResults = Array.isArray(trendsSnapshot.results)
+    ? trendsSnapshot.results
+        .map(function (item) {
+          const keyword = String(item && item.keyword ? item.keyword : "").trim();
+          if (!keyword) return null;
+          const viralScoreValue = Number(item.viral_score);
+          const latestScoreValue = Number(item.latest_score);
+          const risePercentValue = Number(item.rise_percent);
+          const momentumScoreValue = Number(item.momentum_score);
+          const riseValue = Number(item.rise_value);
+          const viralScore = Number.isFinite(viralScoreValue)
+            ? viralScoreValue
+            : Number.isFinite(latestScoreValue)
+              ? latestScoreValue
+              : 50;
+          const risePercent = Number.isFinite(risePercentValue)
+            ? risePercentValue
+            : Number.isFinite(momentumScoreValue)
+              ? momentumScoreValue
+              : Number.isFinite(riseValue)
+                ? riseValue / 5
+                : 20;
+          const searchVolumeValue = Number(item.search_volume);
+          const contentScoreValue = Number(item.content_score);
+          const freshValue = Number(item.fresh);
+          const emotionValue = Number(item.emotion);
+          const debateValue = Number(item.debate);
+          const normalizedKeyword =
+            keyword === keyword.toUpperCase()
+              ? keyword
+              : keyword.charAt(0).toUpperCase() + keyword.slice(1);
+          return {
+            keyword: normalizedKeyword,
+            source: item.source || "Google Trends",
+            source_keyword: item.source_keyword || keyword,
+            rise_value: Number.isFinite(riseValue) ? riseValue : Math.round(risePercent * 5),
+            discovery_type: item.discovery_type || "google_trends",
+            viral_score: viralScore,
+            rise_percent: risePercent,
+            search_volume: Number.isFinite(searchVolumeValue)
+              ? searchVolumeValue
+              : Number.isFinite(latestScoreValue)
+                ? latestScoreValue
+                : Math.min(99, 50 + Math.round(viralScore / 2)),
+            content_score: Number.isFinite(contentScoreValue) ? contentScoreValue : viralScore,
+            fresh: Number.isFinite(freshValue) ? freshValue : 55,
+            emotion: Number.isFinite(emotionValue) ? emotionValue : 45,
+            debate: Number.isFinite(debateValue) ? debateValue : 35,
+            product: item.product || "",
+            trend_state: item.trend_state || item.momentum_label || "trending",
+            latest_score: Number.isFinite(latestScoreValue) ? latestScoreValue : null,
+            recent_avg: Number.isFinite(Number(item.recent_avg)) ? Number(item.recent_avg) : null,
+            previous_avg: Number.isFinite(Number(item.previous_avg)) ? Number(item.previous_avg) : null,
+            opportunity_gap: Number.isFinite(Number(item.opportunity_gap))
+              ? Number(item.opportunity_gap)
+              : null,
+            momentum_score: Number.isFinite(momentumScoreValue) ? momentumScoreValue : null,
+            niche: item.niche || niche || "general",
+            last_updated: trendsSnapshot.last_updated || null,
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  if (trendsSnapshot.ok && trendsResults.length > 0) {
+    return {
+      ok: true,
+      results: trendsResults.slice(0, 15),
+      error: null,
+    };
+  }
+
   const seeds = defaultSuggestSeeds(niche);
   const seen = {};
   const discovered = [];
@@ -180,7 +294,7 @@ async function fetchGoogleSuggestTrends(niche, region) {
   return {
     ok: discovered.length > 0,
     results: discovered.slice(0, 15),
-    error: discovered.length ? null : "no_suggestions",
+    error: discovered.length ? null : trendsSnapshot.error || "no_suggestions",
   };
 }
 
