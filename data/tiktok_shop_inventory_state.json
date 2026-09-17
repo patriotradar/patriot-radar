@@ -93,6 +93,190 @@
           },
           "paused_at": "2026-07-04T12:32:15.324206+00:00",
           "status": "waiting_user_action"
+        },
+        {
+          "content_id": "87c76416-1acf-4f60-a7a2-e833b78344b4",
+          "pipeline_run_id": "037eb754-2159-41f3-a269-df5fdd6ff15b",
+          "product_name": "Smart fitness tracker band",
+          "category": "fitness",
+          "inventory_gap_event": {
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Add this product to your TikTok Shop Showcase",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "notification": {
+            "event": "inventory_gap_detected",
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Product 'Smart fitness tracker band' is not in your TikTok Shop catalog. Add it to Showcase to enable attachment.",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "paused_at": "2026-07-04T17:49:45.553551+00:00",
+          "status": "waiting_user_action"
+        },
+        {
+          "content_id": "b821e8bd-6cfc-42d9-be3a-b91435f161bb",
+          "pipeline_run_id": "c9fcd89b-f521-482a-9b6e-1e984b01dffe",
+          "product_name": "Smart fitness tracker band",
+          "category": "fitness",
+          "inventory_gap_event": {
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Add this product to your TikTok Shop Showcase",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "notification": {
+            "event": "inventory_gap_detected",
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Product 'Smart fitness tracker band' is not in your TikTok Shop catalog. Add it to Showcase to enable attachment.",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "paused_at": "2026-07-04T17:49:45.555259+00:00",
+          "status": "waiting_user_action"
+        },
+        {
+          "content_id": "e2fd231d-6d29-4502-b924-c7cd836e05fa",
+          "pipeline_run_id": "a28959c6-0592-4c8d-9b85-a81abf2abdcd",
+          "product_name": "Nonexistent product xyz",
+          "category": "general",
+          "inventory_gap_event": {
+            "product_name": "Nonexistent product xyz",
+            "category": "general",
+            "message": "Add this product to your TikTok Shop Showcase",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "notification": {
+            "event": "inventory_gap_detected",
+            "product_name": "Nonexistent product xyz",
+            "category": "general",
+            "message": "Product 'Nonexistent product xyz' is not in your TikTok Shop catalog. Add it to Showcase to enable attachment.",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "paused_at": "2026-07-04T17:49:45.556564+00:00",
+          "status": "waiting_user_action"
+        },
+        {
+          "content_id": "3330a89f-02c6-4936-ac75-0b0ee20648c7",
+          "pipeline_run_id": "8464f8f3-9caf-4e62-ac81-4b77001ffc3a",
+          "product_name": "Smart fitness tracker band",
+          "category": "fitness",
+          "inventory_gap_event": {
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Add this product to your TikTok Shop Showcase",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "notification": {
+            "event": "inventory_gap_detected",
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Product 'Smart fitness tracker band' is not in your TikTok Shop catalog. Add it to Showcase to enable attachment.",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "paused_at": "2026-07-04T17:49:45.558201+00:00",
+          "status": "waiting_user_action"
+        },
+        {
+          "content_id": "4555ec96-2cbe-4623-9464-506636de63f4",
+          "pipeline_run_id": "2ba7aba8-2f7c-482e-a49c-9058e5d56b72",
+          "product_name": "Smart fitness tracker band",
+          "category": "fitness",
+          "inventory_gap_event": {
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Add this product to your TikTok Shop Showcase",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "notification": {
+            "event": "inventory_gap_detected",
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Product 'Smart fitness tracker band' is not in your TikTok Shop catalog. Add it to Showcase to enable attachment.",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "paused_at": "2026-07-04T17:50:08.682212+00:00",
+          "status": "waiting_user_action"
+        },
+        {
+          "content_id": "bee83f04-cdc1-407c-94d5-ea35aa7588df",
+          "pipeline_run_id": "d31f5db7-6e91-48a7-9f0e-5ec0c1081add",
+          "product_name": "Smart fitness tracker band",
+          "category": "fitness",
+          "inventory_gap_event": {
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Add this product to your TikTok Shop Showcase",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "notification": {
+            "event": "inventory_gap_detected",
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Product 'Smart fitness tracker band' is not in your TikTok Shop catalog. Add it to Showcase to enable attachment.",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "paused_at": "2026-07-04T17:50:08.684063+00:00",
+          "status": "waiting_user_action"
+        },
+        {
+          "content_id": "b3664848-7b7c-411d-99cd-edf5f6c9f083",
+          "pipeline_run_id": "1ce1f8f2-c802-4598-b5a1-e6f6afc787bb",
+          "product_name": "Nonexistent product xyz",
+          "category": "general",
+          "inventory_gap_event": {
+            "product_name": "Nonexistent product xyz",
+            "category": "general",
+            "message": "Add this product to your TikTok Shop Showcase",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "notification": {
+            "event": "inventory_gap_detected",
+            "product_name": "Nonexistent product xyz",
+            "category": "general",
+            "message": "Product 'Nonexistent product xyz' is not in your TikTok Shop catalog. Add it to Showcase to enable attachment.",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "paused_at": "2026-07-04T17:50:08.685483+00:00",
+          "status": "waiting_user_action"
+        },
+        {
+          "content_id": "21b44ac0-c734-4356-b3c6-75e4ff570bc3",
+          "pipeline_run_id": "7c1e68ac-9fcb-4909-8347-be025c413d91",
+          "product_name": "Smart fitness tracker band",
+          "category": "fitness",
+          "inventory_gap_event": {
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Add this product to your TikTok Shop Showcase",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "notification": {
+            "event": "inventory_gap_detected",
+            "product_name": "Smart fitness tracker band",
+            "category": "fitness",
+            "message": "Product 'Smart fitness tracker band' is not in your TikTok Shop catalog. Add it to Showcase to enable attachment.",
+            "status": "waiting_user_action",
+            "action_required": "add_to_showcase"
+          },
+          "paused_at": "2026-07-04T17:50:08.687190+00:00",
+          "status": "waiting_user_action"
         }
       ]
     }

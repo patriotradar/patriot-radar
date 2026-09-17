@@ -2,6 +2,19 @@ import { scrapeTikTokComments, searchTikTokByNiche, selectTopViralVideos } from 
 import { generateInsights, type InsightsResult } from "./insights";
 import { storeTikTokResults } from "./supabase";
 
+export type ProgressStep =
+  | "searching"
+  | "scoring"
+  | "scraping_comments"
+  | "generating_insights"
+  | "storing"
+  | "done";
+
+export type ProgressEvent = {
+  step: ProgressStep;
+  message: string;
+};
+
 export type PipelineStep =
   | "invalid_input"
   | "config_missing"
@@ -94,7 +107,10 @@ const EMPTY_INSIGHTS: InsightsResult = {
   summary: "",
 };
 
-export async function runScanPipeline(niche: string): Promise<ScanPipelineResult> {
+export async function runScanPipeline(
+  niche: string,
+  onProgress?: (event: ProgressEvent) => void,
+): Promise<ScanPipelineResult> {
   const trimmedNiche = niche.trim();
 
   const base: ScanPipelineResult = {
@@ -120,6 +136,7 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
     return fail(base, "config_missing", configError);
   }
 
+  onProgress?.({ step: "searching", message: `Searching TikTok for "${trimmedNiche}"…` });
   const searchOutcome = await searchTikTokByNiche(trimmedNiche);
   if (!searchOutcome.ok) {
     const step: PipelineStep = searchOutcome.message.includes("defaultDatasetId")
@@ -140,6 +157,10 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
     });
   }
 
+  onProgress?.({
+    step: "scoring",
+    message: `Scoring videos — found ${searchOutcome.items.length} results, picking top 20…`,
+  });
   const viralVideos = selectTopViralVideos(searchOutcome.items, 10, 20);
   base.viralVideoCount = viralVideos.length;
   base.videoUrls = viralVideos.map((video) => video.url);
@@ -169,6 +190,10 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
     );
   }
 
+  onProgress?.({
+    step: "scraping_comments",
+    message: `Scraping comments from ${viralVideos.length} videos…`,
+  });
   const commentOutcome = await scrapeTikTokComments(base.videoUrls);
   if (!commentOutcome.ok) {
     const step: PipelineStep = commentOutcome.message.includes("defaultDatasetId")
@@ -189,6 +214,7 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
   };
   base.comments = commentOutcome.items;
 
+  onProgress?.({ step: "generating_insights", message: "Generating insights…" });
   try {
     base.insights = await generateInsights({
       comments: base.comments,
@@ -212,8 +238,10 @@ export async function runScanPipeline(niche: string): Promise<ScanPipelineResult
     },
   };
 
+  onProgress?.({ step: "storing", message: "Storing results to Supabase…" });
   try {
     const stored = await storeTikTokResults(trimmedNiche, payload);
+    onProgress?.({ step: "done", message: "Done!" });
     return {
       ...base,
       success: true,
