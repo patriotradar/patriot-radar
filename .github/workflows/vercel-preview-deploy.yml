@@ -40,6 +40,12 @@ jobs:
           echo "preview_url=$url" >> "$GITHUB_OUTPUT"
           echo "Preview URL: $url"
 
+      - name: Smoke test root /
+        if: steps.deploy.outputs.preview_url != ''
+        run: |
+          url="${{ steps.deploy.outputs.preview_url }}"
+          curl -fsS "$url/" | grep -qi 'Creator Radar'
+
       - name: Smoke test /api/health
         if: steps.deploy.outputs.preview_url != ''
         run: |
